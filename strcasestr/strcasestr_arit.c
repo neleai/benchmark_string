@@ -22,7 +22,7 @@ STRCASESTR(n,c1l,c1u,c2l,c2u,size) = (char(c1l)|char(c1u)) (char(c2l) | char(c2u
 #define MATCH_REST int j;for(j=0;n[j] && tolower(n[j])==tolower(p[j]);j++); \
 if (!n[j]) return p; \
 size+=j; \
-if ((long) size>4*(p-s)) return strstr_hash(p, strlen(p), n, strlen(n));
+if ((long) size>1*(p-s)) return strstr_hash(p, strlen(p), n, strlen(n));
 
 static inline char * STRCASESTR(char *s ,char *n,char *c1l,char *c1u,char *c2l,char *c2u,char *size ) {
     int i;
