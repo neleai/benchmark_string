@@ -9,10 +9,10 @@ gcc ts_avg.c
 
 comp(){
   echo $1 > tmp/result_$1
-  ln -s -f tmp/lib$I.so libstrstr.so
-  LD_LIBRARY_PATH=. ./tester $2 $3 $4 >> tmp/result_$1 2> tmp/output_$1
-  cp plot.dat  tmp/$I$2$3_$4.dat
-  cp plot_r.dat tmp/$I$2$3_$4_r.dat
+  ln -s -f tmp/lib$1.so libstrstr.so
+  LD_LIBRARY_PATH=. ./tester $2 $3 $4 $5>> tmp/result_$1 2> tmp/output_$1
+  cp plot.dat  data/${1}_$GNAME.dat
+  cp plot_r.dat data/${1}_$GNAME_r.dat
   if [ -e tmp/output ] ; then
     diff -u tmp/output_$1 tmp/output
   fi
@@ -38,49 +38,49 @@ draw(){
   echo "plot \\" >> tmp/plot_r.gp
 
   rm -f tmp/output
+
   for I in strstr_*.c; do
-    comp $I $3 $1 $2
-    echo "\"tmp/$I$3$1_$2.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot.gp
-    echo "\"tmp/$I$3$1_$2_r.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot_r.gp
+    comp $I $1 $2 $3 $4
+    echo "\"data/${I}_$GNAME.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot.gp
+    echo "\"data/${I}_$GNAME_r.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot_r.gp
 
   done
   echo 0 >> tmp/plot.gp
   echo 0 >> tmp/plot_r.gp
-  gnuplot tmp/plot.gp > html/$ALIGNED$4$1_$2.png
-  chmod a+r html/$ALIGNED$4$1_$2.png
-  gnuplot tmp/plot_r.gp > html/$ALIGNED$4$1_$2_r.png
-  chmod a+r html/$ALIGNED$4$1_$2_r.png
-
-  html_a "<td><img src='$ALIGNED$4$1_$2.png'></img></td>"
-  html_r "<td><img src='$ALIGNED$4$1_$2_r.png'></img></td>"
-}
-random(){
-  draw $1 $2 0 random
-}
-aaab(){
-  draw $1 $2 1 aaab
-}
-planted(){
-  draw $1 $2 2 planted
-}
-
-graph(){
-  html "<tr><td>" $ALIGNED $1 $2 "</td>"
-  for NO in 1 10 100 1000 10000; do
-    echo $1 $NO $2
-    $1 $NO      $2
-  done
-  html "</tr>"
+  gnuplot tmp/plot.gp > html/$GNAME.png
+  chmod a+r html/$GNAME.png
+  gnuplot tmp/plot_r.gp > html/$GNAME_r.png
+  chmod a+r html/$GNAME_r.png
 }
 
 echo "<html><body style=\"width:1000%;\"><table>" > html/strstr.html
 chmod a+r html/strstr.html
 echo "<html><body style=\"width:1000%;\"><table>" > html/strstr_r.html
 chmod a+r html/strstr_r.html
-
+export N=1
+try(){
+  html "<tr><td>*_$1_*_$3_$4_${ALIGNED}</td>"
+  for NO in 1 10 100 1000 10000; do
+    export GNAME="$1_${NO}_$3_$4_${ALIGNED}"
+    export GNAME_r="$1_${NO}_$3_$4_${ALIGNED}_r"
+    html_a "<td><img src='$GNAME.png'></img></td>"
+    html_r "<td><img src='$GNAME_r.png'></img></td>"
+  done
+  html "</tr>"
+}
 
 . ./benchmark
 
+try(){
+  export GNAME="$1_$2_$3_$4_${ALIGNED}"
+  export GNAME_r="$1_$2_$3_$4_${ALIGNED}_r"
+  echo $GNAME
+  draw $1 $2 $3 $4
+}
+for NO in 1 10 100 1000 10000; do
+  export N=$NO
+  . ./benchmark
+done
 
 
 html "</table><pre>"
