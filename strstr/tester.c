@@ -121,6 +121,11 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
       if(r) sos+=r-haystack;
       time_end=rdtsc();
       times[i]=time_end-time_start-ts_avg;
+      /*ignore resheduled*/
+      if (times[i]<-1000)               times[i]=times[i-1];
+      if (times[i]>1000.0*haystack_len) times[i]=times[i-1];
+
+
     }
   double mean=0;
   for(i=0; i<runs; i++) mean+=times[i];
