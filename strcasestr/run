@@ -33,6 +33,11 @@ html(){
 draw(){
   echo reset > tmp/plot.gp
   echo set terminal png >> tmp/plot.gp
+  echo set xlabel "'haystack size'" >> tmp/plot.gp
+  echo set ylabel "'instructions'" >> tmp/plot.gp
+  echo set xlabel "'haystack size'" >> tmp/plot_r.gp
+  echo set ylabel "'instructions per character'" >> tmp/plot_r.gp
+
   echo "plot \\" >> tmp/plot.gp
   echo reset > tmp/plot_r.gp
   echo set terminal png >> tmp/plot_r.gp

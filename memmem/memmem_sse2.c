@@ -19,7 +19,7 @@ MEMMEM(n,nsize,end,c1,c2,size) = at_ptr(end) {return NULL;}
 
 #include <string.h>
 #include "strstr_hash.h"
-#define MATCH_REST int j;for(j=1;j<nsize && n[j]==p[j];j++); \
+#define MATCH_REST int j;for(j=2;j<nsize && n[j]==p[j];j++); \
 if (j==nsize) return p; \
 size+=j; \
 if ((long) size>2*(p-s)) return strstr_hash(p, end-p , n, nsize);
@@ -55,7 +55,7 @@ static inline char * MEMMEM(char *s ,char *n,char *nsize,char *end,char *c1,char
     mask=forget_bits(mask,offset);
     while (1) {
         if(mask) {
-            for(i=0; i<BYTES_AT_ONCE; i++) if (GET_BIT(mask,i)) {
+            for(i=0; i<BYTES_AT_ONCE-1; i++) if (GET_BIT(mask,i)) {
                     if (GET_BIT(get_mask(e0),i)) {
                         p=s2+i;
                         return NULL;
@@ -66,6 +66,15 @@ static inline char * MEMMEM(char *s ,char *n,char *nsize,char *end,char *c1,char
                     }
 
                 }
+             if (GET_BIT(get_mask(e0),i)) {
+                        p=s2+i;
+                        return NULL;
+                    }
+                    if (GET_BIT(get_mask(e6),i)&& s2[i+1]==c2) {
+                        p=s2+i;
+                        MATCH_REST
+                    }
+
         }
         s2+=BYTES_AT_ONCE;
         eo=LOAD(s2);
