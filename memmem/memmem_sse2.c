@@ -35,7 +35,7 @@ static inline char * MEMMEM(char *s ,char *n,char *nsize,char *end,char *c1,char
     MBTYPE e5;
     MBTYPE e6;
     MBTYPE e7;
-    MBTYPE m0=byte_at(1<<7,(long)end & (BYTES_AT_ONCE-1));
+    MBTYPE m0=byte_at(1<<7,((long)end) & (BYTES_AT_ONCE-1));
     MBTYPE m1=make_mask(0,0);
     MBTYPE m2=make_mask((char) c1,0);
     MBTYPE m3=make_mask((char) c2,1);
@@ -43,7 +43,7 @@ static inline char * MEMMEM(char *s ,char *n,char *nsize,char *end,char *c1,char
     int offset=((long)(s))%BYTES_AT_ONCE;
     s2-=offset;
     MBTYPE eo=LOAD(s2);
-    e0=((long) s2 == ((long)end & ~((long) BYTES_AT_ONCE-1) ) ) ? m0 : m1;;
+    e0=( (long)s2 == (((long)end) & ~((long) BYTES_AT_ONCE-1) ) ) ? m0 : m1;;
 
     e2=test_eq(eo, m2);
     e3=shift_down(eo,1);
@@ -69,9 +69,12 @@ static inline char * MEMMEM(char *s ,char *n,char *nsize,char *end,char *c1,char
         }
         s2+=BYTES_AT_ONCE;
         eo=LOAD(s2);
-        e0=((long) s2 == ((long)end & ~((long) BYTES_AT_ONCE-1) ) ) ? m0 : m1;;
-
-
+        if ((long)s2 == (((long)end) & ~((long) BYTES_AT_ONCE-1) ) ) {
+         e0=m0;
+        } else {
+          e0=m1;
+        }
+        e0=( (long)s2 == (((long)end) & ~((long) BYTES_AT_ONCE-1) ) ) ? m0 : m1;;
         e2=test_eq(eo, m2);
         e3=shift_down(eo,1);
         e4=test_eq(e3, m3);
