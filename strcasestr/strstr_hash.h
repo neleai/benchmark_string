@@ -50,8 +50,8 @@ static __attribute__ ((noinline)) char *strstr_hash(char *s,int slen,char *n,int
   long shash=0;
   long m=1;
   for(i=0;i<nlen;i++){
-    nhash=r*nhash+n[i];
-    shash=r*shash+s[i];
+    nhash=r*nhash+CONVERT(n[i]);
+    shash=r*shash+CONVERT(s[i]);
     m*=r;
   }
   for(i=0;i<=slen-nlen;i++){
