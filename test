@@ -1,0 +1,115 @@
+#!/bin/sh
+for I in strstr_*.c; do
+  gcc $I -O3 -fPIC -shared -o tmp/lib$I.so
+  ln -s -f tmp/lib$I.so libstrstr.so
+  gcc -L. tester.c -o tester -lstrstr -lm -g
+done
+gcc ts_avg.c
+./a.out
+
+comp(){
+  echo $1 > tmp/result_$1
+  ln -s -f tmp/lib$I.so libstrstr.so
+  LD_LIBRARY_PATH=. ./tester $2 $3 $4 >> tmp/result_$1 2> tmp/output_$1
+  cp plot.dat  tmp/$I$2$3_$4.dat
+  cp plot_r.dat tmp/$I$2$3_$4_r.dat
+  if [ -e tmp/output ] ; then
+    diff -u tmp/output_$1 tmp/output
+  fi
+  cp tmp/output_$1 tmp/output
+}
+html_a(){
+  echo $* >>html/strstr.html
+}
+html_r(){
+  echo $* >>html/strstr_r.html
+}
+html(){
+  html_a $*
+  html_r $*
+}
+
+draw(){
+  echo reset > tmp/plot.gp
+  echo set terminal png >> tmp/plot.gp
+  echo "plot \\" >> tmp/plot.gp
+  echo reset > tmp/plot_r.gp
+  echo set terminal png >> tmp/plot_r.gp
+  echo "plot \\" >> tmp/plot_r.gp
+
+  rm -f tmp/output
+  for I in strstr_*.c; do
+    comp $I $3 $1 $2
+    echo "\"tmp/$I$3$1_$2.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot.gp
+    echo "\"tmp/$I$3$1_$2_r.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot_r.gp
+
+  done
+  echo 0 >> tmp/plot.gp
+  echo 0 >> tmp/plot_r.gp
+  gnuplot tmp/plot.gp > html/$ALIGNED$4$1_$2.png
+  chmod a+r html/$ALIGNED$4$1_$2.png
+  gnuplot tmp/plot_r.gp > html/$ALIGNED$4$1_$2_r.png
+  chmod a+r html/$ALIGNED$4$1_$2_r.png
+
+  html_a "<td><img src='$ALIGNED$4$1_$2.png'></img></td>"
+  html_r "<td><img src='$ALIGNED$4$1_$2_r.png'></img></td>"
+}
+random(){
+  draw $1 $2 0 random
+}
+aaab(){
+  draw $1 $2 1 aaab
+}
+planted(){
+  draw $1 $2 2 planted
+}
+
+graph(){
+  html "<tr><td>" $ALIGNED $1 $2 "</td>"
+  for NO in 1 10 100 1000 10000; do
+    echo $1 $NO $2
+    $1 $NO      $2
+  done
+  html "</tr>"
+}
+
+echo "<html><body style=\"width:1000%;\"><table>" > html/strstr.html
+chmod a+r html/strstr.html
+echo "<html><body style=\"width:1000%;\"><table>" > html/strstr_r.html
+chmod a+r html/strstr_r.html
+
+
+
+graph random 10
+export ALIGNED='aligned'   
+graph random 10
+export ALIGNED='unaligned' 
+graph random 10
+export ALIGNED=''
+
+echo "100 0
+      100 1
+        1 8" > plant
+graph planted 10
+echo "98 0
+       2 8" > plant
+graph planted 11
+echo "90 0
+      10 8" > plant
+graph planted 12
+echo "33 0
+      33 5
+      33 8" > plant
+graph planted 13
+
+graph aaab   4
+graph aaab   12
+graph aaab   128
+
+
+
+
+html "</table><pre>"
+cat /proc/cpuinfo >> html/strstr.html
+cat /proc/cpuinfo >> html/strstr_r.html
+html "</pre></body></html>" 
