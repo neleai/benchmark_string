@@ -134,7 +134,7 @@ void test(int runs,int needle_len,int haystack_len, void (*pop)()){
 }
 int plant_r[100],plant_n[100];
 int main(int argc,char **argv){int i,j; long sum;
-  for (i=0;i<100000000) sum=sum*sum+3*sum; //cpu scaling affect rdtsc
+  for (i=0;i<100000000;i++) sum=sum*sum+3*sum; //cpu scaling affect rdtsc
   FILE *ts=fopen("ts_avg","r");
   fscanf(ts,"%lli",&ts_avg);
   plot=fopen("plot.dat","w");
