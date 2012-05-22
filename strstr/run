@@ -1,15 +1,16 @@
 #!/bin/sh
-for I in strstr_*.c; do
+BENCH_FN=strstr
+for I in ${BENCH_FN}_*.c; do
   gcc $I -O3 -fPIC -shared -o tmp/lib$I.so
-  ln -s -f tmp/lib$I.so libstrstr.so
-  gcc -L. tester.c -o tester -lstrstr -lm -g
+  ln -s -f tmp/lib$I.so lib${BENCH_FN}.so
+  gcc -L. tester.c -o tester -l${BENCH_FN} -lm -g
 done
 gcc ts_avg.c
 ./a.out
 
 comp(){
   echo $1 > tmp/result_$1
-  ln -s -f tmp/lib$1.so libstrstr.so
+  ln -s -f tmp/lib$1.so lib${BENCH_FN}.so
   LD_LIBRARY_PATH=. ./tester $2 $3 $4 $5>> tmp/result_$1 2> tmp/output_$1
   cp plot.dat  data/${1}_$GNAME.dat
   cp plot_r.dat data/${1}_$GNAME_r.dat
@@ -19,10 +20,10 @@ comp(){
   cp tmp/output_$1 tmp/output
 }
 html_a(){
-  echo $* >>html/strstr.html
+  echo $* >>html/${BENCH_FN}.html
 }
 html_r(){
-  echo $* >>html/strstr_r.html
+  echo $* >>html/${BENCH_FN}_r.html
 }
 html(){
   html_a $*
@@ -32,6 +33,11 @@ html(){
 draw(){
   echo reset > tmp/plot.gp
   echo set terminal png >> tmp/plot.gp
+  echo set xlabel "'haystack size'" >> tmp/plot.gp
+  echo set ylabel "'instructions'" >> tmp/plot.gp
+  echo set xlabel "'haystack size'" >> tmp/plot_r.gp
+  echo set ylabel "'instructions per character'" >> tmp/plot_r.gp
+
   echo "plot \\" >> tmp/plot.gp
   echo reset > tmp/plot_r.gp
   echo set terminal png >> tmp/plot_r.gp
@@ -39,7 +45,7 @@ draw(){
 
   rm -f tmp/output
 
-  for I in strstr_*.c; do
+  for I in ${BENCH_FN}_*.c; do
     comp $I $1 $2 $3 $4
     echo "\"data/${I}_$GNAME.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot.gp
     echo "\"data/${I}_$GNAME_r.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot_r.gp
@@ -53,10 +59,10 @@ draw(){
   chmod a+r html/$GNAME_r.png
 }
 
-echo "<html><body style=\"width:1000%;\"><table>" > html/strstr.html
-chmod a+r html/strstr.html
-echo "<html><body style=\"width:1000%;\"><table>" > html/strstr_r.html
-chmod a+r html/strstr_r.html
+echo "<html><body style=\"width:1000%;\"><table>" > html/${BENCH_FN}.html
+chmod a+r html/${BENCH_FN}.html
+echo "<html><body style=\"width:1000%;\"><table>" > html/${BENCH_FN}_r.html
+chmod a+r html/${BENCH_FN}_r.html
 export N=1
 try(){
   html "<tr><td>*_$1_*_$3_$4_${ALIGNED}</td>"
@@ -84,6 +90,6 @@ done
 
 
 html "</table><pre>"
-cat /proc/cpuinfo >> html/strstr.html
-cat /proc/cpuinfo >> html/strstr_r.html
+cat /proc/cpuinfo >> html/${BENCH_FN}.html
+cat /proc/cpuinfo >> html/${BENCH_FN}_r.html
 html "</pre></body></html>" 
