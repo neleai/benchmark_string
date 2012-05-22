@@ -6,7 +6,7 @@ chmod a+rx html
 mkdir tmp
 touch tmp/placeholder
 git add data/placeholder html/placeholder tmp/placeholder
-cp ../test .
+cp ../run .
 cp ../tester.c .
 cp ../ts_avg.c .
 touch benchmark
