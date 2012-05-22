@@ -178,7 +178,7 @@ int main(int argc,char **argv)
         }
       for(j=avail; j<plant_no; j++) plant[j]=0;
     }
-  for(i=2; i<20; i++)
+  for(i=2; i<=20; i++)
     {
       fhlen=(slen*i)/2.0;
       test(100000/(slen==1 ? 10 : slen),nlen,needle_gen,(slen*i)/2,haystack_gen);
