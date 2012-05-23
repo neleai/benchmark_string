@@ -78,8 +78,12 @@ void planted(char *haystack,int haystack_len)
         }
     }
 }
-
-FILE *plot,*plot_r;
+int less(double *a,double *b){
+  if (*a<*b) return 1;
+  if (*a>*b) return -1;
+  return 0;
+}
+FILE *plot,*plot_r,*plot_5p,*plot_95p,*plot_sd;
 void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*haystack_fn)())
 {
   if (runs<100) runs=100;
@@ -87,7 +91,7 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
   int i;
   int j,k;
   uint64_t time_start,time_end,time_mid;
-  for(i=0; i<runs; i++)
+  for(i=-3; i<runs; i++)//dry run first 3 times to fill instruction cache.
     {
       if(getenv("ALIGNED") && !strcmp(getenv("ALIGNED")),"aligned")
         {
@@ -124,11 +128,12 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
         fprintf(stderr,"Wrong answer.  Used seed %i,needle %i,haystack %i",cur_seed,needle_len,haystack_len);
         exit(-3);
       } 
-      times[i]=time_end-time_start-ts_avg;
-      /*ignore resheduled*/
-      if (times[i]<-1000)               times[i]=times[i-1];
-      if (times[i]>1000.0*haystack_len) times[i]=times[i-1];
-
+      if(i>=0){
+        times[i]=time_end-time_start-ts_avg;
+        /*ignore resheduled*/
+        if (times[i]<-1000)               times[i]=times[i-1];
+        if (times[i]>1000.0*haystack_len) times[i]=times[i-1];
+      }
 
     }
   double mean=0;
@@ -138,8 +143,12 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
   for(i=0; i<runs; i++) variance+= (mean-times[i])*(mean-times[i]);
   printf("%f+-%f\n",mean/haystack_len,sqrt(variance/(runs-1))/haystack_len);
   fprintf(plot,"%f %f\n" ,fhlen,mean);
+  fprintf(plot_sd,"%f %f\n",fhlen,sqrt(variance/(runs-1))/haystack_len);
   fprintf(plot_r,"%f %f\n",fhlen,mean/haystack_len);
 
+  qsort(times,runs,sizeof(double),less);
+  fprintf(plot_5p,"%f %f\n" ,fhlen,times[ 5*runs/100]);
+  fprintf(plot_95p,"%f %f\n",fhlen,times[95*runs/100]);
   fprintf(stderr,"%i %i\n",needle_len,haystack_len);
   free(times);
 }
@@ -180,8 +189,13 @@ int main(int argc,char **argv)
   for (i=0; i<10000000; i++) sum=sum*sum+3*sum; //cpu scaling affect rdtsc
   FILE *ts=fopen("ts_avg","r");
   fscanf(ts,"%lli",&ts_avg);
-  plot=fopen("plot.dat","w");
-  plot_r=fopen("plot_r.dat","w");
+  plot    =fopen("plot.dat","w");
+  plot_r  =fopen("plot_r.dat","w");
+  plot_5p =fopen("plot_5p.dat","w");
+  plot_95p=fopen("plot_95p.dat","w");
+  plot_sd =fopen("plot_sd.dat","w");
+
+
   cpu_bind(sched_getcpu());
   r_seed=42;
   void (*haystack_gen)()=get_gen(argv[1]);
