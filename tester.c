@@ -121,7 +121,7 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
       time_end=rdtsc();
       if ((needle_len> haystack_len&&r) ||
           (needle_len<=haystack_len&&r!=haystack+haystack_len-needle_len)){
-        printf("Wrong answer.  Used seed %i,needle %i,haystack %i",cur_seed,needle_len,haystack_len);
+        fprintf(stderr,"Wrong answer.  Used seed %i,needle %i,haystack %i",cur_seed,needle_len,haystack_len);
         exit(-3);
       } 
       times[i]=time_end-time_start-ts_avg;

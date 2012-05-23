@@ -25,6 +25,7 @@ MBTYPE byte_at(unsigned char c,int shift)
 #define test_eq  _mm_cmpeq_epi8
 #define AND  _mm_and_si128
 #define OR   _mm_or_si128
+#define XOR  _mm_xor_si128
 #define shift_down _mm_srli_si128
 #define shift_up   _mm_slli_si128
 inline long  get_mask(MBTYPE x)
