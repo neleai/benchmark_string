@@ -84,7 +84,6 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
 {
   if (runs<100) runs=100;
   double *times=malloc(runs*sizeof(double));
-  int sos=0;
   int i;
   int j,k;
   uint64_t time_start,time_end,time_mid;
@@ -105,12 +104,12 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
           needle=needle2+(rand_r(&r_seed)%512);
           haystack=haystack2+(rand_r(&r_seed)%512);
         }
-
+      int cur_seed=r_seed;
       needle_fn(  needle  ,needle_len);
       needle[needle_len]=0;
       haystack_fn(haystack,haystack_len);
       haystack[haystack_len]=0;
-      if(haystack_len>needle_len)
+      if(haystack_len>=needle_len)
         {
           for(j=0; j<needle_len; j++)
             haystack[haystack_len-needle_len+j]=needle[j];
@@ -119,8 +118,12 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
 
       time_start=rdtsc();
       char *r=strstr2(haystack,needle);
-      if(r) sos+=r-haystack;
       time_end=rdtsc();
+      if ((needle_len> haystack_len&&r) ||
+          (needle_len<=haystack_len&&r!=haystack+haystack_len-needle_len)){
+        printf("Wrong answer. Used seed %i",cur_seed);
+        exit(-3);
+      } 
       times[i]=time_end-time_start-ts_avg;
       /*ignore resheduled*/
       if (times[i]<-1000)               times[i]=times[i-1];
@@ -137,7 +140,7 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
   fprintf(plot,"%f %f\n" ,fhlen,mean);
   fprintf(plot_r,"%f %f\n",fhlen,mean/haystack_len);
 
-  fprintf(stderr,"%i %i %i\n",needle_len,haystack_len,sos);
+  fprintf(stderr,"%i %i\n",needle_len,haystack_len);
   free(times);
 }
 int plant_r[100],plant_n[100];
