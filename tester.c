@@ -121,7 +121,7 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
       time_end=rdtsc();
       if ((needle_len> haystack_len&&r) ||
           (needle_len<=haystack_len&&r!=haystack+haystack_len-needle_len)){
-        printf("Wrong answer. Used seed %i",cur_seed);
+        printf("Wrong answer.  Used seed %i,needle %i,haystack %i",cur_seed,needle_len,haystack_len);
         exit(-3);
       } 
       times[i]=time_end-time_start-ts_avg;
@@ -183,7 +183,7 @@ int main(int argc,char **argv)
   plot=fopen("plot.dat","w");
   plot_r=fopen("plot_r.dat","w");
   cpu_bind(sched_getcpu());
-  srand(42);
+  r_seed=42;
   void (*haystack_gen)()=get_gen(argv[1]);
   int  slen = atoi(argv[2]);
   void (*needle_gen)()  =get_gen(argv[3]);
