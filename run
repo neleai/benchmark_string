@@ -1,5 +1,5 @@
 #!/bin/sh
-BENCH_FN=memmem
+BENCH_FN=strstr
 for I in ${BENCH_FN}_*.c; do
   gcc $I -O3 -fPIC -shared -o tmp/lib$I.so
   ln -s -f tmp/lib$I.so lib${BENCH_FN}.so
@@ -31,20 +31,26 @@ html(){
 }
 
 draw(){
+  for I in ${BENCH_FN}_*.c; do
+    comp $I $1 $2 $3 $4
+  done 
   echo reset > tmp/plot.gp
   echo set terminal png >> tmp/plot.gp
+  echo set xlabel "'haystack size'" >> tmp/plot.gp
+  echo set ylabel "'instructions'" >> tmp/plot.gp
   echo "plot \\" >> tmp/plot.gp
+
   echo reset > tmp/plot_r.gp
   echo set terminal png >> tmp/plot_r.gp
+  echo set xlabel "'haystack size'" >> tmp/plot_r.gp
+  echo set ylabel "'instructions per character'" >> tmp/plot_r.gp
   echo "plot \\" >> tmp/plot_r.gp
 
   rm -f tmp/output
 
   for I in ${BENCH_FN}_*.c; do
-    comp $I $1 $2 $3 $4
     echo "\"data/${I}_$GNAME.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot.gp
     echo "\"data/${I}_$GNAME_r.dat\" using 1:2 with lines title '$I', \\" >> tmp/plot_r.gp
-
   done
   echo 0 >> tmp/plot.gp
   echo 0 >> tmp/plot_r.gp
