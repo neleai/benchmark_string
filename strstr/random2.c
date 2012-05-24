@@ -24,8 +24,7 @@ int main(int argc,char **argv){ int i,j,k;
       needle[ns]=0;
       for(k=0;k<ss;k++) haystack[k]=rand()%128+1;
       haystack[ss]=0;
-      if (ns<=ss)
-        for(k=0;k<ss;k++) haystack[ss-ns+k]=needle[k];
+      
       strstr3(haystack,needle);
     }
   }

@@ -2,16 +2,15 @@
 BENCH_FN=strstr
 for I in ${BENCH_FN}_*.c; do
   gcc $I -O3 -fPIC -shared -o tmp/lib$I.so
-  ln -s -f tmp/lib$I.so lib${BENCH_FN}.so
-  gcc -L. tester.c -o tester -l${BENCH_FN} -lm -g
 done
-gcc ts_avg.c
-./a.out
+gcc random.c -o random -ldl -lm -O3
+gcc random2.c -o random2 -ldl -lm -O3
+gcc ts_avg.c -o ts_avg
+./ts_avg
 
 comp(){
   echo $1 > tmp/result_$1
-  ln -s -f tmp/lib$1.so lib${BENCH_FN}.so
-  LD_LIBRARY_PATH=. ./tester $2 $3 $4 $5>> tmp/result_$1 2> tmp/output_$1
+  VARIANT="./tmp/lib$1.so" ./$2 $3 $4 $5>> tmp/result_$1 2> tmp/output_$1
   cp plot.dat  data/${1}_$GNAME.dat
   cp plot_r.dat data/${1}_$GNAME_r.dat
   cp plot_rng.dat data/${1}_${GNAME}_rng.dat
@@ -42,6 +41,7 @@ gnuplotfile(){
     echo "\"data/${I}_${GNAME}$1.dat\" $3 title '$I', \\" >> tmp/plot.gp
   done
   echo 0 >> tmp/plot.gp
+  cat tmp/plot.gp
   gnuplot tmp/plot.gp > html/$GNAME$1.png
   chmod a+r html/$GNAME$1.png
 
@@ -63,6 +63,7 @@ echo "<html><body style=\"width:1000%;\"><table>" > html/${BENCH_FN}_r.html
 chmod a+r html/${BENCH_FN}_r.html
 export N=1
 try(){
+  echo $1 $2 $3 $4
   html "<tr><td>*_$1_*_$3_$4_${ALIGNED}</td>"
   for NO in 1 10 100 1000 10000; do
     export GNAME="$1_${NO}_$3_$4_${ALIGNED}"
@@ -81,7 +82,7 @@ try(){
   echo $GNAME
   draw $1 $2 $3 $4
 }
-for NO in 1 10 100 1000 10000; do
+for NO in 1 10 100 1000 10000 100000; do
   export N=$NO
   . ./benchmark
 done
