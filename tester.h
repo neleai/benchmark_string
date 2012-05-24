@@ -3,10 +3,8 @@
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
-#include <dlfcn.h>
 #include <stdlib.h>
 #include <sched.h>
-#include <dlfcn.h>
 int cpu_bind(const unsigned short cpu)
 {
   cpu_set_t mask;
@@ -46,21 +44,18 @@ inline void bench_start(){
   ts_start=rdtsc();
   if (!ts_start) ts_start=1;
 }
-inline void bench_end(int size){
+inline void bench_end(){
   if (!ts_start) err("bench_end without bench_start");
   uint64_t ts_end=rdtsc();
   data[data_no].time=ts_end-ts_start-ts_avg;
-  data[data_no].size=size;
   data_no++;
   if (data_no>=100000000) err("TODO compact data");
   ts_start=0;
 }
+void *lib;
 void init_tester(){
   cpu_bind(sched_getcpu());
-  FILE *ts=fopen("ts_avg.dat","r");
-  fscanf(ts,"%lli",&ts_avg);
-  TEST_FN =dlsym(dlopen(getenv("VARIANT"),RTLD_LAZY),TEST_FN_S);
-  if(!TEST_FN) {fprintf(stderr,"cannot load variant %s\n",getenv("VARIANT"));exit(42);}
+  FILE *ts=fopen("ts_avg.dat","r");  fscanf(ts,"%lli",&ts_avg);  
   data=malloc(100000000*sizeof(data_s));
 
   data_no=0;
@@ -88,7 +83,7 @@ void fini_tester(){
   for(m=1;m<1000000000;m*=10){
     for(j=2;j<20;j++){
       flen=m*j/2.0;
-      for(i2=i;i2<data_no && data[i2].size < flen;i2++);
+      for(i2=i;i2<data_no && data[i2].size < m*(j+1)/2;i2++);
       if (i2-i>20) {
         qsort(data+i,i2-i,sizeof(data_s),(__compar_fn_t)less_time);
         mean=0; variance=0;
@@ -103,6 +98,12 @@ void fini_tester(){
       i=i2;
     }
   }
+/*
+  fclose(plot);
+  fclose(plot_r);
+  fclose(plot_rng);
+  fclose(plot_sd);
+*/
 }
 
 

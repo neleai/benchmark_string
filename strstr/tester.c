@@ -1,4 +1,4 @@
-char *(*strstr2)(char *a,char *b);
+char *strstr2(char *a,char *b);
 #define TEST_FN strstr2
 #define TEST_FN_S "strstr2"
 #include "../tester.h"
