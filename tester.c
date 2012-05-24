@@ -83,7 +83,7 @@ int less(double *a,double *b){
   if (*a>*b) return -1;
   return 0;
 }
-FILE *plot,*plot_r,*plot_5p,*plot_95p,*plot_sd;
+FILE *plot,*plot_r,*plot_rng,*plot_sd;
 void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*haystack_fn)())
 {
   if (runs<100) runs=100;
@@ -147,8 +147,7 @@ void test(int runs,int needle_len,void (*needle_fn)(),int haystack_len, void (*h
   fprintf(plot_r,"%f %f\n",fhlen,mean/haystack_len);
 
   qsort(times,runs,sizeof(double),less);
-  fprintf(plot_5p,"%f %f\n" ,fhlen,times[ 5*runs/100]);
-  fprintf(plot_95p,"%f %f\n",fhlen,times[95*runs/100]);
+  fprintf(plot_rng,"%f %f %f\n",fhlen,times[5*runs/100],times[95*runs/100]);
   fprintf(stderr,"%i %i\n",needle_len,haystack_len);
   free(times);
 }
@@ -191,8 +190,7 @@ int main(int argc,char **argv)
   fscanf(ts,"%lli",&ts_avg);
   plot    =fopen("plot.dat","w");
   plot_r  =fopen("plot_r.dat","w");
-  plot_5p =fopen("plot_5p.dat","w");
-  plot_95p=fopen("plot_95p.dat","w");
+  plot_rng =fopen("plot_rng.dat","w");
   plot_sd =fopen("plot_sd.dat","w");
 
 
