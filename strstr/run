@@ -1,10 +1,14 @@
 #!/bin/sh
 BENCH_FN=strstr
+
 for I in ${BENCH_FN}_*.c; do
   gcc $I -O3 -fPIC -shared -o tmp/lib$I.so
 done
 gcc random.c -o random -L. -l${BENCH_FN}  -lm -g
 gcc random2.c -o random2  -L. -l${BENCH_FN}  -lm -g
+gcc aaab.c -o aaab  -L. -l${BENCH_FN}  -lm -g
+gcc planted.c -o planted  -L. -l${BENCH_FN}  -lm -g
+
 gcc ts_avg.c -o ts_avg
 ./ts_avg
 
@@ -83,7 +87,7 @@ try(){
   echo $GNAME
   draw $1 $2 $3 $4
 }
-for NO in 1 10 100 1000 10000 100000; do
+for NO in 1 10 100 1000 10000; do
   export N=$NO
   . ./benchmark
 done

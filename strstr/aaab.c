@@ -17,15 +17,16 @@ int main(int argc,char **argv){ int i,j,k;
   char *haystack=malloc(20*ss2+1);
 
   init_tester();
-  for(i=1;i<=10;i++){
-    for(j=0;j<1000;j++){
-      ss=ss2*i;
-      for(k=0;k<ns;k++) needle[k]=rand()%128+1;
+  for(i=2;i<=20;i++){
+    for(j=0;j<100;j++){
+      ss=ss2*i/2;
+      for(k=0;k<ns;k++) needle[k]='a';
+      needle[ns-1]='b';
       needle[ns]=0;
-      for(k=0;k<ss;k++) haystack[k]=rand()%128+1;
+      for(k=0;k<ss;k++) haystack[k]='a';
       haystack[ss]=0;
-//      if (ns<=ss)
-//        for(k=0;k<ss;k++) haystack[ss-ns+k]=needle[k];
+      if (ns<=ss)
+        for(k=0;k<ss;k++) haystack[ss-ns+k]=needle[k];
       strstr3(haystack,needle);
     }
   }

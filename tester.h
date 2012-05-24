@@ -44,7 +44,7 @@ inline void bench_start(){
   ts_start=rdtsc();
   if (!ts_start) ts_start=1;
 }
-inline void bench_end(){
+inline void _bench_end(){
   if (!ts_start) err("bench_end without bench_start");
   uint64_t ts_end=rdtsc();
   data[data_no].time=ts_end-ts_start-ts_avg;
@@ -52,6 +52,7 @@ inline void bench_end(){
   if (data_no>=100000000) err("TODO compact data");
   ts_start=0;
 }
+#define bench_end(x) _bench_end(); data[data_no-1].size=(x)
 void *lib;
 void init_tester(){
   cpu_bind(sched_getcpu());
@@ -98,12 +99,11 @@ void fini_tester(){
       i=i2;
     }
   }
-/*
+
   fclose(plot);
   fclose(plot_r);
   fclose(plot_rng);
   fclose(plot_sd);
-*/
 }
 
 
