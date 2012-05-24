@@ -1,15 +1,15 @@
 #!/bin/sh
+export RUNS=100000
 BENCH_FN=strstr
 
 for I in ${BENCH_FN}_*.c; do
   gcc $I -O3 -fPIC -shared -o tmp/lib$I.so
 done
 gcc random.c -o random -L. -l${BENCH_FN}  -lm -g
-gcc random2.c -o random2  -L. -l${BENCH_FN}  -lm -g
 gcc aaab.c -o aaab  -L. -l${BENCH_FN}  -lm -g
 gcc planted.c -o planted  -L. -l${BENCH_FN}  -lm -g
 
-gcc ts_avg.c -o ts_avg
+gcc ts_avg.c -lm -o ts_avg
 ./ts_avg
 
 comp(){
@@ -31,9 +31,14 @@ html_a(){
 html_r(){
   echo $* >>html/${BENCH_FN}_r.html
 }
+html_rng(){
+  echo $* >>html/${BENCH_FN}_rng.html
+}
+
 html(){
   html_a $*
   html_r $*
+  html_rng $*
 }
 
 gnuplotfile(){
@@ -66,6 +71,9 @@ echo "<html><body style=\"width:1000%;\"><table>" > html/${BENCH_FN}.html
 chmod a+r html/${BENCH_FN}.html
 echo "<html><body style=\"width:1000%;\"><table>" > html/${BENCH_FN}_r.html
 chmod a+r html/${BENCH_FN}_r.html
+echo "<html><body style=\"width:1000%;\"><table>" > html/${BENCH_FN}_rng.html
+chmod a+r html/${BENCH_FN}_r.html
+
 export N=1
 try(){
   echo $1 $2 $3 $4
@@ -75,6 +83,8 @@ try(){
     export GNAME_r="$1_${NO}_$3_$4_${ALIGNED}_r"
     html_a "<td><img src='$GNAME.png'></img></td>"
     html_r "<td><img src='$GNAME_r.png'></img></td>"
+    html_rng "<td><img src='${GNAME}_rng.png'></img></td>"
+
   done
   html "</tr>"
 }
@@ -96,4 +106,6 @@ done
 html "</table><pre>"
 cat /proc/cpuinfo >> html/${BENCH_FN}.html
 cat /proc/cpuinfo >> html/${BENCH_FN}_r.html
+cat /proc/cpuinfo >> html/${BENCH_FN}_rng.html
+
 html "</pre></body></html>" 

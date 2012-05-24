@@ -19,15 +19,13 @@ MBTYPE make_mask(unsigned char c,int shift)
 }
 MBTYPE byte_at(unsigned char c,int shift)
 {
-  if  (shift<8)
-    return _mm_set_epi64x(0,((uint64_t)c)<<(8*shift));
-  else
-    return _mm_set_epi64x(((uint64_t)c)<<(8*(shift-8)),0);
+  return _mm_set_epi64x(((uint64_t)c)<<(8*shift),((uint64_t)c)<<(8*(shift-8)));
 }
 #define LOAD(x) _mm_load_si128(( long long int * )x)
 #define test_eq  _mm_cmpeq_epi8
 #define AND  _mm_and_si128
 #define OR   _mm_or_si128
+#define XOR  _mm_xor_si128
 #define shift_down _mm_srli_si128
 #define shift_up   _mm_slli_si128
 inline long  get_mask(MBTYPE x)

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sched.h>
+#include <string.h>
 int cpu_bind(const unsigned short cpu)
 {
   cpu_set_t mask;
@@ -20,6 +21,7 @@ void err(char *s){
   fprintf(stderr,s);fprintf(stderr,"\n");exit(42);
 }
 long ts_avg;
+#ifndef USE_CLOCK
 __inline__ uint64_t rdtsc(void)
 {
   uint32_t lo, hi;
@@ -31,6 +33,22 @@ __inline__ uint64_t rdtsc(void)
   __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
   return (uint64_t)hi << 32 | lo;
 }
+#else
+#include <time.h>
+struct timespec res;
+int clock_rand;
+__inline__ uint64_t rdtsc(void)
+{
+  struct timespec ret;
+  clock_gettime(CLOCK_MONOTONIC,&ret);
+
+  int i,d=rand_r(clock_rand)%res.tv_nsec;//introduce noise to improve precision.
+  for(i=0;i<d;i++) clock_rand=3*clock_rand+5;
+
+  return ((long)1000000000)*ret.tv_sec+ret.tv_nsec;
+}
+#endif
+
 
 long ts_avg;
 uint64_t ts_start;
@@ -56,6 +74,9 @@ inline void _bench_end(){
 void *lib;
 void init_tester(){
   cpu_bind(sched_getcpu());
+#ifdef USE_CLOCK
+   clock_getres(CLOCK_MONOTONIC, &res);
+#endif
   FILE *ts=fopen("ts_avg.dat","r");  fscanf(ts,"%lli",&ts_avg);  
   data=malloc(100000000*sizeof(data_s));
 
@@ -94,7 +115,7 @@ void fini_tester(){
         fprintf(plot,"%f %f\n" ,flen,mean);
         fprintf(plot_sd,"%f %f\n",flen,sqrt(variance/(i2-i-10-1))/flen);
         fprintf(plot_r,"%f %f\n",flen,mean/flen);
-        fprintf(plot_rng,"%f %f %f\n",flen,data[i+5+5*(i2-i-10)/100].size,data[i+5+95*(i2-i-10)/100].size);      
+        fprintf(plot_rng,"%f %lli %lli\n",flen,data[i+5+5*(i2-i-10)/100].time,data[i+5+95*(i2-i-10)/100].time);      
       }
       i=i2;
     }

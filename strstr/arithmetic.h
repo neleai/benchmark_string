@@ -17,7 +17,7 @@ MBTYPE make_mask(unsigned char c,int shift)
 }
 MBTYPE byte_at(unsigned char c,int shift)
 {
-  return c <<(8*shift);
+  return ((long)c) <<(8*shift);
 }
 #define LOAD(x) *((MBTYPE *)x)
 inline MBTYPE test_eq(MBTYPE x,MBTYPE y)
