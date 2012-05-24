@@ -24,6 +24,6 @@ int main()
   long ts_end=rdtsc();
   printf("%lli",sum);
   ts_avg=(ts_end-ts_start)/201.0;
-  FILE *f=fopen("ts_avg","w");
+  FILE *f=fopen("ts_avg.dat","w");
   fprintf(f,"%lli",ts_avg);
 }

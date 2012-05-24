@@ -57,7 +57,7 @@ inline void bench_end(int size){
 }
 void init_tester(){
   cpu_bind(sched_getcpu());
-  FILE *ts=fopen("ts_avg","r");
+  FILE *ts=fopen("ts_avg.dat","r");
   fscanf(ts,"%lli",&ts_avg);
   TEST_FN =dlsym(dlopen(getenv("VARIANT"),RTLD_LAZY),TEST_FN_S);
   if(!TEST_FN) {fprintf(stderr,"cannot load variant %s\n",getenv("VARIANT"));exit(42);}
