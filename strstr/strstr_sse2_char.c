@@ -54,6 +54,7 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
     }
   }
   er=LOAD(s2+16);
+  /*TODO handle period < 4 */
   m0=make_mask((char) n[0],0);
   m1=make_mask((char) n[1],0);
   m2=make_mask((char) n[2],0);
@@ -80,6 +81,15 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
       e2=OR(e1,e2);
       mask=mask&get_mask(test_eq(e2, mz));
       if(mask){
+      /*
+        for(i=0;i<16;i+=4){ if (adv[mask&(((1<<4)-1)<<(4*i))]){
+          p=s2+i+adv[i]-1;
+          if((*((uint64_t *)(s2+p+phase2-8)))&n64mask==n64){
+            MATCH_REST
+          }
+        }}
+       */
+
         uint64_t c= (*((uint64_t *)(s2+4)))&n64mask;
         for(i=0; i<BYTES_AT_ONCE; i++) 
         if (c==n64 && GET_BIT(mask,i))

@@ -7,6 +7,7 @@ for I in ${BENCH_FN}_*.c; do
 done
 gcc random.c -o random -L. -l${BENCH_FN}  -lm -g
 gcc aaab.c -o aaab  -L. -l${BENCH_FN}  -lm -g
+gcc bababac.c -o bababac  -L. -l${BENCH_FN}  -lm -g
 gcc planted.c -o planted  -L. -l${BENCH_FN}  -lm -g
 
 gcc ts_avg.c -lm -o ts_avg
