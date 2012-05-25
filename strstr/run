@@ -79,7 +79,7 @@ export N=1
 try(){
   echo $1 $2 $3 $4
   html "<tr><td>*_$1_*_$3_$4_${ALIGNED}</td>"
-  for NO in 1 10 100 1000 10000; do
+  for NO in 1 10 100 1000 10000 100000; do
     export GNAME="$1_${NO}_$3_$4_${ALIGNED}"
     export GNAME_r="$1_${NO}_$3_$4_${ALIGNED}_r"
     html_a "<td><img src='$GNAME.png'></img></td>"
@@ -98,7 +98,7 @@ try(){
   echo $GNAME
   draw $1 $2 $3 $4
 }
-for NO in 1 10 100 1000 10000; do
+for NO in 1 10 100 1000 10000 100000; do
   export N=$NO
   . ./benchmark
 done

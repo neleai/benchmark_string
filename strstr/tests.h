@@ -1,4 +1,5 @@
 #include "../tester.h"
+
 char *needle,*haystack;
 char **garg;
 int ns,ss; int cur_seed;

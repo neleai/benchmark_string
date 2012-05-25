@@ -1,6 +1,6 @@
 /* generated from expression
 
-_strstr(n,c1,c2,size) = char(c1) char(c2) {MATCH_REST}
+_strstr(n,c1,c2,size) = unsigned char(c1) unsigned char(c2) {MATCH_REST}
                      | '\000' {return NULL;}
 
 */
@@ -24,10 +24,11 @@ _strstr(n,c1,c2,size) = char(c1) char(c2) {MATCH_REST}
 size+=j; \
 if ((long) size>1*(p-s)) return strstr_hash(p, strlen(p), n, strlen(n));
 
-static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
+unsigned char lastbit[256];
+static inline unsigned char * _strstr(unsigned char *s ,unsigned char *n,unsigned char c1,unsigned char c2,long size )
 {
   int i;
-  char *p; 
+  unsigned char *p; 
   MBTYPE el,er;
   MBTYPE e0;
   MBTYPE e1;
@@ -41,7 +42,7 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
   MBTYPE m0,m1,m2,m3;
   MASKTYPE mask;
   int checked=0;
-  char *s2=s;
+  unsigned char *s2=s;
   int offset=((long)(s))%BYTES_AT_ONCE;
   s2-=offset;
   el=LOAD(s2);
@@ -55,7 +56,7 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
   }
   er=LOAD(s2+16);
 
-  int killed=1, killp=0;
+  int killed=1, killp=0,nkilled;
   for(i=0;n[i+3] && i<8;i++){
     for (nkilled=1;n[nkilled+3] && !(n[i]==n[nkilled] && n[i+1]==n[nkilled+1] && n[i+2]==n[nkilled+2] && n[i+3]==n[nkilled+3]) ;nkilled++);
     if (nkilled>killed){
@@ -65,10 +66,10 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
   }
   if (killed<4) return strstr_hash(s,strlen(s),n,strlen(n));
 
-  m0=make_mask((char) n[killp+0],0);
-  m1=make_mask((char) n[killp+1],0);
-  m2=make_mask((char) n[killp+2],0);
-  m3=make_mask((char) n[killp+3],0);
+  m0=make_mask((unsigned char) n[killp+0],0);
+  m1=make_mask((unsigned char) n[killp+1],0);
+  m2=make_mask((unsigned char) n[killp+2],0);
+  m3=make_mask((unsigned char) n[killp+3],0);
 
   uint64_t n64=0;
   uint64_t n64mask=0;
@@ -88,7 +89,7 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
     }
     checked=i;
   }
-  e0=XOR(el,m0);
+  e2=XOR(el,m0);
   mask=get_mask(test_eq(e2, mz));
   mask=forget_bits(mask,offset);
   while (1)
@@ -100,21 +101,24 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
       e1=XOR(CONCAT(er,el,3),m3);
       e2=OR(e1,e2);
       mask=mask&get_mask(test_eq(e2, mz));
-      int end=15; char rev[4],int revn=0;
-      while (mask){
-        if (!mask&256){
+      int end=15; unsigned char rev[4];int revn=0;
+      unsigned char *m=&mask;
+      while (mask &((1<<16)-1)){
+        if (!m[1]){
           end-=8;
-          mask=mask>>8;
+          mask=mask<<8;
         } else {
-          int lb=lastbit[mask&256];
+          int lb=7-lastbit[m[1]];
           rev[revn++]=end-lb;
           end=end-lb-killed;
-          mask=mask>>(lb+killed);
+          mask=mask<<(lb+killed);
         }
       }
       while(revn--){
         p=s2+rev[revn];
-        MATCH_REST
+        if ( (*(uint64_t*) (p+ns))&n64mask==n64) {
+          MATCH_REST
+        }
       }
     }
     s2+=BYTES_AT_ONCE;
@@ -129,14 +133,24 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
       }
     }
     er=LOAD(s2+BYTES_AT_ONCE);
-    e0=XOR(el,m0);
+    e2=XOR(el,m0);
     mask=get_mask(test_eq(e2, mz));
   }
 }
-char *strstr2(char *s,char *n)
+int ini=0;
+unsigned char *strstr2(unsigned char *s,unsigned char *n)
 {
+  if(!ini) init();
   int i;
   if(!n[0])return s;
   if(!n[1]||!n[1]||!n[2]||!n[3]) return strstr_hash(s,strlen(s),n,strlen(n));
   return _strstr(s,n,n[0],n[1],-32);
+}
+
+int init(){int i,j;
+  ini=1;
+  for(i=1;i<256;i++){
+    for(j=7;!(i&(1<<j));j--);
+    lastbit[i]=j;
+  }
 }
