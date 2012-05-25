@@ -24,7 +24,7 @@ _strstr(n,c1,c2,size) = char(c1) char(c2) {MATCH_REST}
 size+=j; \
 if ((long) size>1*(p-s)) return strstr_hash(p, strlen(p), n, strlen(n));
 
-static inline char * _strstr(char *s ,char *n,char *c1,char *c2,char *size )
+static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
 {
   int i;
   char *p;
@@ -54,8 +54,8 @@ static inline char * _strstr(char *s ,char *n,char *c1,char *c2,char *size )
     }
   }
   er=LOAD(s2+16);
-  m1=make_mask((char) c1,0);
-  m2=make_mask((char) c2,0);
+  m0=make_mask((char) c1,0);
+  m1=make_mask((char) c2,0);
   phase2=2;
   e0=XOR(el,m0);
   e1=XOR(CONCAT(er,el,1),m1);
@@ -75,7 +75,7 @@ static inline char * _strstr(char *s ,char *n,char *c1,char *c2,char *size )
     s2+=BYTES_AT_ONCE;
     el=er; 
     e0=test_eq(el, mz);
-    if (get_mask(e0)>>offset){
+    if (get_mask(e0)){
       for (i=0;i<BYTES_AT_ONCE;i++){
         if(!s2[i]) return NULL;
         p=s2+i;
@@ -93,5 +93,5 @@ char *strstr2(char *s,char *n)
 {
   int i;
   if(!n[0])return s;
-  return _strstr(s,n,(char *)n[0],(char *)n[1],-32);
+  return _strstr(s,n,n[0],n[1],-32);
 }
