@@ -58,8 +58,15 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
   m1=make_mask((char) n[1],0);
   m2=make_mask((char) n[2],0);
   m3=make_mask((char) n[3],0);
-
-  phase2=4;
+  uint64_t n64=0;
+  uint64_t n64mask=0;
+  int ns;
+  for (ns=4;n[ns]&&ns<12;ns++) {
+    n64=n64|(((uint64_t) n[ns])<<((ns-4)*8));
+    n64mask=n64mask|(((uint64_t)255)<<((ns-4)*8));
+  }
+  
+  phase2=4+ns;
   e0=XOR(el,m0);
   mask=get_mask(test_eq(e2, mz));
   mask=forget_bits(mask,offset);
@@ -73,11 +80,14 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
       e2=OR(e1,e2);
       mask=mask&get_mask(test_eq(e2, mz));
       if(mask){
-        for(i=0; i<BYTES_AT_ONCE; i++) if (GET_BIT(mask,i))
+        uint64_t c= (*((uint64_t *)(s2+4)))&n64mask;
+        for(i=0; i<BYTES_AT_ONCE; i++) 
+        if (c==n64 && GET_BIT(mask,i))
         {
           p=s2+i;
           MATCH_REST
         }
+        c=(c>>8)| (((uint64_t)s2[i+ns])<<(8*(ns-1)));
       }
     }
     s2+=BYTES_AT_ONCE;
