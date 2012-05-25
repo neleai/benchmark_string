@@ -3,7 +3,7 @@ export RUNS=100000
 BENCH_FN=strstr
 
 for I in ${BENCH_FN}_*.c; do
-  gcc $I -O3 -fPIC -shared -o tmp/lib$I.so
+  gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
 done
 gcc random.c -o random -L. -l${BENCH_FN}  -lm -g
 gcc aaab.c -o aaab  -L. -l${BENCH_FN}  -lm -g
@@ -51,7 +51,7 @@ gnuplotfile(){
     echo "\"data/${I}_${GNAME}$1.dat\" $3 title '$I', \\" >> tmp/plot.gp
   done
   echo 0 >> tmp/plot.gp
-  cat tmp/plot.gp
+#  cat tmp/plot.gp
   gnuplot tmp/plot.gp > html/$GNAME$1.png
   chmod a+r html/$GNAME$1.png
 

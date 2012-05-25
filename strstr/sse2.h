@@ -1,5 +1,7 @@
 #include <stdint.h>
 #include <emmintrin.h>
+#include <tmmintrin.h>
+
 #define BYTES_AT_ONCE 16
 #define MBTYPE __m128i
 
@@ -21,7 +23,10 @@ MBTYPE byte_at(unsigned char c,int shift)
 {
   return _mm_set_epi64x(((uint64_t)c)<<(8*shift),((uint64_t)c)<<(8*(shift-8)));
 }
-#define LOAD(x) _mm_load_si128(( long long int * )x)
+#define LOAD(x) _mm_load_si128((x))
+#define LOAD_unaligned(x) _mm_loadu_si128(x)
+#define CONCAT(x,y,n) _mm_alignr_epi8(x,y,n)
+
 #define test_eq  _mm_cmpeq_epi8
 #define AND  _mm_and_si128
 #define OR   _mm_or_si128
