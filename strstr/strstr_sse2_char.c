@@ -61,17 +61,16 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
 
   phase2=4;
   e0=XOR(el,m0);
-  e1=XOR(CONCAT(er,el,1),m1);
-  e2=OR(e0,e1);
   mask=get_mask(test_eq(e2, mz));
   mask=forget_bits(mask,offset);
   while (1)
   {
-    if(mask)
-    {
+    if(mask){ 
+      e1=XOR(CONCAT(er,el,1),m1);
       e0=XOR(CONCAT(er,el,2),m2);
-      e1=XOR(CONCAT(er,el,3),m3);
       e2=OR(e0,e1);
+      e1=XOR(CONCAT(er,el,3),m3);
+      e2=OR(e1,e2);
       mask=mask&get_mask(test_eq(e2, mz));
       if(mask){
         for(i=0; i<BYTES_AT_ONCE; i++) if (GET_BIT(mask,i))
@@ -94,8 +93,6 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
     }
     er=LOAD(s2+BYTES_AT_ONCE);
     e0=XOR(el,m0);
-    e1=XOR(CONCAT(er,el,1),m1);
-    e2=OR(e0,e1);
     mask=get_mask(test_eq(e2, mz));
   }
 }
