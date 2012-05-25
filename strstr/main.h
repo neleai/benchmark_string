@@ -1,4 +1,9 @@
+char lastbit[256];
 int main(int argc,char **argv){ int i,j,k;
+  for(i=1;i<256;i++){
+    for(j=7;!(i&(1<<j));j--);
+    lastbit[i]=j;
+  }
   garg=argv;
   r_seed=42;
   int ss2=atoi(argv[1]);
