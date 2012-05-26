@@ -24,6 +24,7 @@ _strstr(n,c1,c2,size) = char(c1) char(c2) {MATCH_REST}
 size+=j; \
 if ((long) size>1*(p-s)) return strstr_hash(p, strlen(p), n, strlen(n));
 
+char lastbit[]={0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3};
 char * strstr_periodic(char *s,char *n,int period,int cnt){
 }
 static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
@@ -64,42 +65,39 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
   uint64_t n64=0;
   uint64_t n64mask=0;
   int ns;
-  for (ns=4;n[ns]&&ns<12;ns++) {
-    n64=n64|(((uint64_t) n[ns])<<((ns-4)*8));
-    n64mask=n64mask|(((uint64_t)255)<<((ns-4)*8));
+  for (ns=0;n[ns]&&ns<8;ns++) {
+    n64=n64|(((uint64_t) n[ns])<<((ns)*8));
+    n64mask=n64mask|(((uint64_t)255)<<((ns)*8));
   }
   
-  phase2=4+ns;
-  e0=XOR(el,m0);
+  phase2=ns;
+  e2=XOR(el,m0);
+  e1=XOR(CONCAT(er,el,1),m1);
+  e2=OR(e1,e2);
   mask=get_mask(test_eq(e2, mz));
   mask=forget_bits(mask,offset);
   while (1)
   {
     if(mask){ 
-      e1=XOR(CONCAT(er,el,1),m1);
-      e0=XOR(CONCAT(er,el,2),m2);
-      e2=OR(e0,e1);
+      e1=XOR(CONCAT(er,el,2),m2);
+      e2=OR(e1,e2);
       e1=XOR(CONCAT(er,el,3),m3);
       e2=OR(e1,e2);
-      mask=mask&get_mask(test_eq(e2, mz));
+      mask=get_mask(test_eq(e2, mz));
       if(mask){
-      /*
-        for(i=0;i<16;i+=4){ if (adv[mask&(((1<<4)-1)<<(4*i))]){
-          p=s2+i+adv[i]-1;
-          if((*((uint64_t *)(s2+p+phase2-8)))&n64mask==n64){
+        char *msk=&mask;
+        for(i=0; i<BYTES_AT_ONCE/8; i++){
+          p= s2+8*i+lastbit[msk[i]&(1<<4-1)];
+          if ( ((*((uint64_t *)p))&n64mask)==n64)
+          {
             MATCH_REST
           }
-        }}
-       */
-
-        uint64_t c= (*((uint64_t *)(s2+4)))&n64mask;
-        for(i=0; i<BYTES_AT_ONCE; i++) 
-        if (c==n64 && GET_BIT(mask,i))
-        {
-          p=s2+i;
-          MATCH_REST
+          p= s2+8*i+4+lastbit[msk[i]>>4];
+          if ( ((*((uint64_t *)p))&n64mask)==n64)
+          {
+            MATCH_REST
+          }
         }
-        c=(c>>8)| (((uint64_t)s2[i+ns])<<(8*(ns-1)));
       }
     }
     s2+=BYTES_AT_ONCE;
@@ -114,7 +112,9 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
       }
     }
     er=LOAD(s2+BYTES_AT_ONCE);
-    e0=XOR(el,m0);
+    e2=XOR(el,m0);
+    e1=XOR(CONCAT(er,el,1),m1);
+    e2=OR(e1,e2);
     mask=get_mask(test_eq(e2, mz));
   }
 }
