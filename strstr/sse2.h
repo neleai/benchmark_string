@@ -10,6 +10,10 @@ inline MASKTYPE forget_bits(MASKTYPE m,int b)
 {
   return (m >>(b))<<(b);
 }
+inline MASKTYPE forget_high_bits(MASKTYPE m,int b)
+{
+  return (m <<(8*sizeof(MASKTYPE)-BYTES_AT_ONCE+b))>>(sizeof(MASKTYPE)-BYTES_AT_ONCE+b);
+}
 
 
 
