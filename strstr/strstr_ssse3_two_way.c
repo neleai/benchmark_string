@@ -169,7 +169,8 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
   v=maxSuf(n,ns,&vp,1);
   ell = (u > v) ? u :  v;
   per = (u > v) ? up : vp;
-  int chk= min(ell+1,ns-4);
+  int chk      = min(ell+1,ns-4);
+  int fw_extra = ell+1-chk;
   int peri = periodic(n, n + per, ell + 1);
   if (!peri)
     per = max(ell + 1, ns - ell - 1) + 1;
@@ -206,7 +207,7 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
                 return p;
               i+=per;
             } else {
-              i+=fw;
+              i+=fw+fw_extra;
             }
           } else {
             if (p==prefix){
@@ -231,7 +232,7 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
                 i+=per;
                 prefix=p+per;
               } else {
-                i+=fw;
+                i+=fw+fw_extra;
               }
             }
             if (i>=BYTES_AT_ONCE){ int j;
