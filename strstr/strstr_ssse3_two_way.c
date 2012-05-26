@@ -67,8 +67,67 @@ int cmp(char *a,char *b,int siz,int dir){ int i;
 int periodic(char *a,char *b,int siz){int i;
   return cmp(a,b,siz,1)==siz;
 }
+static inline char * _strstr2(char *s,char *n,char c1,char c2,long size);
 
-static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
+static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
+  char *s2;int i,j;int ns;
+
+  for( ns=0; n[ns]; ns++) //TODO strlencmp(a,b) 
+    if (!s[ns]) return NULL;
+  size = -8*ns;
+
+  MBTYPE el,er;
+  MBTYPE m0,m1;
+  MBTYPE e0,e1,e2;
+  MBTYPE mz=make_mask(0,0);
+  MASKTYPE mask;
+  int offset=((long)(s))%BYTES_AT_ONCE;
+  s2=s-offset;
+  el=LOAD(s2);
+  e0=test_eq(el, mz);
+  if (get_mask(e0)>>offset){
+    for (i=offset;i<BYTES_AT_ONCE;i++){int j;
+      if (!s2[i]) return NULL;
+      for(j=0;n[j]&& s2[i+j]==n[j];j++);
+      if (!n[j]) return s2+i;
+    }
+  }
+  m0=make_mask((char) n[0],0);
+  m1=make_mask((char) n[1],0);
+  e2=XOR(el,m0);
+  e1=XOR(CONCAT(er,el,1),m1);
+  e2=OR(e1,e2);
+  mask=get_mask(test_eq(e2, mz));
+  mask=forget_bits(mask,offset);
+  while(1){
+    if (mask){
+      for(i=0; i<BYTES_AT_ONCE; i++) if (GET_BIT(mask,i))
+      {
+        char *p=s2+i;
+        for(j=2;n[j]&& p[j]==n[j];j++);
+        if(!n[j]) return p;
+        size+=j;
+      }
+      size+=16;
+      if (4*size> (s2-s)) return _strstr2(s2,n,c1,c2,size);
+    }
+    s2+=BYTES_AT_ONCE;
+    el=er;
+    e0=test_eq(el, mz);
+    if (get_mask(e0)){
+      if (!s2[i]) return NULL;
+      for(j=0;n[j]&& s2[i+j]==n[j];j++);
+      if (!n[j]) return s2+i; 
+    }
+    er=LOAD(s2+BYTES_AT_ONCE);
+    e2=XOR(el,m0);
+    e1=XOR(CONCAT(er,el,1),m1);
+    e2=OR(e1,e2);
+    mask=get_mask(test_eq(e2, mz));
+  }
+}
+
+static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
 {
   
   int i;
@@ -99,7 +158,7 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
         return s2+i;
     }
   }
-  er=LOAD(s2+16);
+  er=LOAD(s2+BYTES_AT_ONCE);
   int u,v,up,vp;
   int per,ell;
   char *prefix;
@@ -205,5 +264,5 @@ char *strstr2(char *s,char *n)
 {
   int i;
   if(!n[0])return s;
-  return _strstr(s,n,n[0],n[1],-32);
+  return _strstr(s,n,n[0],n[1],-64);
 }
