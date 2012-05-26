@@ -20,6 +20,8 @@ _strstr(n,c1,c2,size) = char(c1) char(c2) {MATCH_REST}
 #include <string.h>
 
 inline int max(int x,int y){ return x>y ? x : y; }
+inline int min(int x,int y){ return x<y ? x : y; }
+
 /* Computing of the maximal suffix */
 int maxSuf(char *ne, int m, int *p,int ord) {
    int ms, j, k;
@@ -53,11 +55,8 @@ int maxSuf(char *ne, int m, int *p,int ord) {
    return(ms);
 }
 
-int periodic(char *a,char *b,int siz){int i;
-  return cmp(a,b,siz,1)==siz;
-}
 
-int cmp(char *a,char *b,int siz,int dir){
+int cmp(char *a,char *b,int siz,int dir){ int i;
   for(i=0;i<siz;i++) {
     if (*a!=*b) return i;
     a+=dir;b+=dir;
@@ -65,6 +64,9 @@ int cmp(char *a,char *b,int siz,int dir){
   return siz;
 }
 
+int periodic(char *a,char *b,int siz){int i;
+  return cmp(a,b,siz,1)==siz;
+}
 
 static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
 {
@@ -85,6 +87,7 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
   MASKTYPE mask;
   int phase2=0;
   char *s2=s;
+  int ns=strlen(n);
   int offset=((long)(s))%BYTES_AT_ONCE;
   s2-=offset;
   el=LOAD(s2);
@@ -97,15 +100,17 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
     }
   }
   er=LOAD(s2+16);
-  int ns=strlen(n);
-   int u,v,p,q;
+  int u,v,up,vp;
   int per,ell;
-  u=maxSuf(n,strlen(ns),&p,0);
-  v=maxSuf(n,strlen(ns),&p,1);
-  ell = (u > v) ? u : v;
-  per = (u > v) ? p : q;
+  char *prefix;
+  u=maxSuf(n,ns,&up,0);
+  v=maxSuf(n,ns,&vp,1);
+  ell = (u > v) ? u :  v;
+  per = (u > v) ? up : vp;
   int chk= min(ell+1,ns-4);
-
+  int peri = periodic(n, n + per, ell + 1);
+  if (!peri)
+    per = max(ell + 1, ns - ell - 1) + 1;
   m0=make_mask((char) n[chk+0],0);
   m1=make_mask((char) n[chk+1],0);
   m2=make_mask((char) n[chk+2],0);
@@ -134,11 +139,11 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
           if (!peri){
             int fw=cmp(p+chk+4,n+chk+4,ns-chk-4,1);
             if (fw==ns-chk-4) {
-              bw=cmp(p+chk,n+chk,chk,-1);
+              int bw=cmp(p+chk,n+chk,chk,-1);
               if (bw==chk)
                 return p;
               i+=per;
-              if (i>=BYTES_AT_ONCE){
+              if (i>=BYTES_AT_ONCE){ int j;
                 for (j=BYTES_AT_ONCE;j<i;j++) { if (!s2[j]) return NULL;}
                 s2+=BYTES_AT_ONCE*(i/BYTES_AT_ONCE-1);
                 mask=0;
@@ -151,13 +156,13 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
             if (p==prefix){
                int memc= ns-per-1;
                int ii=max(ell,memc)+1;
-               int fw=cmp(p+ii,n+ii,ns-ii);
+               int fw=cmp(p+ii,n+ii,ns-ii,1);
                if (fw>=ns-ii){
-                 bw =  cmp(p+ell,n+ell,memc);
+                 int bw =  cmp(p+ell,n+ell,memc,-1);
                  if (bw>=memc)
                    return p;
                  i+=per;
-                 if (i>=BYTES_AT_ONCE){
+                 if (i>=BYTES_AT_ONCE){ int j;
                    for (j=BYTES_AT_ONCE;j<i;j++) { if (!s2[j]) return NULL;}
                    s2+=BYTES_AT_ONCE*(i/BYTES_AT_ONCE-1);
                    mask=0;
@@ -169,11 +174,11 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
             } else {
               int fw=cmp(p+4,n+chk+4,ns-chk-4,1);
               if (fw==ns-chk-4) {
-                bw=cmp(p,n+chk,chk,-1);
+                int bw=cmp(p,n+chk,chk,-1);
                 if (bw==chk)
                   return p-chk;
                 i+=per;
-                if (i>=BYTES_AT_ONCE){
+                if (i>=BYTES_AT_ONCE){ int j;
                   for (j=BYTES_AT_ONCE;j<i;j++) { if (!s2[j]) return NULL;}
                   s2+=BYTES_AT_ONCE*(i/BYTES_AT_ONCE-1);
                   mask=0;
