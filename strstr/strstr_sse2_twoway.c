@@ -143,12 +143,6 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
               if (bw==chk)
                 return p;
               i+=per;
-              if (i>=BYTES_AT_ONCE){ int j;
-                for (j=BYTES_AT_ONCE;j<i;j++) { if (!s2[j]) return NULL;}
-                s2+=BYTES_AT_ONCE*(i/BYTES_AT_ONCE-1);
-                mask=0;
-              }
-
             } else {
               i+=fw;
             }
@@ -162,11 +156,6 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
                  if (bw>=memc)
                    return p;
                  i+=per;
-                 if (i>=BYTES_AT_ONCE){ int j;
-                   for (j=BYTES_AT_ONCE;j<i;j++) { if (!s2[j]) return NULL;}
-                   s2+=BYTES_AT_ONCE*(i/BYTES_AT_ONCE-1);
-                   mask=0;
-                 }
                  prefix=p+per;
                } else {
                  i+=fw;
@@ -178,19 +167,19 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
                 if (bw==chk)
                   return p-chk;
                 i+=per;
-                if (i>=BYTES_AT_ONCE){ int j;
-                  for (j=BYTES_AT_ONCE;j<i;j++) { if (!s2[j]) return NULL;}
-                  s2+=BYTES_AT_ONCE*(i/BYTES_AT_ONCE-1);
-                  mask=0;
-                }
                 prefix=p+per;
               } else {
                 i+=fw;
               }
             }
+            if (i>=BYTES_AT_ONCE){ int j;
+              for (j=BYTES_AT_ONCE;j<i;j++) { if (!s2[j]) return NULL;}
+              s2+=BYTES_AT_ONCE*(i/BYTES_AT_ONCE-1);
+              mask=0;
+              el=LOAD(s2);
+            }
           }
-        }
-        
+        }  
       }
     }
     s2+=BYTES_AT_ONCE;
@@ -200,8 +189,8 @@ static inline char * _strstr(char *s ,char *n,char c1,char c2,long size )
       phase2=0;
       for (i=0;i<BYTES_AT_ONCE;i++){
         if(!s2[i]) return NULL;
-        if (cmp(s2+i,n,ns,1)==ns)
-          return s2+i;
+        if (cmp(s2+i-chk,n,ns,1)==ns)
+          return s2+i-chk;
 
       }
     }
