@@ -6,15 +6,12 @@ _strstr(n,c1,c2,size) = char(c1) char(c2) {MATCH_REST}
 */
 #define SSE2
 
-#ifdef SSE2
-#include "sse2.h"
-#define STRSTR strstr_sse2
+#ifdef ARITHMETIC
+#include "arithmetic.h"
 #elif AVX2
 #include "avx2.h"
-#define STRSTR strstr_avx2
 #else
-#include "arithmetic.h"
-#define STRSTR strstr_arithmetic
+#include "sse2.h"
 #endif
 
 #include <string.h>
@@ -48,7 +45,7 @@ char * strchr2(char *s ,char c)
   {
     if(mask)
     {
-      int bz=__builtin_ctz(mask);
+      int bz=firstbit(mask);
       if (s2[bz]) 
         return s2+bz;
       else
