@@ -9,7 +9,7 @@ char *strstr3(char *a,char *b){
   bench_start();
   char *r=strstr2(a,b);
   bench_end(r ? r-a+strlen(b) : strlen(a));
-  if (r && strncmp(r,b,strlen(b))) {
+  if (strlen(a)>=strlen(b) && r != a+strlen(a)-strlen(b)) {
     fprintf(stderr,"invalid match ns=%i,ss=%i,r_seed=%i\n",ns,ss,cur_seed); 
     exit(42);
   }

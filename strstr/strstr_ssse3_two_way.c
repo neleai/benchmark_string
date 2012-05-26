@@ -92,6 +92,7 @@ static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
       if (!n[j]) return s2+i;
     }
   }
+  er=LOAD(s2+BYTES_AT_ONCE);
   m0=make_mask((char) n[0],0);
   m1=make_mask((char) n[1],0);
   e2=XOR(el,m0);
