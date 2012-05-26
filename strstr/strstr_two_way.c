@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <string.h>
+
 inline int max(int x,int y){ return x>y ? x : y; }
 /* Computing of the maximal suffix */
 int maxSuf(char *ne, int m, int *p,int ord) {
@@ -34,68 +36,59 @@ int maxSuf(char *ne, int m, int *p,int ord) {
 }
  
 
+int periodic(char *a,char *b,int siz){int i;
+  for(i=0;i<siz;i++) 
+    if (a[i]!=b[i]) return 0;
+  return 1;
+}
 
 
-char *TW(char *ne, int m, char *hs, int n) {
+char *TW(char *ne, int ns, char *s, int ss) {
    int i, j, ell, memory, p, per, q;
 
    /* Preprocessing */
-   i = maxSuf(ne, m, &p , 0);
-   j = maxSuf(ne, m, &q , 1);
-   if (i > j) {
-      ell = i;
-      per = p;
-   }
-   else {
-      ell = j;
-      per = q;
-   }
-
+   i = maxSuf(ne, ns, &p , 0);
+   j = maxSuf(ne, ns, &q , 1);
+   
+   ell = (i > j) ? i : j;
+   per = (i > j) ? p : q;
+  
    /* Searching */
-   if (memcmp(ne, ne + per, ell + 1) == 0) {
-      j = 0;
-      memory = -1;
-      while (j <= n - m) {
+    int peri= periodic(ne, ne + per, ell + 1);
+    j=0;
+    memory = -1;
+    if (!peri)  per = max(ell + 1, ns - ell - 1) + 1;
+    while (ns + j <= ss ) {
+      if( peri)
          i = max(ell, memory) + 1;
-         while (i < m && ne[i] == hs[i + j])
-            ++i;
-         if (i >= m) {
-            i = ell;
-            while (i > memory && ne[i] == hs[i + j])
-               --i;
-            if (i <= memory)
-               return hs+j;
-            j += per;
-            memory = m - per - 1;
-         }
-         else {
-            j += (i - ell);
-            memory = -1;
-         }
-      }
-   }
-   else {
-      per = max(ell + 1, m - ell - 1) + 1;
-      j = 0;
-      while (j <= n - m) {
+      else
          i = ell + 1;
-         while (i < m && ne[i] == hs[i + j])
-            ++i;
-         if (i >= m) {
-            i = ell;
-            while (i >= 0 && ne[i] == hs[i + j])
+      while (i < ns && ne[i] == s[i + j])
+        ++i;
+      if (i == ns) {
+        i = ell; 
+        if (peri){
+           while (i > memory && ne[i] == s[i + j])
+             --i;
+           if (i <= memory)
+               return s+j;
+           memory = ns - per - 1;
+        }else {
+            while (i >= 0 && ne[i] == s[i + j])
                --i;
             if (i < 0)
-               return hs+j;
-            j += per;
-         }
-         else
-            j += (i - ell);
-      }
-   }
-  return NULL;
+               return s+j;
+        }
+        j += per;
+      } else {
+        j += (i - ell);
+        memory = -1;
+      }         
+    }
+    return NULL;
 }
 
 char *strstr2(char *s,char *n){
+  if( strlen(s)<strlen(n)) return NULL;
   return TW(n,strlen(n),s,strlen(s));
 }
