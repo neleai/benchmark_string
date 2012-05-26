@@ -1,5 +1,5 @@
 /* Return the offset of one string within another.
-   Copyright (C) 1994,1996,1997,2000,2001,2003,2008,2009
+   Copyright (C) 1994-2012
    Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -19,7 +19,6 @@
 
 /* This particular implementation was written by Eric Blake, 2008.  */
 
-
 /* Specification of strstr.  */
 #include <string.h>
 
@@ -33,7 +32,11 @@
 #define AVAILABLE(h, h_l, j, n_l)			\
   (!memchr ((h) + (h_l), '\0', (j) + (n_l) - (h_l))	\
    && ((h_l) = (j) + (n_l)))
-#include "str-two-way.h"
+#define AVAILABLE1(h, h_l, j, n_l) (true)
+#define AVAILABLE2(h, h_l, j, n_l) AVAILABLE (h, h_l, j, n_l)
+#define RET0_IF_0(a) if (!a) goto ret0
+#define AVAILABLE_USES_J (0)
+#include "str-two-way_maxim.h"
 
 #undef strstr
 
