@@ -1,6 +1,8 @@
 #!/bin/sh
-export RUNS=100000
-BENCH_FN=strstr
+try(){
+  echo $1
+}
+. ./benchmark
 
 for I in ${BENCH_FN}_*.c; do
   gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
