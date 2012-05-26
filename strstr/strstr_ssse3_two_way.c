@@ -116,9 +116,11 @@ static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
     el=er;
     e0=test_eq(el, mz);
     if (get_mask(e0)){
-      if (!s2[i]) return NULL;
-      for(j=0;n[j]&& s2[i+j]==n[j];j++);
-      if (!n[j]) return s2+i; 
+      for (i=0;i<BYTES_AT_ONCE;i++){
+        if (!s2[i]) return NULL;
+        for(j=0;n[j]&& s2[i+j]==n[j];j++);
+        if (!n[j]) return s2+i; 
+      }
     }
     er=LOAD(s2+BYTES_AT_ONCE);
     e2=XOR(el,m0);
