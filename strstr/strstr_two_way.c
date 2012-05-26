@@ -17,20 +17,18 @@ int maxSuf(char *ne, int m, int *p,int ord) {
          j += k;
          k = 1;
          *p = j - ms;
-      }
-      else
-         if (a == b)
-            if (k != *p)
-               ++k;
-            else {
-               j += *p;
-               k = 1;
-            }
-         else { /* a > b */
-            ms = j;
-            j = ms + 1;
-            k = *p = 1;
+      } else if ( (ord ? a > b : a < b ) ) {
+         j = ms + 1;
+         k = *p = 1;
+         ms = j;
+      } else if ( a == b ){
+         if (k != *p)
+            ++k;
+         else {
+            j += *p;
+            k = 1;
          }
+      }
    }
    return(ms);
 }
@@ -59,26 +57,17 @@ char *TW(char *ne, int ns, char *s, int ss) {
     memory = -1;
     if (!peri)  per = max(ell + 1, ns - ell - 1) + 1;
     while (ns + j <= ss ) {
-      if( peri)
-         i = max(ell, memory) + 1;
-      else
-         i = ell + 1;
+      i = max(ell, memory) + 1;
       while (i < ns && ne[i] == s[i + j])
         ++i;
       if (i == ns) {
         i = ell; 
-        if (peri){
-           while (i > memory && ne[i] == s[i + j])
-             --i;
-           if (i <= memory)
-               return s+j;
-           memory = ns - per - 1;
-        }else {
-            while (i >= 0 && ne[i] == s[i + j])
-               --i;
-            if (i < 0)
-               return s+j;
-        }
+        while (i > memory && ne[i] == s[i + j])
+          --i;
+        if (i <= memory)
+          return s+j;
+        if (peri)
+          memory = ns - per - 1;        
         j += per;
       } else {
         j += (i - ell);
