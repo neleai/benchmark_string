@@ -1,0 +1,3 @@
+export RUNS=100000
+export BENCH_FN=strlen
+try random 1 10
