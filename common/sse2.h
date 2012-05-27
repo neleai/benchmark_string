@@ -29,7 +29,6 @@ MBTYPE byte_at(unsigned char c,int shift)
 }
 #define LOAD(x) _mm_load_si128((__m128i*) (x))
 #define LOAD_unaligned(x) _mm_loadu_si128((__m128i*) (x))
-#define CONCAT(x,y,n) _mm_alignr_epi8(x,y,n)
 
 #define test_eq  _mm_cmpeq_epi8
 #define AND  _mm_and_si128

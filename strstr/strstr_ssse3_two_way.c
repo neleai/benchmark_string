@@ -1,13 +1,4 @@
-
-#define SSE2
-
-#ifdef SSE2
-#include "sse2.h"
-#elif AVX2
-#include "avx2.h"
-#else
-#include "arithmetic.h"
-#endif
+#include "bit_parallel.h"
 
 #include <string.h>
 

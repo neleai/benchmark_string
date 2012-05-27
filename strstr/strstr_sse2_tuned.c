@@ -4,18 +4,7 @@ _strstr(n,c1,c2,size) = char(c1) char(c2) {MATCH_REST}
                      | '\000' {return NULL;}
 
 */
-#define SSE2
-
-#ifdef SSE2
-#include "sse2.h"
-#define STRSTR strstr_sse2
-#elif AVX2
-#include "avx2.h"
-#define STRSTR strstr_avx2
-#else
-#include "arithmetic.h"
-#define STRSTR strstr_arithmetic
-#endif
+#include "bit_parallel.h"
 
 #include <string.h>
 #include "strstr_hash.h"
