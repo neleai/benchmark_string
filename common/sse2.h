@@ -27,8 +27,8 @@ MBTYPE byte_at(unsigned char c,int shift)
 {
   return _mm_set_epi64x(((uint64_t)c)<<(8*shift),((uint64_t)c)<<(8*(shift-8)));
 }
-#define LOAD(x) _mm_load_si128((x))
-#define LOAD_unaligned(x) _mm_loadu_si128(x)
+#define LOAD(x) _mm_load_si128((__m128i*) (x))
+#define LOAD_unaligned(x) _mm_loadu_si128((__m128i*) (x))
 #define CONCAT(x,y,n) _mm_alignr_epi8(x,y,n)
 
 #define test_eq  _mm_cmpeq_epi8

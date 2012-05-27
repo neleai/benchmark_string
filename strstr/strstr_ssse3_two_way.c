@@ -1,20 +1,12 @@
-/* generated from expression
 
-_strstr(n,c1,c2,size) = char(c1) char(c2) {MATCH_REST}
-                     | '\000' {return NULL;}
-
-*/
 #define SSE2
 
 #ifdef SSE2
 #include "sse2.h"
-#define STRSTR strstr_sse2
 #elif AVX2
 #include "avx2.h"
-#define STRSTR strstr_avx2
 #else
 #include "arithmetic.h"
-#define STRSTR strstr_arithmetic
 #endif
 
 #include <string.h>
@@ -67,15 +59,12 @@ int cmp(char *a,char *b,int siz,int dir){ int i;
 int periodic(char *a,char *b,int siz){int i;
   return cmp(a,b,siz,1)==siz;
 }
-static inline char * _strstr2(char *s,char *n,char c1,char c2,long size);
+static inline char * _strstr2(char *s,char *n,int ns,long size);
 
-static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
-  char *s2;int i,j;int ns;
+static inline char * _strstr(char *s,char *n,int ns,long size){
+  char *s2;int i,j;
 
-  for( ns=0; n[ns]; ns++) //TODO strlencmp(a,b) 
-    if (!s[ns]) return NULL;
-  size = -8*ns;
-
+  
   MBTYPE el,er;
   MBTYPE m0,m1;
   MBTYPE e0,e1,e2;
@@ -110,7 +99,7 @@ static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
         size+=j;
       }
       size+=16;
-      if (4*size> (s2-s)) return _strstr2(s2,n,c1,c2,size);
+      if (4*size> (s2-s)) return _strstr2(s2,n,ns,size);
     }
     s2+=BYTES_AT_ONCE;
     el=er;
@@ -130,7 +119,7 @@ static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
   }
 }
 
-static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
+static char * _strstr2(char *s ,char *n,int ns,long size )
 {
   
   int i;
@@ -149,7 +138,6 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
   MASKTYPE mask;
   int phase2=0;
   char *s2=s;
-  int ns=strlen(n);
   int offset=((long)(s))%BYTES_AT_ONCE;
   s2-=offset;
   el=LOAD(s2);
@@ -185,7 +173,6 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
   e2=OR(e1,e2);
   mask=get_mask(test_zero(e2));
   mask=forget_bits(mask,offset);
-  int memory=NULL;
   while (1)
   {
     if(mask)
@@ -266,7 +253,15 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
 }
 char *strstr2(char *s,char *n)
 {
-  int i;
+  int i; int ns;
   if(!n[0])return s;
-  return _strstr(s,n,n[0],n[1],-64);
+  if(!n[1]) return strchr(s,n[0]);
+  for( ns=2; n[ns]; ns++) //TODO strlencmp(a,b) 
+    if (!s[ns]) return NULL; 
+  long size;
+  if (ns==3)// for size 3 avoid calling strstr2
+    size=-1000000000000L;
+  else
+    size=-8*ns;
+  return _strstr(s,n,ns,size);
 }
