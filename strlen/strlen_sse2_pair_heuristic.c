@@ -29,7 +29,7 @@ char * strlen2(char *s ,char c)
   MBTYPE e7;
   MBTYPE mz=make_mask(0,0);
   MBTYPE m0,m1,m2,m3;
-  MASKTYPE mask,ml;
+  MASKTYPE mask,ml,mr;
   char *s2=s;
   int offset=((long)(s))%BYTES_AT_ONCE;
   s2-=offset;
@@ -57,8 +57,9 @@ char * strlen2(char *s ,char c)
       ml=get_mask(test_eq(el,mz));
       if (ml) 
         return s2-s+firstbit(ml);
-      else
-        return s2+BYTES_AT_ONCE-s+firstbit(get_mask(test_eq(er,mz)));
+      mr=get_mask(test_eq(er,mz));
+      if (mr)
+        return s2+BYTES_AT_ONCE-s+firstbit(mr);
     }
     s2+=2*BYTES_AT_ONCE;
   }

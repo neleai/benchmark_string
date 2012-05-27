@@ -1,3 +1,4 @@
 export RUNS=100000
 export BENCH_FN=strlen
 try aaab $N
+try random $N
