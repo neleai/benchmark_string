@@ -42,3 +42,5 @@ inline long  get_mask(MBTYPE x)
   return  _mm_movemask_epi8(x);
 }
 #define GET_BIT(x,y) (x&(1<<(y)))
+
+#define test_zero(x) test_eq(x,mz)

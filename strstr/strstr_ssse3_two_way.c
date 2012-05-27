@@ -84,7 +84,7 @@ static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
   int offset=((long)(s))%BYTES_AT_ONCE;
   s2=s-offset;
   el=LOAD(s2);
-  e0=test_eq(el, mz);
+  e0=test_zero(el);
   if (get_mask(e0)>>offset){
     for (i=offset;i<BYTES_AT_ONCE;i++){int j;
       if (!s2[i]) return NULL;
@@ -98,7 +98,7 @@ static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
   e2=XOR(el,m0);
   e1=XOR(CONCAT(er,el,1),m1);
   e2=OR(e1,e2);
-  mask=get_mask(test_eq(e2, mz));
+  mask=get_mask(test_zero(e2));
   mask=forget_bits(mask,offset);
   while(1){
     if (mask){
@@ -114,7 +114,7 @@ static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
     }
     s2+=BYTES_AT_ONCE;
     el=er;
-    e0=test_eq(el, mz);
+    e0=test_zero(el);
     if (get_mask(e0)){
       for (i=0;i<BYTES_AT_ONCE;i++){
         if (!s2[i]) return NULL;
@@ -126,7 +126,7 @@ static inline char * _strstr(char *s,char *n,char c1,char c2,long size){
     e2=XOR(el,m0);
     e1=XOR(CONCAT(er,el,1),m1);
     e2=OR(e1,e2);
-    mask=get_mask(test_eq(e2, mz));
+    mask=get_mask(test_zero(e2));
   }
 }
 
@@ -153,7 +153,7 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
   int offset=((long)(s))%BYTES_AT_ONCE;
   s2-=offset;
   el=LOAD(s2);
-  e0=test_eq(el, mz);
+  e0=test_zero(el);
   if (get_mask(e0)>>offset){
     for (i=offset;i<BYTES_AT_ONCE;i++){
       if(!s2[i]) return NULL;
@@ -183,7 +183,7 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
   e2=XOR(el,m0);
   e1=XOR(CONCAT(er,el,1),m1);
   e2=OR(e1,e2);
-  mask=get_mask(test_eq(e2, mz));
+  mask=get_mask(test_zero(e2));
   mask=forget_bits(mask,offset);
   int memory=NULL;
   while (1)
@@ -194,7 +194,7 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
       e2=OR(e1,e2);
       e1=XOR(CONCAT(er,el,3),m3);
       e2=OR(e1,e2);
-      mask=get_mask(test_eq(e2, mz));
+      mask=get_mask(test_zero(e2));
       if(mask){
         for(i=0; i<BYTES_AT_ONCE; i++) if (GET_BIT(mask,i))
         {
@@ -247,7 +247,7 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
     }
     s2+=BYTES_AT_ONCE;
     el=er; 
-    e0=test_eq(el, mz);
+    e0=test_zero(el);
     if (get_mask(e0)){
       phase2=0;
       for (i=0;i<BYTES_AT_ONCE;i++){
@@ -261,7 +261,7 @@ static char * _strstr2(char *s ,char *n,char c1,char c2,long size )
     e2=XOR(el,m0);
     e1=XOR(CONCAT(er,el,1),m1);
     e2=OR(e1,e2);
-    mask=get_mask(test_eq(e2, mz));
+    mask=get_mask(test_zero(e2));
   }
 }
 char *strstr2(char *s,char *n)
