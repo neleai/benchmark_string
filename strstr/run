@@ -3,7 +3,7 @@ export RUNS=100000
 BENCH_FN=strstr
 
 for I in ${BENCH_FN}_*.c; do
-  gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
+  gcc $I -I../common -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
 done
 gcc random.c -o random -L. -l${BENCH_FN}  -lm -g
 gcc aaab.c -o aaab  -L. -l${BENCH_FN}  -lm -g
