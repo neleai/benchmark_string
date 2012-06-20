@@ -77,7 +77,7 @@ void init_tester(){
 #ifdef USE_CLOCK
    clock_getres(CLOCK_MONOTONIC, &res);
 #endif
-  FILE *ts=fopen("ts_avg.dat","r");  fscanf(ts,"%lli",&ts_avg);  
+  FILE *ts=fopen("data/ts_avg.dat","r");  fscanf(ts,"%lli",&ts_avg);  
   data=malloc(100000000*sizeof(data_s));
 
   data_no=0;
@@ -97,10 +97,10 @@ void fini_tester(){
   FILE *plot,*plot_r,*plot_rng,*plot_sd;
 
   qsort(data,data_no,sizeof(data_s),(__compar_fn_t)less_size);
-  plot    =fopen("plot.dat","w");
-  plot_r  =fopen("plot_r.dat","w");
-  plot_rng=fopen("plot_rng.dat","w");
-  plot_sd =fopen("plot_sd.dat","w");
+  plot    =fopen("data/plot.dat","w");
+  plot_r  =fopen("data/plot_r.dat","w");
+  plot_rng=fopen("data/plot_rng.dat","w");
+  plot_sd =fopen("data/plot_sd.dat","w");
   int i=0,i2,k; double flen,mean,variance;int m,j;
   for(m=1;m<1000000000;m*=10){
     for(j=2;j<20;j++){
