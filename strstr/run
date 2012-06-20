@@ -3,12 +3,9 @@ for I in test_*.c; do
   gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
   ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
-
-gcc random.c -o   tmp/random   -L. -ltest  -lm -g
-gcc random16.c -o tmp/random16 -L. -ltest  -lm -g
-gcc aaab.c -o     tmp/aaab     -L. -ltest  -lm -g
-gcc bababac.c -o  tmp/bababac  -L. -ltest  -lm -g
-gcc planted.c -o  tmp/planted  -L. -ltest  -lm -g
+for I in cases/*.c; do
+  echo   gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
+done
 
 gcc ts_avg.c -lm -o ts_avg
 ./ts_avg
