@@ -1,5 +1,5 @@
 #!/bin/sh
-for I in test_*.c; do
+for I in *.c; do
   gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
   ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
@@ -61,7 +61,7 @@ gnuplotfile(){
   echo set xlabel "'haystack size'" >> tmp/plot.gp
   echo set ylabel "'$2'" >> tmp/plot.gp
   echo "plot \\" >> tmp/plot.gp
-  for I in test_*.c; do
+  for I in *.c; do
 		COL=`head -n1 $I | cut --delimiter=" " -f2`
     echo "\"data/pes${I}_${GNAME}$1.dat\" $3 title '$I' linecolor rgb \"$COL\", \\" >> tmp/plot.gp
     echo "\"data/rnd${I}_${GNAME}$1.dat\" $3 notitle  linecolor rgb \"$COL\", \\" >> tmp/plot.gp
@@ -76,7 +76,7 @@ gnuplotfile(){
 
 draw(){
   rm -f tmp/output
-  for I in test_*.c; do
+  for I in *.c; do
     comp $I $1 $2 $3 $4 $5
   done 
   gnuplotfile ""     "instructions"            "using 1:2 with lines"
