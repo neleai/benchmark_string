@@ -1,19 +1,26 @@
 #include "../tester.h"
+#ifndef CHECK_TEST
+#define CHECK_TEST 0
+#endif
+int reversed();
 char *needle,*haystack;
 char **garg;
 int ns,ss; int cur_seed;
 int r_seed;
-size_t strlen2(char *a);
-size_t strlen3(char *a){
+
+
+char *strstr2(char *a,char *c);
+char *strstr3(char *a,char *b){
+
   bench_start();
-  size_t r=strlen2(a);
-  bench_end(r);
-  if (*(a+r)) {
-    fprintf(stderr,"invalid match ns=%i,ss=%i,r_seed=%i\n",ns,ss,cur_seed); 
+  char *r=strstr2(a,b);
+  bench_end(ss);
+  if (CHECK_TEST) {
+    fprintf(stderr,"invalid match. Call try_test(%i,%i,%i) to reproduce.\n",ns,ss,cur_seed); 
     exit(42);
   }
   return r;
 }
-#define strlen strlen3
+#define strstr strstr3
 
-#define FN_CALL strlen(haystack);
+#define FN_CALL strstr(haystack,needle);
