@@ -5,15 +5,29 @@
 inline int max(int x,int y){ return x>y ? x : y; }
 inline int min(int x,int y){ return x<y ? x : y; }
 
+#define ZEROMATCH(v,from,to)             e0=test_zero(v);\
+    if (get_mask(e0)){ \
+      for (i=from;i<to;i++){ \
+        if (!s2[i]) return NULL; \
+        for(j=0;n[j]&& s2[i+j]==n[j];j++);\
+        if (!n[j]) return s2+i;\
+      }\
+    }
+
+
+
 static inline char * _strstr(char *s,char *n,int ns,long size){
   char *s2;int i,j;
 
   
   MBTYPE el,er;
   MBTYPE m0,m1;
-  MBTYPE e0,e1,e2;
+  MBTYPE e0,e1,e2,e0fw;
   MBTYPE mz=make_mask(0,0);
-  MASKTYPE mask;
+  m0=make_mask(n[0],0);
+  m1=make_mask(n[1],0);
+
+  MASKTYPE mask,nm;
   int offset=((long)(s))%BYTES_AT_ONCE;
   s2=s-offset;
   el=LOAD(s2);
@@ -26,40 +40,49 @@ static inline char * _strstr(char *s,char *n,int ns,long size){
     }
   }
   er=LOAD(s2+BYTES_AT_ONCE);
-  m0=make_mask((char) n[0],0);
-  m1=make_mask((char) n[1],0);
-  e2=XOR(el,m0);
+  ZEROMATCH(er,0,2*BYTES_AT_ONCE);
+  e0=XOR(el,m0);
   e1=XOR(CONCAT(er,el,1),m1);
-  e2=OR(e1,e2);
+  e0fw=XOR(er,m0);
+  e2=OR(e0,e1);
   mask=get_mask(test_zero(e2));
+  nm=get_mask(test_zero(e0fw));
   mask=forget_bits(mask,offset);
+
   while(1){
-    if (mask){
-      for(i=0; i<BYTES_AT_ONCE; i++) if (GET_BIT(mask,i))
-      {
-        char *p=s2+i;
-        for(j=2;n[j]&& p[j]==n[j];j++);
-        if(!n[j]) return p;
-        size+=j;
+    start:
+    if (mask||nm){
+      if(mask){
+        for(i=0; i<BYTES_AT_ONCE; i++) if (GET_BIT(mask,i))
+        {
+          char *p=s2+i;
+          for(j=2;n[j]&& p[j]==n[j];j++);
+          if(!n[j]) return p;
+        }
       }
-      size+=16;
-//      if (4*size> (s2-s)) return _strstr2(s2,n,ns,size);
-    }
-    s2+=BYTES_AT_ONCE;
-    el=er;
-    e0=test_zero(el);
-    if (get_mask(e0)){
-      for (i=0;i<BYTES_AT_ONCE;i++){
-        if (!s2[i]) return NULL;
-        for(j=0;n[j]&& s2[i+j]==n[j];j++);
-        if (!n[j]) return s2+i; 
+      if (nm){
+        el=er;
+        s2+=BYTES_AT_ONCE;
+        er=LOAD(s2+BYTES_AT_ONCE);
+        e0fw=XOR(er,m0);
+        ZEROMATCH(er,0,2*BYTES_AT_ONCE);
+        e1=XOR(CONCAT(er,el,1),m1);
+        mask=nm&get_mask(test_zero(e1));
+        nm=get_mask(test_zero(e0fw));
+        goto start;
       }
     }
+    s2+=2*BYTES_AT_ONCE;
+    el=LOAD(s2);
+    ZEROMATCH(el,            0,  BYTES_AT_ONCE);
     er=LOAD(s2+BYTES_AT_ONCE);
-    e2=XOR(el,m0);
+    ZEROMATCH(el,BYTES_AT_ONCE,2*BYTES_AT_ONCE);
+    e0=XOR(el,m0);
     e1=XOR(CONCAT(er,el,1),m1);
-    e2=OR(e1,e2);
+    e0fw=XOR(er,m0);
+    e2=OR(e0,e1);
     mask=get_mask(test_zero(e2));
+    nm=get_mask(test_zero(e0fw));
   }
 }
 
