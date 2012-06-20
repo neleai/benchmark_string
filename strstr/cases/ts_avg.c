@@ -1,4 +1,4 @@
-#include "../tester.h"
+#include "tester.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>

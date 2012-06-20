@@ -4,11 +4,10 @@ for I in test_*.c; do
   ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
 for I in cases/*.c; do
-  echo   gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
+  gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
 done
 
-gcc ts_avg.c -lm -o ts_avg
-./ts_avg
+LD_LIBRARY_PATH=. cases/ts_avg
 
 comp(){
   echo $1 > tmp/result_$1
