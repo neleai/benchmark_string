@@ -1,12 +1,15 @@
 #!/bin/sh
 export RUNS=100000
-BENCH_FN=memmem
+BENCH_FN="test"
 
 for I in ${BENCH_FN}_*.c; do
-  gcc $I -O3 -fPIC -shared -o tmp/lib$I.so
+  gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
 done
 gcc random.c -o random -L. -l${BENCH_FN}  -lm -g
+gcc random16.c -o random16 -L. -l${BENCH_FN}  -lm -g
+
 gcc aaab.c -o aaab  -L. -l${BENCH_FN}  -lm -g
+gcc bababac.c -o bababac  -L. -l${BENCH_FN}  -lm -g
 gcc planted.c -o planted  -L. -l${BENCH_FN}  -lm -g
 
 gcc ts_avg.c -lm -o ts_avg
@@ -15,10 +18,27 @@ gcc ts_avg.c -lm -o ts_avg
 comp(){
   echo $1 > tmp/result_$1
   ln -s -f tmp/lib$I.so lib${BENCH_FN}.so
-  LD_LIBRARY_PATH=. ./$2 $3 $4 $5>> tmp/result_$1 2> tmp/output_$1
-  cp plot.dat  data/${1}_$GNAME.dat
-  cp plot_r.dat data/${1}_$GNAME_r.dat
-  cp plot_rng.dat data/${1}_${GNAME}_rng.dat
+	echo $1 $2 $3 $4 $5
+  LD_LIBRARY_PATH=. ./$2 pes_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  cp plot.dat  data/pes${1}_$GNAME.dat
+  cp plot_r.dat data/pes${1}_$GNAME_r.dat
+  cp plot_rng.dat data/pes${1}_${GNAME}_rng.dat
+  if [ -e tmp/output ] ; then
+    diff -u tmp/output_$1 tmp/output
+  fi
+
+  LD_LIBRARY_PATH=. ./$2 opt_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  cp plot.dat  data/opt${1}_$GNAME.dat
+  cp plot_r.dat data/opt${1}_$GNAME_r.dat
+  cp plot_rng.dat data/opt${1}_${GNAME}_rng.dat
+  if [ -e tmp/output ] ; then
+    diff -u tmp/output_$1 tmp/output
+  fi
+
+  LD_LIBRARY_PATH=. ./$2 rnd_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  cp plot.dat  data/rnd${1}_$GNAME.dat
+  cp plot_r.dat data/rnd${1}_$GNAME_r.dat
+  cp plot_rng.dat data/rnd${1}_${GNAME}_rng.dat
 
   if [ -e tmp/output ] ; then
     diff -u tmp/output_$1 tmp/output
@@ -48,10 +68,13 @@ gnuplotfile(){
   echo set ylabel "'$2'" >> tmp/plot.gp
   echo "plot \\" >> tmp/plot.gp
   for I in ${BENCH_FN}_*.c; do
-    echo "\"data/${I}_${GNAME}$1.dat\" $3 title '$I', \\" >> tmp/plot.gp
+		COL=`head -n1 $I | cut --delimiter=" " -f2`
+    echo "\"data/pes${I}_${GNAME}$1.dat\" $3 title '$I' linecolor rgb \"$COL\", \\" >> tmp/plot.gp
+    echo "\"data/rnd${I}_${GNAME}$1.dat\" $3 notitle  linecolor rgb \"$COL\", \\" >> tmp/plot.gp
+    echo "\"data/opt${I}_${GNAME}$1.dat\" $3 notitle  linecolor rgb \"$COL\", \\" >> tmp/plot.gp
   done
-  echo 0 >> tmp/plot.gp
-  cat tmp/plot.gp
+  echo 0 notitle>> tmp/plot.gp
+#  cat tmp/plot.gp
   gnuplot tmp/plot.gp > html/$GNAME$1.png
   chmod a+r html/$GNAME$1.png
 
@@ -60,10 +83,10 @@ gnuplotfile(){
 draw(){
   rm -f tmp/output
   for I in ${BENCH_FN}_*.c; do
-    comp $I $1 $2 $3 $4
+    comp $I $1 $2 $3 $4 $5
   done 
   gnuplotfile ""     "instructions"            "using 1:2 with lines"
-  gnuplotfile "_r"   "instructions per byte"   "using 1:2 with lines"
+  gnuplotfile "_r"   "instructions per 16 bytes"   "using 1:2 with lines"
   gnuplotfile "_rng" "instructions"            "using 1:2:3 with filledcu"
 }
 
@@ -77,10 +100,10 @@ chmod a+r html/${BENCH_FN}_r.html
 export N=1
 try(){
   echo $1 $2 $3 $4
-  html "<tr><td>*_$1_*_$3_$4_${ALIGNED}</td>"
-  for NO in 1 10 100 1000 10000; do
-    export GNAME="$1_${NO}_$3_$4_${ALIGNED}"
-    export GNAME_r="$1_${NO}_$3_$4_${ALIGNED}_r"
+  html "<tr><td>*_$1_*_$3_$4</td>"
+  for NO in 1 10 100 1000 10000 100000; do
+    export GNAME="$1_${NO}_$3_$4"
+    export GNAME_r="$1_${NO}_$3_$4_r"
     html_a "<td><img src='$GNAME.png'></img></td>"
     html_r "<td><img src='$GNAME_r.png'></img></td>"
     html_rng "<td><img src='${GNAME}_rng.png'></img></td>"
@@ -92,12 +115,12 @@ try(){
 . ./benchmark
 
 try(){
-  export GNAME="$1_$2_$3_$4_${ALIGNED}"
-  export GNAME_r="$1_$2_$3_$4_${ALIGNED}_r"
+  export GNAME="$1_$2_$3_$4"
+  export GNAME_r="$1_$2_$3_$4_r"
   echo $GNAME
   draw $1 $2 $3 $4
 }
-for NO in 1 10 100 1000 10000; do
+for NO in 1 10 100 1000 10000 100000; do
   export N=$NO
   . ./benchmark
 done
@@ -109,3 +132,5 @@ cat /proc/cpuinfo >> html/${BENCH_FN}_r.html
 cat /proc/cpuinfo >> html/${BENCH_FN}_rng.html
 
 html "</pre></body></html>" 
+rm tmp/*
+rm data/*

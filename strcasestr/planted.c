@@ -3,7 +3,7 @@
 int plant_r[1000],plant_n[1000];
 int plant[1<<20],plant_no;
 void init_gen(){int i,j;
-      FILE *f=fopen(garg[3],"r");
+      FILE *f=fopen(garg[4],"r");
       plant_no=1<<20;
       int sum=0;
       int no;
@@ -26,7 +26,7 @@ void init_gen(){int i,j;
 void gen()
 {
   int i,j,k;
-  for(k=0;k<ns;k++) needle[k]=rand()%128+1;
+  for(k=0;k<ns;k++) needle[k]=rand_r(&r_seed)%128+1;
 
   j=0;
   char next=0;
