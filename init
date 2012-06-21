@@ -1,11 +1,4 @@
-mkdir data
-touch data/placeholder
-mkdir html
-touch html/placeholder
+cp -r ../common/* .
 chmod a+rx html
-mkdir tmp
-touch tmp/placeholder
-git add data/placeholder html/placeholder tmp/placeholder
-cp ../common/* .
-touch benchmark
+chmod a+rx .
 git add *

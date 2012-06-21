@@ -1,4 +1,4 @@
-#include "../tester.h"
+#include "tester.h"
 #ifndef CHECK_TEST
 #define CHECK_TEST 0
 #endif
