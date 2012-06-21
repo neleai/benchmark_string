@@ -1,44 +1,38 @@
 #!/bin/sh
-export RUNS=100000
-BENCH_FN="test"
-
-for I in ${BENCH_FN}_*.c; do
+for I in *.c; do
   gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
+  ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
-gcc random.c -o random -L. -l${BENCH_FN}  -lm -g
-gcc random16.c -o random16 -L. -l${BENCH_FN}  -lm -g
+for I in cases/*.c; do
+  gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
+done
 
-gcc aaab.c -o aaab  -L. -l${BENCH_FN}  -lm -g
-gcc bababac.c -o bababac  -L. -l${BENCH_FN}  -lm -g
-gcc planted.c -o planted  -L. -l${BENCH_FN}  -lm -g
-
-gcc ts_avg.c -lm -o ts_avg
-./ts_avg
+LD_LIBRARY_PATH=. cases/ts_avg
 
 comp(){
   echo $1 > tmp/result_$1
-  ln -s -f tmp/lib$I.so lib${BENCH_FN}.so
+  ln -s -f tmp/lib$I.so libtest.so
 	echo $1 $2 $3 $4 $5
-  LD_LIBRARY_PATH=. ./$2 pes_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
-  cp plot.dat  data/pes${1}_$GNAME.dat
-  cp plot_r.dat data/pes${1}_$GNAME_r.dat
-  cp plot_rng.dat data/pes${1}_${GNAME}_rng.dat
+  LD_LIBRARY_PATH=. cases/$2 pes_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  cp data/plot.dat  data/pes${1}_$GNAME.dat
+  cp data/plot_r.dat data/pes${1}_$GNAME_r.dat
+  cp data/plot_rng.dat data/pes${1}_${GNAME}_rng.dat
   if [ -e tmp/output ] ; then
     diff -u tmp/output_$1 tmp/output
   fi
 
-  LD_LIBRARY_PATH=. ./$2 opt_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
-  cp plot.dat  data/opt${1}_$GNAME.dat
-  cp plot_r.dat data/opt${1}_$GNAME_r.dat
-  cp plot_rng.dat data/opt${1}_${GNAME}_rng.dat
+  LD_LIBRARY_PATH=. cases/$2 opt_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  cp data/plot.dat  data/opt${1}_$GNAME.dat
+  cp data/plot_r.dat data/opt${1}_$GNAME_r.dat
+  cp data/plot_rng.dat data/opt${1}_${GNAME}_rng.dat
   if [ -e tmp/output ] ; then
     diff -u tmp/output_$1 tmp/output
   fi
 
-  LD_LIBRARY_PATH=. ./$2 rnd_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
-  cp plot.dat  data/rnd${1}_$GNAME.dat
-  cp plot_r.dat data/rnd${1}_$GNAME_r.dat
-  cp plot_rng.dat data/rnd${1}_${GNAME}_rng.dat
+  LD_LIBRARY_PATH=. cases/$2 rnd_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  cp data/plot.dat  data/rnd${1}_$GNAME.dat
+  cp data/plot_r.dat data/rnd${1}_$GNAME_r.dat
+  cp data/plot_rng.dat data/rnd${1}_${GNAME}_rng.dat
 
   if [ -e tmp/output ] ; then
     diff -u tmp/output_$1 tmp/output
@@ -46,13 +40,13 @@ comp(){
   cp tmp/output_$1 tmp/output
 }
 html_a(){
-  echo $* >>html/${BENCH_FN}.html
+  echo $* >>html/test.html
 }
 html_r(){
-  echo $* >>html/${BENCH_FN}_r.html
+  echo $* >>html/test_r.html
 }
 html_rng(){
-  echo $* >>html/${BENCH_FN}_rng.html
+  echo $* >>html/test_rng.html
 }
 
 html(){
@@ -67,7 +61,7 @@ gnuplotfile(){
   echo set xlabel "'haystack size'" >> tmp/plot.gp
   echo set ylabel "'$2'" >> tmp/plot.gp
   echo "plot \\" >> tmp/plot.gp
-  for I in ${BENCH_FN}_*.c; do
+  for I in *.c; do
 		COL=`head -n1 $I | cut --delimiter=" " -f2`
     echo "\"data/pes${I}_${GNAME}$1.dat\" $3 title '$I' linecolor rgb \"$COL\", \\" >> tmp/plot.gp
     echo "\"data/rnd${I}_${GNAME}$1.dat\" $3 notitle  linecolor rgb \"$COL\", \\" >> tmp/plot.gp
@@ -82,7 +76,7 @@ gnuplotfile(){
 
 draw(){
   rm -f tmp/output
-  for I in ${BENCH_FN}_*.c; do
+  for I in *.c; do
     comp $I $1 $2 $3 $4 $5
   done 
   gnuplotfile ""     "instructions"            "using 1:2 with lines"
@@ -90,12 +84,12 @@ draw(){
   gnuplotfile "_rng" "instructions"            "using 1:2:3 with filledcu"
 }
 
-echo "<html><body style=\"width:1000%;\"><table>" > html/${BENCH_FN}.html
-chmod a+r html/${BENCH_FN}.html
-echo "<html><body style=\"width:1000%;\"><table>" > html/${BENCH_FN}_r.html
-chmod a+r html/${BENCH_FN}_r.html
-echo "<html><body style=\"width:1000%;\"><table>" > html/${BENCH_FN}_rng.html
-chmod a+r html/${BENCH_FN}_r.html
+echo "<html><body style=\"width:1000%;\"><table>" > html/test.html
+chmod a+r html/test.html
+echo "<html><body style=\"width:1000%;\"><table>" > html/test_r.html
+chmod a+r html/test_r.html
+echo "<html><body style=\"width:1000%;\"><table>" > html/test_rng.html
+chmod a+r html/test_r.html
 
 export N=1
 try(){
@@ -127,9 +121,9 @@ done
 
 
 html "</table><pre>"
-cat /proc/cpuinfo >> html/${BENCH_FN}.html
-cat /proc/cpuinfo >> html/${BENCH_FN}_r.html
-cat /proc/cpuinfo >> html/${BENCH_FN}_rng.html
+cat /proc/cpuinfo >> html/test.html
+cat /proc/cpuinfo >> html/test_r.html
+cat /proc/cpuinfo >> html/test_rng.html
 
 html "</pre></body></html>" 
 rm tmp/*

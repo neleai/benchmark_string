@@ -13,7 +13,7 @@ comp(){
   echo $1 > tmp/result_$1
   ln -s -f tmp/lib$I.so libtest.so
 	echo $1 $2 $3 $4 $5
-  LD_LIBRARY_PATH=. tmp/$2 pes_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  LD_LIBRARY_PATH=. cases/$2 pes_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
   cp data/plot.dat  data/pes${1}_$GNAME.dat
   cp data/plot_r.dat data/pes${1}_$GNAME_r.dat
   cp data/plot_rng.dat data/pes${1}_${GNAME}_rng.dat
@@ -21,7 +21,7 @@ comp(){
     diff -u tmp/output_$1 tmp/output
   fi
 
-  LD_LIBRARY_PATH=. tmp/$2 opt_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  LD_LIBRARY_PATH=. cases/$2 opt_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
   cp data/plot.dat  data/opt${1}_$GNAME.dat
   cp data/plot_r.dat data/opt${1}_$GNAME_r.dat
   cp data/plot_rng.dat data/opt${1}_${GNAME}_rng.dat
@@ -29,7 +29,7 @@ comp(){
     diff -u tmp/output_$1 tmp/output
   fi
 
-  LD_LIBRARY_PATH=. tmp/$2 rnd_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  LD_LIBRARY_PATH=. cases/$2 rnd_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
   cp data/plot.dat  data/rnd${1}_$GNAME.dat
   cp data/plot_r.dat data/rnd${1}_$GNAME_r.dat
   cp data/plot_rng.dat data/rnd${1}_${GNAME}_rng.dat
