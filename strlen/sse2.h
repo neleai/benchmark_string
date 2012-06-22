@@ -56,7 +56,7 @@ SI long  get_mask(MBTYPE x)
 }
 #define GET_BIT(x,y) (x&(1<<(y)))
 
-#define PREFETCH(x)	_mm_prefetch(x,_MM_HINT_NTA);
+#define PREFETCH(x)	_mm_prefetch(x,_MM_HINT_T0);
 
 SI tp_mask kill_first(long x){	return ((tp_mask)(-1))<<x;}
 SI tp_mask kill_last (long x){	return ((tp_mask)(-1))>>x;}
