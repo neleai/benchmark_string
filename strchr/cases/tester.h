@@ -48,6 +48,7 @@ __inline__ uint64_t rdtsc(void)
   return ((long)1000000000)*ret.tv_sec+ret.tv_nsec;
 }
 #endif
+int clock_rand=0;
 
 
 long ts_avg;
@@ -59,6 +60,11 @@ typedef struct {
 data_s *data;int data_no;
 inline void bench_start(){
   if (ts_start) err("recursive invocation of benchmarked function detected");
+
+  int i,d=rand_r(&clock_rand)%256;//introduce noise to improve precision.
+  for(i=0;i<d;i++) clock_rand=3*clock_rand+5;
+
+
   ts_start=rdtsc();
   if (!ts_start) ts_start=1;
 }
