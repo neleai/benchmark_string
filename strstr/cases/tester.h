@@ -114,7 +114,7 @@ void fini_tester(){
         for(k=i+5;k<i2-5;k++) variance+= (data[k].time-mean)*(data[k].time-mean);
         fprintf(plot,"%f %f\n" ,flen,mean);
         fprintf(plot_sd,"%f %f\n",flen,sqrt(variance/(i2-i-10-1))/flen);
-        fprintf(plot_r,"%f %f\n",flen,mean/flen);
+        fprintf(plot_r,"%f %f\n",flen,16*mean/flen);
         fprintf(plot_rng,"%f %lli %lli\n",flen,data[i+5+5*(i2-i-10)/100].time,data[i+5+95*(i2-i-10)/100].time);      
       }
       i=i2;

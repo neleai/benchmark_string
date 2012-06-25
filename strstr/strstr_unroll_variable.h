@@ -1,18 +1,19 @@
+typedef unsigned char uchar;
 #include "sse2.h"
 #include <string.h>
-static int cmp(char *a,char *b,int no,int dir){int i;
+static int cmp(uchar *a,uchar *b,int no,int dir){int i;
 	for(i=0;i<no && CHAR(a)==CHAR(b);i++) {a+=dir;b+=dir;}
 	return i;
 }
 static inline int max(int x,int y){ return x>y ? x : y; }
 static inline int min(int x,int y){ return x<y ? x : y; }
-static int periodic(char *a,char *b,int siz){int i;
+static int periodic(uchar *a,uchar *b,int siz){int i;
   return cmp(a,b,siz,1)==siz;
 }
 
-static int maxSuf(char *n, int ns, int *p,int ord) {
+static int maxSuf(uchar *n, int ns, int *p,int ord) {
    int ms, j, k;
-   char a, b;
+   uchar a, b;
 
    ms = -1;
    j = 0;
@@ -41,16 +42,15 @@ static int maxSuf(char *n, int ns, int *p,int ord) {
    }
    return(ms);
 }
-static void two_way_preprocessing(char *n,int ns,int *per2,int *ell2){
+static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2){
   int u,v,up,vp;
   int per,ell;
-  char *prefix;
+  uchar *prefix;
   u=maxSuf(n,ns,&up,0);
   v=maxSuf(n,ns,&vp,1);
   ell = (u > v) ? u :  v;
   per = (u > v) ? up : vp;
   int chk      = min(ell+1,ns-4);
-  int fw_extra = ell+1-chk;
   int peri = periodic(n, n + per, ell + 1);
   if (!peri)
     per = max(ell + 1, ns - ell - 1) + 1;
@@ -58,15 +58,14 @@ static void two_way_preprocessing(char *n,int ns,int *per2,int *ell2){
 	*ell2=ell;
 }
 
-char *strstr2two_way(char *s,int ss,char *n,int ns){
+uchar *strstr2two_way(uchar *s,int ss,uchar *n,int ns){
 }
-#define PARA unroll*BYTES_AT_ONCE
 
 #define MASKEXP0 domask(0) MASKEXP
 #define MASKEXP  domask(1) domask(2) domask(3) \
        domask(4) domask(5) domask(6) domask(7)
 //extern int reverse;
-static char *strstr2v(char *s,char *n,int ns,char *s_end){int i;
+static uchar *strstr2v(uchar *s,uchar *n,int ns,uchar *s_end){int i;
 //	reverse=1;
 //	revers();
 	int rent=0;
@@ -74,11 +73,11 @@ static char *strstr2v(char *s,char *n,int ns,char *s_end){int i;
 	int scan2=min(ns,phase2);
   int u,v,up,vp;
   int per,ell;
-  char *prefix;
+  uchar *prefix;
 	ell=ns-scan2;
   int chk= min(ell+scan2,ns);
 	int fwn=ns-chk,bwn=chk-scan2;
-	char *fwp=n+ns-fwn,*bwp=n+bwn-1;
+	uchar *fwp=n+ns-fwn,*bwp=n+bwn-1;
 	
 	per=1;
 
@@ -89,9 +88,9 @@ static char *strstr2v(char *s,char *n,int ns,char *s_end){int i;
 	#undef domask
 	#define domask(x) tp_vector m##x; if(chk-1-x>=0) m##x=make_mask(n[chk-1-x]);
 	MASKEXP0
-	char *sr=s+chk-1;
+	uchar *sr=s+chk-1;
 	int offset=((long)sr)%(PARA);
-	char *s2=sr-offset;
+	uchar *s2=sr-offset;
 	
 	sn=(s2>s) ? LOAD(s2-BYTES_AT_ONCE) : vzero;
 #ifdef SIZE_SUPPLIED
@@ -144,7 +143,7 @@ static char *strstr2v(char *s,char *n,int ns,char *s_end){int i;
 				}
 				while(mask){
 					int i=first_bit(mask);
-					char *p=s2+i-chk+1;
+					uchar *p=s2+i-chk+1;
 					int checked;
 					if((checked=cmp(p+bwn-1,bwp,bwn,-1))==bwn){
 						return p;
@@ -171,19 +170,19 @@ static char *strstr2v(char *s,char *n,int ns,char *s_end){int i;
 #ifdef SIZE_SUPPLIED
 #define ND_END(x) (x==ns)
 #define HS_END(x) (x==ss)
-unsigned char *strstr2(unsigned char *s,int ss,unsigned char *n,int ns){
+uchar *strstr2(uchar *s,int ss,uchar *n,int ns){
 	int i;
-	char *s_end=s+ss;
+	uchar *s_end=s+ss;
 #define STRCHR(x,y) memchr(x,y,s_end-x)
 #else
 #define ND_END(x) !n[x]
 #define HS_END(x) !s[x]
 #define STRCHR strchr
-unsigned char *strstr2(unsigned char *s,unsigned char *n){
+uchar *strstr2(uchar *s,uchar *n){
 	int i,ns=0,ss=0;
-	char *s_end=NULL;
+	uchar *s_end=NULL;
 #endif
-	int cnt=0;unsigned char *so=s;
+	int cnt=0;uchar *so=s;
 	int m=0;
 	if(s-so>=treshold) return strstr2v(s,n,strlen(n),s_end);
 	s=STRCHR(s+m,n[m]);

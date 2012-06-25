@@ -36,6 +36,7 @@ int try_test(int ns2,int ss2,int rnd){int k;
 
 }
 int aligns[100], align_min[100][64], align_min_no[100][64];
+#define ALIGN_TO(x) align_offset=(x)+(64)*(rand_r(&r_seed)%(align_to/64))
 int main(int argc,char **argv){ int i,j,k,l;int crun;int resolution;
   garg=argv;
   r_seed=42;
@@ -59,7 +60,7 @@ int main(int argc,char **argv){ int i,j,k,l;int crun;int resolution;
 				for(i=resolution;i<10*resolution;i++)
 					for(j=0;j<64;j++)
 						for(k=0;k<16;k++){
-							align_offset=j;
+              ALIGN_TO(j);
 							try_test(ns,ss2*i/resolution,r_seed);
 							data_no--;
 							align_min[i][j]+=	data[data_no].time,align_min[i][j];
@@ -80,8 +81,8 @@ int main(int argc,char **argv){ int i,j,k,l;int crun;int resolution;
 		}
 		for(i=resolution;i<10*resolution;i++)
 			for(k=0;k<crun;k++){
-				align_offset=aligns[i]; 
-				if(!strcmp(align_type,"rnd_align")) align_offset=rand_r(&r_seed)%64;
+        ALIGN_TO(i);
+				if(!strcmp(align_type,"rnd_align")) ALIGN_TO(rand_r(&r_seed)%64);
 				try_test(ns,ss2*i/resolution,r_seed);
 			}
 	
@@ -91,7 +92,7 @@ int main(int argc,char **argv){ int i,j,k,l;int crun;int resolution;
 				int cmin;
 				i=rand_r(&r_seed)%(9*resolution)+resolution;
 				j=rand_r(&r_seed)%64;
-				align_offset=j;
+				ALIGN_TO(j);
 				try_test(ns,ss2*i/resolution,r_seed);
 				data_no--;
 				align_min[i][j]+=	data[data_no].time,align_min[i][j];
@@ -112,8 +113,8 @@ int main(int argc,char **argv){ int i,j,k,l;int crun;int resolution;
 
 		for(j=0;j<10*resolution*crun;j++){
 			i=rand_r(&r_seed)%(9*resolution)+resolution;
-			align_offset=aligns[i];
-			if(!strcmp(align_type,"rnd_align")) align_offset=rand_r(&r_seed)%64;
+      ALIGN_TO(i);
+			if(!strcmp(align_type,"rnd_align")) ALIGN_TO(rand_r(&r_seed)%64);
 			try_test(ns,ss2*i/resolution,r_seed);
 		}
 	}

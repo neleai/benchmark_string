@@ -3,8 +3,8 @@
 #include <tmmintrin.h>
 #include <stdlib.h>
 #define PARA (BYTES_AT_ONCE*unroll)
-#define ALIGN(x) int x##_offset=((size_t) x)%PARA; char *x##2=x-x##_offset;
-#define ALIGNB(x) int x##_offset=((size_t) x)%BYTES_AT_ONCE; char *x##2=x-x##_offset;
+#define ALIGN(x) int x##_offset=((size_t) x)%PARA; uchar *x##2=x-x##_offset;
+#define ALIGNB(x) int x##_offset=((size_t) x)%BYTES_AT_ONCE; uchar *x##2=x-x##_offset;
 
 #define MBTYPE __m128i
 #define MASKTYPE long
@@ -27,11 +27,11 @@ SI MASKTYPE forget_high_bits(MASKTYPE m,int b)
 
 
 static const uint64_t ones=0x0101010101010101;
-SI MBTYPE make_mask(unsigned char c)
+SI MBTYPE make_mask(uchar c)
 {
   return _mm_set1_epi8(c);
 }
-SI MBTYPE byte_at(unsigned char c,int shift)
+SI MBTYPE byte_at(uchar c,int shift)
 {
   return _mm_set_epi64x(((uint64_t)c)<<(8*shift),((uint64_t)c)<<(8*(shift-8)));
 }
@@ -60,7 +60,7 @@ SI long  get_mask(MBTYPE x)
 
 SI tp_mask kill_first(long x){	return ((tp_mask)(-1))<<x;}
 SI tp_mask kill_last (long x){	return ((tp_mask)(-1))>>x;}
-SI CHAR(char *a){
+SI CHAR(uchar *a){
 #ifdef CASE_INSENSITIVE
 return tolower(*a);
 #else
@@ -71,7 +71,7 @@ return *a;
 SI long first_bit(tp_mask t){ return __builtin_ctzl(t);}
 #define find_zeros(x) get_mask(test_eq(x,vzero))
 
-SI tp_vector test_range(tp_vector v,char from,char to){
+SI tp_vector test_range(tp_vector v,uchar from,uchar to){
 	MBTYPE fv=make_mask(-127-from);
 	v=_mm_add_epi8(v,fv);
 	MBTYPE tv=make_mask(-127+to-from+1);
@@ -86,7 +86,7 @@ SI tp_vector LOAD(MBTYPE* x){tp_mask mask;
 	if (mask=get_mask(m)){int i;
 		while(mask){
       i=first_bit(mask);
-			((unsigned char*)&m)[i]=tolower(((unsigned char*)&m)[i]);
+			((uchar*)&m)[i]=tolower(((uchar*)&m)[i]);
 			mask=forget_bits(mask,i+1);
 		}
 	}
@@ -99,5 +99,6 @@ SI tp_vector LOAD(MBTYPE* x){tp_mask mask;
 SI tp_vector zerov(){
 	tp_vector m;
 	m=XOR(m,m);
+  return m;
 }
 

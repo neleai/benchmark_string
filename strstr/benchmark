@@ -1,25 +1,24 @@
-try random  $N 5
-try random  $N 10
-try random  $N 33
-try random  $N 100
+try random $N 5
+try random $N 10
+try random $N 33
+try random $N 100
 
-try random16  $N 5
-try random16  $N 10
-try random16  $N 33
-try random16  $N 100
+try random16 $N 5
+try random16 $N 10
+try random16 $N 33
+try random16 $N 100
 
-try aaab  $N 4
-try aaab  $N 6
-try aaab  $N 8
-try aaab  $N 10
-try aaab  $N 12
-try aaab  $N 128
-try bababac  $N 4
-try bababac  $N 12
-try bababac  $N 128
+try aaab $N 4
+try aaab $N 6
+try aaab $N 8
+try aaab $N 10
+try aaab $N 12
+try aaab $N 128
+try bababac $N 4
+try bababac $N 12
+try bababac $N 128
 
-try planted  $N 10 dist1 
-try planted  $N 10 dist2 
-try planted  $N 10 dist3 
-try planted  $N 10 dist4 
-
+try planted $N 10 dist1 
+try planted $N 10 dist2 
+try planted $N 10 dist3 
+try planted $N 10 dist4 

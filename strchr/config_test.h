@@ -1,4 +1,4 @@
-const int align_to=512;
+const int align_to=4096;
 int get_resolution(int ss2){int resolution;//Split interval (ss2,10 ss2) into pieces of size ss2/resolution.
 	if(ss2==1     ) resolution=1;
 	if(ss2==10    ) resolution=10;
