@@ -7,7 +7,7 @@ for I in *.c *.s; do
 done
 for I in cases/*.c; do
   #gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
-icc -no-cxxlib $I -o cases/`basename $I .c` -L. -ltest -lm -g
+icc -fPIC -no-cxxlib $I -o cases/`basename $I .c` -L. -ltest -lm -g
 
 done
 
