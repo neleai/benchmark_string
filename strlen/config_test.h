@@ -1,11 +1,11 @@
-const int align_to=4096;
+const int align_to=8*1024*1024;
 int get_resolution(int ss2){int resolution;//Split interval (ss2,10 ss2) into pieces of size ss2/resolution.
 	if(ss2==1     ) resolution=1;
 	if(ss2==10    ) resolution=10;
 	if(ss2==100   ) resolution=10;
-	if(ss2==1000  ) resolution=4;
-	if(ss2==10000 ) resolution=2;
-	if(ss2==100000) resolution=1;
+	if(ss2==1000  ) resolution=8;
+	if(ss2==10000 ) resolution=8;
+	if(ss2==100000) resolution=8;
 	return resolution;
 }
 int get_runs(int ss2){int runs;//for each size we call function 'runs' times.

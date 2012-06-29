@@ -1,4 +1,6 @@
 try random  $N 5
+try random_nocache  $N 5
+
 try aaab  $N 4
 try planted  $N 10 dist1 
 try planted  $N 10 dist2 
