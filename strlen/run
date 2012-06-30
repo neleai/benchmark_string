@@ -1,13 +1,14 @@
 #!/bin/sh
+mkdir  tmp
+mkdir  data
+mkdir  html
 for I in *.c *.s; do
   gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
-  icc -no-cxxlib $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
 
   ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
 for I in cases/*.c; do
   gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
-#icc -O3 -no-cxxlib $I -o cases/`basename $I .c` -L. -ltest -lm -g
 
 done
 
