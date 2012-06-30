@@ -1,5 +1,5 @@
-# red #
-  .file	"test_strlen.c"
+# blue #
+	.file	"test_strlen.c"
 	.text
 	.p2align 4,,15
 	.globl	strlen
@@ -11,44 +11,52 @@ strlen:
 	pxor	%xmm0, %xmm0
 	andq	$-64, %rdx
 	movl	%edi, %ecx
+	movdqa	(%rdx), %xmm1
 	andl	$63, %ecx
-  movdqa	(%rdx), %xmm5
-	movdqa	16(%rdx), %xmm4
-	movdqa	32(%rdx), %xmm3
-	pcmpeqb	%xmm0, %xmm5
-	movdqa	48(%rdx), %xmm2
-	pcmpeqb	%xmm0, %xmm4
-	pcmpeqb	%xmm0, %xmm3
-	por	%xmm5, %xmm3
-	pcmpeqb	%xmm0, %xmm2
-	por	%xmm4, %xmm2
-	por	%xmm3, %xmm2
-	pmovmskb	%xmm2, %eax
+	pcmpeqb	%xmm0, %xmm1
+	movdqa	%xmm1, %xmm5
+	movdqa	16(%rdx), %xmm1
+	pcmpeqb	%xmm0, %xmm1
+	movdqa	%xmm1, %xmm4
+	movdqa	32(%rdx), %xmm1
+	pcmpeqb	%xmm0, %xmm1
+	movdqa	%xmm1, %xmm3
+	movdqa	48(%rdx), %xmm1
+	movdqa	%xmm3, %xmm6
+	pcmpeqb	%xmm0, %xmm1
+	por	%xmm1, %xmm6
+	movdqa	%xmm1, %xmm2
+	movdqa	%xmm5, %xmm1
+	por	%xmm4, %xmm1
+	por	%xmm6, %xmm1
+	pmovmskb	%xmm1, %eax
 	testl	%eax, %eax
 	jne	.L8
 	.p2align 4,,10
 	.p2align 3
 .L2:
 	addq	$64, %rdx
-  prefetcht0      512(%rdx)
-  movdqa	(%rdx), %xmm5
-	movdqa	16(%rdx), %xmm4
-	movdqa	32(%rdx), %xmm3
-	pcmpeqb	%xmm0, %xmm5
-	movdqa	48(%rdx), %xmm2
-	pcmpeqb	%xmm0, %xmm4
-	pcmpeqb	%xmm0, %xmm3
-	por	%xmm5, %xmm3
-	pcmpeqb	%xmm0, %xmm2
-	por	%xmm4, %xmm2
-	por	%xmm3, %xmm2
-	pmovmskb	%xmm2, %eax
+	movdqa	(%rdx), %xmm1
+	prefetcht0	512(%rdx)
+	pcmpeqb	%xmm0, %xmm1
+	movdqa	%xmm1, %xmm5
+	movdqa	16(%rdx), %xmm1
+	pcmpeqb	%xmm0, %xmm1
+	movdqa	%xmm1, %xmm4
+	movdqa	32(%rdx), %xmm1
+	pcmpeqb	%xmm0, %xmm1
+	movdqa	%xmm1, %xmm3
+	movdqa	48(%rdx), %xmm1
+	movdqa	%xmm3, %xmm6
+	pcmpeqb	%xmm0, %xmm1
+	por	%xmm1, %xmm6
+	movdqa	%xmm1, %xmm2
+	movdqa	%xmm5, %xmm1
+	por	%xmm4, %xmm1
+	por	%xmm6, %xmm1
+	pmovmskb	%xmm1, %eax
 	testl	%eax, %eax
 	je	.L2
-  movdqa  32(%rdx), %xmm3
-  movdqa  48(%rdx), %xmm2
-  pcmpeqb %xmm0, %xmm3
-  pcmpeqb %xmm0, %xmm2
 	pmovmskb	%xmm4, %eax
 	pmovmskb	%xmm3, %r8d
 	pmovmskb	%xmm5, %esi
@@ -70,10 +78,6 @@ strlen:
 	movq	%rdx, %rax
 	ret
 .L8:
-  movdqa  32(%rdx), %xmm3
-  movdqa  48(%rdx), %xmm2
-  pcmpeqb %xmm0, %xmm3
-  pcmpeqb %xmm0, %xmm2
 	pmovmskb	%xmm4, %eax
 	pmovmskb	%xmm3, %r9d
 	pmovmskb	%xmm5, %r8d
