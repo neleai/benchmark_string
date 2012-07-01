@@ -1,26 +1,27 @@
 #!/bin/sh
+mkdir  tmp
+mkdir  data
+mkdir  html
 for I in *.c *.s; do
-#  gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
-  icc -no-cxxlib $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
+  gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
 
   ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
 for I in cases/*.c; do
-  #gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
-icc -fPIC -no-cxxlib $I -o cases/`basename $I .c` -L. -ltest -lm -g
+  gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
 
 done
 
-LD_LIBRARY_PATH=".:/opt/intel/lib/intel64/" cases/ts_avg
+LD_LIBRARY_PATH="." cases/ts_avg
 
 comp(){
   echo $1 > tmp/result_$1
   ln -s -f tmp/lib$I.so libtest.so
   echo ln -s -f tmp/lib$I.so libtest.so
-  echo   LD_LIBRARY_PATH=".:/opt/intel/lib/intel64/" cases/$2 pes_align $3 $4 $5
+  echo   LD_LIBRARY_PATH="." cases/$2 pes_align $3 $4 $5
 	echo $1 $2 $3 $4 $5
   rm data/plot*.dat
-  LD_LIBRARY_PATH=".:/opt/intel/lib/intel64/" cases/$2 pes_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  LD_LIBRARY_PATH="." cases/$2 pes_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
   cp data/plot.dat  data/pes${1}_$GNAME.dat
   cp data/plot_r.dat data/pes${1}_$GNAME_r.dat
   cp data/plot_rng.dat data/pes${1}_${GNAME}_rng.dat
@@ -29,7 +30,7 @@ comp(){
   fi
   rm data/plot*.dat
 
-  LD_LIBRARY_PATH=".:/opt/intel/lib/intel64/" cases/$2 opt_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  LD_LIBRARY_PATH="." cases/$2 opt_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
   cp data/plot.dat  data/opt${1}_$GNAME.dat
   cp data/plot_r.dat data/opt${1}_$GNAME_r.dat
   cp data/plot_rng.dat data/opt${1}_${GNAME}_rng.dat
@@ -38,7 +39,7 @@ comp(){
   fi
   rm data/plot*.dat
 
-  LD_LIBRARY_PATH=".:/opt/intel/lib/intel64/" cases/$2 rnd_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  LD_LIBRARY_PATH="." cases/$2 rnd_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
   cp data/plot.dat  data/rnd${1}_$GNAME.dat
   cp data/plot_r.dat data/rnd${1}_$GNAME_r.dat
   cp data/plot_rng.dat data/rnd${1}_${GNAME}_rng.dat
@@ -104,14 +105,19 @@ chmod a+r html/test_r.html
 export N=1
 try(){
   echo $1 $2 $3 $4
-  html "<tr><td>*_$1_*_$3_$4</td>"
+  html "<tr>"
+  for NO in 1 10 100 1000 10000 100000; do
+    export GNAME="$1_${NO}_$3_$4"
+    html "<td align='center' >$1 *_align ${NO} $3 $4 </td>"
+  done 
+  html "</tr>"
+  html "<tr>"
   for NO in 1 10 100 1000 10000 100000; do
     export GNAME="$1_${NO}_$3_$4"
     export GNAME_r="$1_${NO}_$3_$4_r"
     html_a "<td><img src='$GNAME.png'></img></td>"
     html_r "<td><img src='$GNAME_r.png'></img></td>"
     html_rng "<td><img src='${GNAME}_rng.png'></img></td>"
-
   done
   html "</tr>"
 }

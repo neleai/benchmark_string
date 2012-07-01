@@ -11,7 +11,7 @@ void strrev(char *s,int cnt){int i; char tmp;
 		s[cnt-1-i]=tmp;
 	}
 }
-int try_test(int ns2,int ss2,int rnd){int k;
+int try_test(int ns2,int ss2,int rnd){int i,k;
 	ns=ns2;
 	ss=ss2;
 	cur_seed=r_seed=rnd;
@@ -31,6 +31,14 @@ int try_test(int ns2,int ss2,int rnd){int k;
 			strrev(needle,ns);
 		}
 	}
+  #ifdef NOCACHE
+      for(i=0;i<ns;i+=64){ 
+        _mm_clflush(needle+i);
+      }
+      for(i=0;i<ss;i+=64){ 
+        _mm_clflush(haystack+i);
+      }
+  #endif
 	FN_CALL
 
 }

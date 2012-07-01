@@ -40,10 +40,11 @@ strlen:
 	subq	%rdi, %rax
 	ret
 .L16:
-  movdqu	(%rax), %xmm5
+	movdqu	(%rax), %xmm5
 	movdqu	32(%rax), %xmm3
 	pcmpeqb	%xmm0, %xmm5
-	pcmpeqb	%xmm0, %xmm3
+  pcmpeqb	%xmm0, %xmm3
+
 	pmovmskb	%xmm2, %edx
 	pmovmskb	%xmm4, %ecx
 	pmovmskb	%xmm5, %r8d
@@ -60,6 +61,7 @@ strlen:
 .L13:
 	addq	$64, %rax
 	movdqu	(%rax), %xmm5
+	prefetcht0	400(%rax)
 	movdqu	32(%rax), %xmm3
 	pcmpeqb	%xmm0, %xmm5
 	movdqu	16(%rax), %xmm4
@@ -67,8 +69,8 @@ strlen:
 	movdqu	48(%rax), %xmm2
 	pcmpeqb	%xmm0, %xmm4
 	pcmpeqb	%xmm0, %xmm2
-	por	%xmm2, %xmm3
-	por	%xmm4, %xmm5
+	por	%xmm4, %xmm3
+	por	%xmm2, %xmm5
 	por	%xmm3, %xmm5
 	pmovmskb	%xmm5, %edx
 	testl	%edx, %edx

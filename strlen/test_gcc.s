@@ -63,6 +63,7 @@ strlen:
 .L13:
 	addq	$64, %rax
 	movdqu	(%rax), %xmm5
+	prefetcht0	512(%rax)
 	movdqu	32(%rax), %xmm3
 	pcmpeqb	%xmm0, %xmm5
 	movdqu	16(%rax), %xmm4
