@@ -53,10 +53,10 @@ void gen()
         }
     }
 #ifdef NOCACHE
-      for(i=0;i<ns;i+=64+512){ 
+      for(i=0;i<ns;i+=64){ 
         _mm_clflush(needle+i);
       }
-      for(i=0;i<ss;i+=64+512){ 
+      for(i=0;i<ss;i+=64){ 
         _mm_clflush(haystack+i);
       }
 #endif

@@ -7,168 +7,101 @@
 strchr:
 .LFB576:
 	.cfi_startproc
-	pxor	%xmm2, %xmm2
-	andl	$255, %esi
-	movd	%esi, %xmm0
 	movq	%rdi, %rcx
-	movq	%rdi, %rax
+	pxor	%xmm0, %xmm0
+	andl	$255, %esi
 	andl	$63, %ecx
+	subq	%rcx, %rdi
+	movd	%esi, %xmm1
 	movl	%esi, -12(%rsp)
-	pshufb	%xmm2, %xmm0
-	subq	%rcx, %rax
-	movdqu	(%rax), %xmm3
-	movdqa	%xmm2, %xmm1
-	movdqa	%xmm3, %xmm6
-	pcmpeqb	%xmm0, %xmm3
-	pcmpeqb	%xmm2, %xmm6
-	pmovmskb	%xmm3, %edi
-	movdqu	16(%rax), %xmm3
-	movdqa	%xmm3, %xmm5
-	movslq	%edi, %rdi
-	pcmpeqb	%xmm0, %xmm3
-	pcmpeqb	%xmm2, %xmm5
-	pmovmskb	%xmm3, %edx
-	movdqu	32(%rax), %xmm3
-	movdqa	%xmm3, %xmm4
-	movslq	%edx, %rdx
-	pcmpeqb	%xmm0, %xmm3
+	movdqu	(%rdi), %xmm2
+	pshufb	%xmm0, %xmm1
+	movdqa	%xmm2, %xmm3
+	pcmpeqb	%xmm0, %xmm2
+	pcmpeqb	%xmm1, %xmm3
+	por	%xmm3, %xmm2
+	pmovmskb	%xmm2, %r8d
+	movdqu	16(%rdi), %xmm2
+	movdqa	%xmm2, %xmm3
+	pcmpeqb	%xmm0, %xmm2
+	pcmpeqb	%xmm1, %xmm3
+	por	%xmm3, %xmm2
+	pmovmskb	%xmm2, %eax
+	movdqu	32(%rdi), %xmm2
+	movdqa	%xmm2, %xmm3
+	pcmpeqb	%xmm0, %xmm2
+	salq	$16, %rax
+	pcmpeqb	%xmm1, %xmm3
+	orq	%r8, %rax
+	por	%xmm3, %xmm2
+	pmovmskb	%xmm2, %esi
+	movdqu	48(%rdi), %xmm2
+	movdqa	%xmm2, %xmm3
+	pcmpeqb	%xmm0, %xmm2
+	pcmpeqb	%xmm1, %xmm3
+	por	%xmm3, %xmm2
+	pmovmskb	%xmm2, %edx
 	salq	$16, %rdx
-	pcmpeqb	%xmm2, %xmm4
-	pmovmskb	%xmm3, %r8d
-	movdqu	48(%rax), %xmm3
-	pmovmskb	%xmm4, %r9d
-	pcmpeqb	%xmm3, %xmm2
-	salq	$32, %r8
-	pcmpeqb	%xmm0, %xmm3
-	orq	%r8, %rdx
-	pmovmskb	%xmm6, %r8d
-	orq	%rdi, %rdx
-	salq	$32, %r9
-	pmovmskb	%xmm2, %edi
-	pmovmskb	%xmm3, %esi
-	movslq	%r8d, %r8
-	salq	$48, %rdi
-	salq	$48, %rsi
 	orq	%rsi, %rdx
-	pmovmskb	%xmm5, %esi
-	movslq	%esi, %rsi
-	salq	$16, %rsi
-	orq	%r9, %rsi
-	orq	%r8, %rsi
-	orq	%rdi, %rsi
-	movq	$-1, %rdi
-	orq	%rsi, %rdx
-	salq	%cl, %rdi
-	andq	%rdi, %rdx
-	je	.L2
-	bsfq	%rdx, %rcx
-	movslq	%ecx, %rdx
-	addq	%rdx, %rax
-	movl	$1, %edx
+	salq	$32, %rdx
+	orq	%rdx, %rax
+	movq	$-1, %rdx
 	salq	%cl, %rdx
-	testq	%rsi, %rdx
+	andq	%rdx, %rax
+	je	.L14
+.L2:
+	bsfq	%rax, %rax
 	movl	$0, %edx
-	cmovne	%rdx, %rax
+	addq	%rdi, %rax
+	cmpb	$0, (%rax)
+	cmove	%rdx, %rax
 	ret
 .L17:
-  movdqu	(%rax), %xmm2
+	pmovmskb	%xmm3, %eax
+	pmovmskb	%xmm5, %edx
+	pmovmskb	%xmm6, %esi
+	pmovmskb	%xmm4, %ecx
+	salq	$16, %rax
+	salq	$16, %rdx
+	orq	%rcx, %rax
+	orq	%rsi, %rdx
+	salq	$32, %rax
+	orq	%rdx, %rax
+	jne	.L2
+	.p2align 4,,10
+	.p2align 3
+.L14:
+	addq	$64, %rdi
+	movdqu	(%rdi), %xmm2
+	prefetcht0	512(%rdi)
 	movdqa	%xmm2, %xmm6
 	pcmpeqb	%xmm0, %xmm2
 	pcmpeqb	%xmm1, %xmm6
-	pmovmskb	%xmm2, %ecx
-	movdqu	16(%rax), %xmm2
+	por	%xmm2, %xmm6
+	movdqu	16(%rdi), %xmm2
 	movdqa	%xmm2, %xmm5
 	pcmpeqb	%xmm0, %xmm2
 	pcmpeqb	%xmm1, %xmm5
-	pmovmskb	%xmm2, %edi
-	movdqu	32(%rax), %xmm2
+	por	%xmm2, %xmm5
+	movdqu	32(%rdi), %xmm2
 	movdqa	%xmm2, %xmm4
-	movl	%edi, %edx
 	pcmpeqb	%xmm0, %xmm2
-	orl	%ecx, %edx
 	pcmpeqb	%xmm1, %xmm4
-	pmovmskb	%xmm2, %esi
-	movdqu	48(%rax), %xmm2
-	movdqa	%xmm4, %xmm7
+	por	%xmm2, %xmm4
+	movdqu	48(%rdi), %xmm2
 	movdqa	%xmm2, %xmm3
-	orl	%esi, %edx
 	pcmpeqb	%xmm0, %xmm2
+	movdqa	%xmm4, %xmm7
 	pcmpeqb	%xmm1, %xmm3
-	pmovmskb	%xmm2, %r8d
+	por	%xmm2, %xmm3
 	movdqa	%xmm6, %xmm2
 	por	%xmm3, %xmm7
 	por	%xmm5, %xmm2
-	orl	%r8d, %edx
 	por	%xmm7, %xmm2
-	pmovmskb	%xmm2, %r9d
-	orl	%r9d, %edx
-
-	movslq	%edi, %rdi
-	salq	$32, %rsi
-	movslq	%ecx, %rcx
-	salq	$16, %rdi
-	salq	$48, %r8
-	pmovmskb	%xmm5, %edx
-	orq	%rsi, %rdi
-	pmovmskb	%xmm6, %esi
-	orq	%rcx, %rdi
-	movslq	%edx, %rdx
-	pmovmskb	%xmm3, %ecx
-	orq	%r8, %rdi
-	pmovmskb	%xmm4, %r8d
-	salq	$16, %rdx
-	movslq	%esi, %rsi
-	salq	$48, %rcx
-	salq	$32, %r8
-	orq	%r8, %rdx
-	orq	%rsi, %rdx
-	orq	%rcx, %rdx
-	movq	%rdi, %rcx
-	orq	%rdx, %rcx
-	jne	.L15
-	.p2align 4,,10
-	.p2align 3
-.L2:
-	addq	$64, %rax
-	prefetcht0	512(%rax)
-	movdqu	(%rax), %xmm2
-	movdqa	%xmm2, %xmm3
-	pcmpeqb	%xmm0, %xmm2
-	pcmpeqb	%xmm1, %xmm3
-  por     %xmm2, %xmm3
-	movdqu	16(%rax), %xmm4
-	movdqa	%xmm4, %xmm5
-	pcmpeqb	%xmm0, %xmm4
-	pcmpeqb	%xmm1, %xmm5
-  por     %xmm4, %xmm5
-  por     %xmm3, %xmm5
- 	movdqu	32(%rax), %xmm6
-	movdqa	%xmm6, %xmm7
-	pcmpeqb	%xmm0, %xmm6
-	pcmpeqb	%xmm1, %xmm7
-  por     %xmm6, %xmm7
-  movdqu  48(%rax), %xmm8
-  movdqa  %xmm8, %xmm9
-  pcmpeqb %xmm0, %xmm8
-  pcmpeqb %xmm1, %xmm9
-  por     %xmm8, %xmm9
-  por     %xmm7, %xmm9
-  por     %xmm5, %xmm9
-
-	pmovmskb	%xmm9, %edx
-  testq %edx, %edx
-	je	.L2
+	pmovmskb	%xmm2, %eax
+	testl	%eax, %eax
+	je	.L14
 	jmp	.L17
-.L15:
-	bsfq	%rcx, %rcx
-	movl	$1, %esi
-	movslq	%ecx, %rdi
-	salq	%cl, %rsi
-	addq	%rax, %rdi
-	xorl	%eax, %eax
-	testq	%rdx, %rsi
-	cmove	%rdi, %rax
-	ret
 	.cfi_endproc
 .LFE576:
 	.size	strchr, .-strchr

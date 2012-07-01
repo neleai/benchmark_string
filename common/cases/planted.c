@@ -52,6 +52,14 @@ void gen()
             }
         }
     }
+#ifdef NOCACHE
+      for(i=0;i<ns;i+=64){ 
+        _mm_clflush(needle+i);
+      }
+      for(i=0;i<ss;i+=64){ 
+        _mm_clflush(haystack+i);
+      }
+#endif
 }
 
 #include "main.h"
