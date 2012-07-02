@@ -59,7 +59,7 @@ uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
   uchar *strstr_two_way(uchar *s, uchar *n, int ns)
 #endif
 #ifdef AS_MEMMEM
-  #define DETECT_END s+ss
+  #define DETECT_END s+ss-ns+check
   #define _AS_STRSTR(x) 
   #define _AS_MEMMEM(x) x
   uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
@@ -68,13 +68,12 @@ uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
    int fw,fwno,bw,bwno;
    int ell, memory,  per, peri,pos;
    two_way_preprocessing(n,ns,&per,&ell,&peri);
-   if(peri) return strstr_two_way_periodic(s,strlen(s),n,ns); 
    int check=min(ell+2,ns-1);
    tp_vector vn0=BROADCAST(n[check-0]);
    tp_vector vn1=BROADCAST(n[check-1]);
    tp_vector e0,e1;
    uchar *skip_to=s+check;
-
+   uchar *memo_pos=NULL;
 
   #define TEST_CODE(so,sn) vzero;\
      e0   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-0),vn0); \
@@ -82,24 +81,30 @@ uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
      mvec = AND(e0,e1);
 
   #define LOOP_BODY(p) \
-    p = p - check;\
-      _AS_MEMMEM( if (p+ns > s+ss) return NULL; ); \
-      pos = check + 1;\
-      fwno = ns - pos;\
-      fw = strcmp_dir(n + pos ,p + pos, fwno , 1);\
-      if (fw < fwno ){\
-        _AS_STRSTR( if (*(p + pos + fw)==0) return NULL;); \
-        p += fw + 1;\
-      } else {\
-        bwno = ell + 1;\
-        bw = strcmp_dir(n + ell, p + ell, bwno, -1);\
-        if ( bw < bwno ){\
-          p += per;\
-        } else {\
-          return p;\
-        }\
+     p = p - check;\
+     if (p!=memo_pos) memory = -1;\
+     pos = max(ell, memory) + 1;\
+     fwno = ns - pos;\
+     fw = strcmp_dir(n + pos ,p + pos, fwno , 1);\
+     if (fw < fwno ){\
+       p += fw + 1;\
+       _AS_STRSTR( if (*(p + pos + fw)==0) return NULL;); \
+       memory = -1;\
+       memo_pos = NULL;\
+     } else {\
+       bwno = ell - memory;\
+       bw = strcmp_dir(n + ell, p + ell, bwno, -1);\
+       if ( bw < bwno ){\
+         p += per;\
+         if (peri){\
+           memo_pos = p;\
+           memory   = ns - per - 1;\
+         }\
+       } else {\
+         return p;\
+       }\
      }\
-    skip_to = p + check;
+     skip_to = p + check;
 
   #define LOOP_END(p) return NULL;
   #define CAN_SKIP
@@ -107,46 +112,6 @@ uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
 
 }
 
-
-uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns) {
-   int i, ell, memory, p, per, q,peri,pos;
-   int fw,fwno,bw,bwno,skip;
-   uchar *so = s;
-   two_way_preprocessing(n,ns,&per,&ell,&peri);
-
-   
-   // Searching 
-   memory = -1;
-   while (s + ns <= so + ss ) {
-
-     if( memory == -1 ){
-       int pos2 = min(ell+1,ns-2);
-       uchar *skip = strstr_sse2( s + pos2 , so+ss - s - pos2 , n + pos2 ,  2);
-       if (!skip) return NULL;
-       s =  skip - pos2;
-     }
-
-     pos = max(ell, memory) + 1;
-     fwno = ns - pos;
-     fw = strcmp_dir(n + pos ,s + pos, fwno , 1);
-     if (fw < fwno ){
-       s += fw + 1;
-       memory = -1;
-     } else {
-       bwno = ell - memory;
-       bw = strcmp_dir(n + ell, s + ell, bwno, -1);
-       if ( bw < bwno ){
-         s += per;
-         if (peri){
-           memory = ns - per - 1;
-         }
-       } else {
-         return s;
-       }
-     }
-   }
-   return NULL;
-}
 
 
 uchar * strstr(uchar *s, uchar *n){
