@@ -83,13 +83,13 @@ uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
   #define LOOP_BODY(p) \
      p = p - check;\
      if (p!=memo_pos) memory = -1;\
+     else             memory = ns - per - 1;\
      pos = max(ell, memory) + 1;\
      fwno = ns - pos;\
      fw = strcmp_dir(n + pos ,p + pos, fwno , 1);\
      if (fw < fwno ){\
        p += fw + 1;\
        _AS_STRSTR( if (*(p + pos + fw)==0) return NULL;); \
-       memory = -1;\
        memo_pos = NULL;\
      } else {\
        bwno = ell - memory;\
@@ -98,7 +98,6 @@ uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
          p += per;\
          if (peri){\
            memo_pos = p;\
-           memory   = ns - per - 1;\
          }\
        } else {\
          return p;\
