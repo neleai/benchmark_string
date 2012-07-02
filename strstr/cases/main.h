@@ -1,7 +1,6 @@
 
 static inline int max(int x,int y){ return x>y ? x : y; }
 static inline int min(int x,int y){ return x<y ? x : y; }
-#include "../config_test.h"
 int align_offset=0;
 int runs;
 char *needle2,*haystack2;

@@ -1,4 +1,4 @@
-gcc $1 -mssse3 -g -fPIC -shared -o tmp/lib$1.so
+gcc  $1 -mssse3 -g -fPIC -shared -o tmp/lib$1.so
 
 ln -s -f tmp/lib$1.so libtest.so
 LD_LIBRARY_PATH=".:/opt/intel/lib/intel64/" gdb cases/$2

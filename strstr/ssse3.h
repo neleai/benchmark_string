@@ -1,3 +1,4 @@
+#include <tmmintrin.h>
 #include "sse2.h"
 #undef CONCAT
 
