@@ -93,7 +93,7 @@ uchar * strstr_two_way(uchar *s, int ss, uchar *n, int ns) {
 uchar * strstr(uchar *s, uchar *n){
   return strstr_two_way(s,strlen(s),n,strlen(n));
 }
-int maxSuf(uchar *x, int m, int *p) {
+int maxSuf(uchar *x, int m, int *p, int invert) {
    int ms, j, k;
    uchar a, b;
 
@@ -103,7 +103,7 @@ int maxSuf(uchar *x, int m, int *p) {
    while (j + k < m) {
       a = CHAR(x + j + k);
       b = CHAR(x + ms + k);
-      if (a < b) {
+      if (invert ? (a > b) : (a < b)) {
          j += k;
          k = 1;
          *p = j - ms;
@@ -125,45 +125,13 @@ int maxSuf(uchar *x, int m, int *p) {
    return(ms);
 }
  
-/* Computing of the maximal suffix for >= */
-int maxSufTilde(uchar *x, int m, int *p) {
-   int ms, j, k;
-   uchar a, b;
-
-   ms = -1;
-   j = 0;
-   k = *p = 1;
-   while (j + k < m) {
-      a = CHAR(x + j + k);
-      b = CHAR(x + ms + k);
-      if (a > b) {
-         j += k;
-         k = 1;
-         *p = j - ms;
-      }
-      else
-         if (a == b)
-            if (k != *p)
-               ++k;
-            else {
-               j += *p;
-               k = 1;
-            }
-         else { /* a < b */
-            ms = j;
-            j = ms + 1;
-            k = *p = 1;
-         }
-   }
-   return(ms);
-}
 
 static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2,int *peri){
   int u,v,up,vp;
   int per,ell;
   uchar *prefix;
-  u=maxSuf(n,ns,&up);
-  v=maxSufTilde(n,ns,&vp);
+  u=maxSuf(n,ns,&up,0);
+  v=maxSuf(n,ns,&vp,1);
   ell = (u > v) ? u :  v;
   per = (u > v) ? up : vp;
   *peri = periodic(n, n + per, ell + 1);
