@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include "vector.h"
-#define CHAR(x) *x
 typedef unsigned char uchar;
 
 static inline int max(int x,int y){ return x>y ? x : y; }
 static inline int min(int x,int y){ return x<y ? x : y; }
 
+#define CHAR(x) *(x)
 static size_t strcmp_dir(const uchar *a,const uchar *b,size_t no,int dir){
   int i;
   for(i=0;i<no && CHAR(a)==CHAR(b);i++){a+=dir;b+=dir;}
@@ -60,11 +60,11 @@ uchar * strstr_two_way(uchar *s, int ss, uchar *n, int ns) {
    memory = -1;
    while (s + ns <= so + ss ) {
 
-     if( memory == -1 && ell+1 <= ns-2){
-       int pos2 = ell+1;
+     if( memory == -1 ){
+       int pos2 = min(ell+1,ns-2);
        uchar *skip = strstr_sse2( s + pos2 , so+ss - s - pos2 , n + pos2 ,  2);
        if (!skip) return NULL;
-       s+=  skip - (s + pos2);
+       s =  skip - pos2;
      }
 
      pos = max(ell, memory) + 1;
@@ -93,18 +93,17 @@ uchar * strstr_two_way(uchar *s, int ss, uchar *n, int ns) {
 uchar * strstr(uchar *s, uchar *n){
   return strstr_two_way(s,strlen(s),n,strlen(n));
 }
-
-static int maxSuf(uchar *n, int ns, int *p,int ord) {
+int maxSuf(uchar *x, int m, int *p) {
    int ms, j, k;
    uchar a, b;
 
    ms = -1;
    j = 0;
    k = *p = 1;
-   while (j + k < ns) {
-      a = CHAR(n + j + k);
-      b = CHAR(n + ms + k);
-      if (ord ? a < b : a > b) {
+   while (j + k < m) {
+      a = CHAR(x + j + k);
+      b = CHAR(x + ms + k);
+      if (a < b) {
          j += k;
          k = 1;
          *p = j - ms;
@@ -125,12 +124,46 @@ static int maxSuf(uchar *n, int ns, int *p,int ord) {
    }
    return(ms);
 }
+ 
+/* Computing of the maximal suffix for >= */
+int maxSufTilde(uchar *x, int m, int *p) {
+   int ms, j, k;
+   uchar a, b;
+
+   ms = -1;
+   j = 0;
+   k = *p = 1;
+   while (j + k < m) {
+      a = CHAR(x + j + k);
+      b = CHAR(x + ms + k);
+      if (a > b) {
+         j += k;
+         k = 1;
+         *p = j - ms;
+      }
+      else
+         if (a == b)
+            if (k != *p)
+               ++k;
+            else {
+               j += *p;
+               k = 1;
+            }
+         else { /* a < b */
+            ms = j;
+            j = ms + 1;
+            k = *p = 1;
+         }
+   }
+   return(ms);
+}
+
 static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2,int *peri){
   int u,v,up,vp;
   int per,ell;
   uchar *prefix;
-  u=maxSuf(n,ns,&up,0);
-  v=maxSuf(n,ns,&vp,1);
+  u=maxSuf(n,ns,&up);
+  v=maxSufTilde(n,ns,&vp);
   ell = (u > v) ? u :  v;
   per = (u > v) ? up : vp;
   *peri = periodic(n, n + per, ell + 1);
