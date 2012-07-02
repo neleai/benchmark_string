@@ -57,7 +57,7 @@ SI tp_vector BYTE_AT(uchar c,int shift)
 #define XOR  _mm_xor_si128
 #define SHIFT_DOWN _mm_srli_si128
 #define SHIFT_UP   _mm_slli_si128
-#define CONCAT(x,y,n) (n==0) ? (y) : ((n==BYTES_AT_ONCE) ? (x) : OR(shift_up(x,BYTES_AT_ONCE-(n)),shift_down(y,(n))))
+#define CONCAT(x,y,n) (n==0) ? (y) : ((n==BYTES_AT_ONCE) ? (x) : OR(SHIFT_UP(x,BYTES_AT_ONCE-(n)),SHIFT_DOWN(y,(n))))
 SI tp_vector BROADCAST(uchar c)
 {
   return _mm_set1_epi8(c);

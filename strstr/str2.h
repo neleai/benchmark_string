@@ -1,6 +1,6 @@
 #include <stdlib.h>
+#include "../has_ssse3.h"
 #include "vector.h"
-typedef unsigned char uchar;
 
 static inline int max(int x,int y){ return x>y ? x : y; }
 static inline int min(int x,int y){ return x<y ? x : y; }
