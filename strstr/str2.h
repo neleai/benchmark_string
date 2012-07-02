@@ -46,7 +46,70 @@ uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
 
 }
 
-/* Two Way string matching algorithm. */
+
+#ifdef AS_STRSTR
+   #define DETECT_ZERO_BYTE
+  #define _AS_STRSTR(x) x 
+  #define _AS_MEMMEM(x) 
+  uchar *strstr_two_way(uchar *s, uchar *n, int ns)
+#endif
+#ifdef AS_MEMMEM
+  #define DETECT_END s+ss
+  #define _AS_STRSTR(x) 
+  #define _AS_MEMMEM(x) x
+  uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
+#endif
+{
+   int fw,fwno,bw,bwno;
+   int ell, memory,  per, peri,pos;
+   two_way_preprocessing(n,ns,&per,&ell,&peri);
+   memory = -1;
+
+   int check=min(ell+2,ns-1);
+   tp_vector vn0=BROADCAST(n[check-0]);
+   tp_vector vn1=BROADCAST(n[check-1]);
+   tp_vector e0,e1;
+   uchar *skip_to=s+check;
+
+
+  #define TEST_CODE(so,sn) vzero;\
+     e0   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-0),vn0); \
+     e1   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-1),vn1); \
+     mvec = AND(e0,e1);
+
+  #define LOOP_BODY(p) \
+    p = p - check;\
+    do {\
+      _AS_MEMMEM( if (p+ns > s+ss) return NULL; ); \
+      pos = max(ell, memory) + 1;\
+      fwno = ns - pos;\
+      fw = strcmp_dir(n + pos ,p + pos, fwno , 1);\
+      if (fw < fwno ){\
+        _AS_STRSTR( if (*(p+fw)==0) return NULL;); \
+        p += fw + 1;\
+        memory = -1;\
+      } else {\
+        bwno = ell - memory;\
+        bw = strcmp_dir(n + ell, p + ell, bwno, -1);\
+        if ( bw < bwno ){\
+          p += per;\
+          if (peri){\
+            memory = ns - per - 1;\
+          }\
+        } else {\
+          return p;\
+        }\
+     }\
+    } while (memory!=-1);\
+    skip_to = p + check;
+
+  #define LOOP_END(p) return NULL;
+  #define CAN_SKIP
+  #include "loop2.h"
+
+}
+
+/* Two Way string matching algorithm. 
 uchar * strstr_two_way(uchar *s, int ss, uchar *n, int ns) {
    if(ns==0) return s;
    if(ns==1) return strchr(s,n[0]);
@@ -56,7 +119,7 @@ uchar * strstr_two_way(uchar *s, int ss, uchar *n, int ns) {
    two_way_preprocessing(n,ns,&per,&ell,&peri);
 
    
-   /* Searching */
+   // Searching 
    memory = -1;
    while (s + ns <= so + ss ) {
 
@@ -88,10 +151,10 @@ uchar * strstr_two_way(uchar *s, int ss, uchar *n, int ns) {
    }
    return NULL;
 }
-
+*/
 
 uchar * strstr(uchar *s, uchar *n){
-  return strstr_two_way(s,strlen(s),n,strlen(n));
+  return strstr_two_way(s,n,strlen(n));
 }
 int maxSuf(uchar *x, int m, int *p, int invert) {
    int ms, j, k;

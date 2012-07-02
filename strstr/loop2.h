@@ -68,18 +68,18 @@
      }
    }
    test:;
-   enum_bits_start(mask,i)
+      enum_bits_start(mask,i)
          uchar *p=s2+i;
          if(__builtin_expect(_TEST_ZERO_BYTE||_TEST_END,0)){
            LOOP_END(p)
          }
 #ifdef CAN_SKIP
-       if(p>=skip_to){
-         LOOP_BODY(p)
-       }
+         if(p>=skip_to){
+           LOOP_BODY(p)
+         }
 #else
-         LOOP_BODY(p)
+          LOOP_BODY(p)
 #endif
        enum_bits_end
-
+   #endif
    goto start;
