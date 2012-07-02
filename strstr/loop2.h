@@ -111,3 +111,6 @@
      enum_bits_end
    #endif
    goto start;
+
+
+  #undef CAN_SKIP

@@ -22,48 +22,18 @@ static int periodic(uchar *a,uchar *b,int siz){int i;
 static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2,int *peri);
 
 
-uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
-  
-  tp_vector vn0=BROADCAST(n[ns-1-0]); 
-  tp_vector vn1=BROADCAST(n[ns-1-1]);
-  tp_vector e0,e1;
-
-  #define DETECT_ZERO_BYTE
-
-  #define TEST_CODE(so,sn) vzero;\
-     e0   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-0),vn0); \
-     e1   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-1),vn1); \
-     mvec = (AND(e0,e1));
-
-  #define LOOP_BODY(p) \
-    int checked=strcmp_dir(p,n+ns-1-2,ns-2,-1); \
-    if (checked==ns-2) return p-(ns-1); 
-
-  #define LOOP_END(p) return NULL;
-  #define CAN_SKIP
-  uchar *skip_to=s+ns-1;
-  #include "loop2.h"
-
-}
-#undef TEST_CODE
-#undef LOOP_BODY
-#undef LOOP_END
-
-uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
-
 
 #ifdef AS_STRSTR
    #define DETECT_ZERO_BYTE
   #define _AS_STRSTR(x) x 
   #define _AS_MEMMEM(x) 
-  uchar *strstr_two_way(uchar *s, uchar *n, int ns)
 #endif
 #ifdef AS_MEMMEM
   #define DETECT_END s+ss-ns+check
   #define _AS_STRSTR(x) 
   #define _AS_MEMMEM(x) x
-  uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
 #endif
+  uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
 {
    int fw,fwno,bw,bwno;
    int ell, memory,  per, peri,pos;
@@ -111,11 +81,72 @@ uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
 
 }
 
+uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
+  int buy=128;
+  int rent=0;
+  tp_vector vn0=BROADCAST(n[ns-1-0]); 
+  tp_vector vn1=BROADCAST(n[ns-1-1]);
+  tp_vector e0,e1;
+  int siz=ns-2;
 
+  #define DETECT_ZERO_BYTE
 
-uchar * strstr(uchar *s, uchar *n){
-  return strstr_two_way(s,n,strlen(n));
+  #define TEST_CODE(so,sn) vzero;\
+     e0   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-0),vn0); \
+     e1   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-1),vn1); \
+     mvec = (AND(e0,e1));
+
+  #define LOOP_BODY(p) \
+    p=p-ns+1;\
+    if(p>=s){\
+      int checked=strcmp_dir(p+siz-1,n+siz-1,siz,-1); \
+      if (checked==siz) return p; \
+      rent+=checked;\
+      if(__builtin_expect(buy - (s2-s) < rent,0)) \
+        return strstr_two_way(s,ss,n,ns);\
+    }
+
+  #define LOOP_END(p) return NULL;
+
+  #include "loop2.h"
+
 }
+#undef TEST_CODE
+#undef LOOP_BODY
+#undef LOOP_END
+
+
+uchar *strstr( uchar *s,uchar *n){
+  int buy = 128,rent = 0;
+  int ns=0,ss;
+  while(n[ns]){
+    if(!s[ns]) return NULL;
+    ns++;
+  }
+  int siz=ns-1;
+  tp_vector vn0=BROADCAST(n[ns-1-0]); 
+
+  #define DETECT_ZERO_BYTE
+  #define TEST_CODE(so,sn) TEST_EQ(sn,vn0); 
+  
+  #define LOOP_BODY(p) \
+    p=p-ns+1;\
+    int checked=strcmp_dir(p+siz-1,n+siz-1,siz,-1); \
+    if (checked==siz) return p; \
+    rent+=checked;\
+    if(__builtin_expect(buy - (s2-s) < rent,0)) \
+      return strstr_sse2(p,ss,n,ns);\
+
+  #define LOOP_END(p) return NULL;
+  s+=ns-1;
+  #include "loop2.h"
+}
+#undef TEST_CODE
+#undef LOOP_BODY
+#undef LOOP_END
+
+
+
 int maxSuf(uchar *x, int m, int *p, int invert) {
    int ms, j, k;
    uchar a, b;

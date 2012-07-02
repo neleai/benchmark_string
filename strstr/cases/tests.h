@@ -1,3 +1,4 @@
+int resolution;
 #include "../config_test.h"
 #include "tester.h"
 #ifndef CHECK_TEST
@@ -6,9 +7,8 @@
 int reversed();
 char *needle,*haystack;
 char **garg;
-int ns,ss; int cur_seed;
-int r_seed;
-
+int ns,ss; unsigned int cur_seed;
+unsigned int r_seed;
 
 char *strstr2(char *a,char *c);
 char *strstr3(char *a,char *b){
