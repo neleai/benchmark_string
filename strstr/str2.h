@@ -22,48 +22,18 @@ static int periodic(uchar *a,uchar *b,int siz){int i;
 static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2,int *peri);
 
 
-uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
-  
-  tp_vector vn0=BROADCAST(n[ns-1-0]); 
-  tp_vector vn1=BROADCAST(n[ns-1-1]);
-  tp_vector e0,e1;
-
-  #define DETECT_ZERO_BYTE
-
-  #define TEST_CODE(so,sn) vzero;\
-     e0   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-0),vn0); \
-     e1   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-1),vn1); \
-     mvec = (AND(e0,e1));
-
-  #define LOOP_BODY(p) \
-    int checked=strcmp_dir(p,n+ns-1-2,ns-2,-1); \
-    if (checked==ns-2) return p-(ns-1); 
-
-  #define LOOP_END(p) return NULL;
-  #define CAN_SKIP
-  uchar *skip_to=s+ns-1;
-  #include "loop2.h"
-
-}
-#undef TEST_CODE
-#undef LOOP_BODY
-#undef LOOP_END
-
-uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
-
 
 #ifdef AS_STRSTR
    #define DETECT_ZERO_BYTE
   #define _AS_STRSTR(x) x 
   #define _AS_MEMMEM(x) 
-  uchar *strstr_two_way(uchar *s, uchar *n, int ns)
 #endif
 #ifdef AS_MEMMEM
   #define DETECT_END s+ss-ns+check
   #define _AS_STRSTR(x) 
   #define _AS_MEMMEM(x) x
-  uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
 #endif
+uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
 {
    int fw,fwno,bw,bwno;
    int ell, memory,  per, peri,pos;
@@ -112,10 +82,75 @@ uchar * strstr_two_way_periodic(uchar *s, int ss, uchar *n, int ns);
 }
 
 
+uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
+  int buy=8*ns,rent=0; 
+  tp_vector vn0=BROADCAST(n[ns-1-0]); 
+  tp_vector vn1=BROADCAST(n[ns-1-1]);
+  tp_vector e0,e1;
 
-uchar * strstr(uchar *s, uchar *n){
-  return strstr_two_way(s,n,strlen(n));
+  #define DETECT_ZERO_BYTE
+
+  #define TEST_CODE(so,sn) vzero;\
+     e0   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-0),vn0); \
+     e1   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-1),vn1); \
+     mvec = (AND(e0,e1));
+
+  #define LOOP_BODY(p) \
+    p = p - (ns - 1);\
+    if (p >= s){\
+      int checked=strcmp_dir(p+ns-1-2,n+ns-1-2,ns-2,-1); \
+      if (checked==ns-2) return p; \
+      rent+=checked;\
+      if(buy+(p-s)>rent) return strstr_two_way(p,ss,n,ns);\
+    }
+
+  #define LOOP_END(p) return NULL;
+  #include "loop2.h"
 }
+#undef TEST_CODE
+#undef LOOP_BODY
+#undef LOOP_END
+
+
+
+#ifdef AS_STRSTR
+  #define STRCHR(s,c) strchr(s,c)
+  #define ND_END(x) !n[x]
+  #define HS_END(x) !s[x]
+  uchar *strstr(const uchar *s,const uchar *n)
+#endif
+#ifdef AS_MEMMEM
+  #define STRCHR(s,c) strchr(s,s_end-s,c)
+  #define ND_END(x) (x==ns)
+  #define HS_END(x) (x==ss)
+  uchar *memmem(const uchar *s,size_t ss,const uchar *n,size_t ns)
+#endif
+{
+  uchar *s_end=NULL;
+  uchar *s2=s;
+  int i,cnt=0;
+  int m=0;
+  if(s2-s>=small_treshold) return strstr_sse2(s2,0,n,strlen(n));
+  s2=STRCHR(s2+m,n[m]);
+  while(s2){
+    s2=s2-m;
+    for (i=m; !ND_END(i) && n[i]==s2[i]; i++);
+    if (ND_END(i)){
+      cnt++;
+      if(cnt==4) return strstr_sse2(s2,0,n,strlen(n));
+      for(i=0;i<m && n[i]==s2[i]; i++);
+      if(i==m) return s2;
+    }
+    m=i;
+    if(HS_END(m)) return NULL;
+    if(s2-s>=small_treshold) return strstr_sse2(s2,0,n,strlen(n));
+    s2++;
+    s2=STRCHR(s2+m,n[m]);
+  }
+  return NULL;
+}
+
+
 int maxSuf(uchar *x, int m, int *p, int invert) {
    int ms, j, k;
    uchar a, b;
