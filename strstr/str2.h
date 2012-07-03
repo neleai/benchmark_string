@@ -35,15 +35,17 @@ static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2,int *peri)
 #endif
 uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
 {
+
    int fw,fwno,bw,bwno;
-   int ell, memory,  per, peri,pos;
+   int ell,   per, peri,pos;
    two_way_preprocessing(n,ns,&per,&ell,&peri);
    int check=min(ell+2,ns-1);
+   uchar *skip_to=s+check;
+   uchar *memo_pos=NULL;
+
    tp_vector vn0=BROADCAST(n[check-0]);
    tp_vector vn1=BROADCAST(n[check-1]);
    tp_vector e0,e1;
-   uchar *skip_to=s+check;
-   uchar *memo_pos=NULL;
 
   #define TEST_CODE(so,sn) vzero;\
      e0   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-0),vn0); \
@@ -52,22 +54,34 @@ uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
 
   #define LOOP_BODY(p) \
      p = p - check;\
-     if (p!=memo_pos) memory = -1;\
-     else             memory = ns - per - 1;\
-     pos = max(ell, memory) + 1;\
+     pos = check + 1;\
      fwno = ns - pos;\
      fw = strcmp_dir(n + pos ,p + pos, fwno , 1);\
      if (fw < fwno ){\
-       p += fw + 1;\
-       _AS_STRSTR( if (*(p + pos + fw)==0) return NULL;); \
-       memo_pos = NULL;\
+       p += fw + check - ell + 1;\
      } else {\
-       bwno = ell - memory;\
-       bw = strcmp_dir(n + ell, p + ell, bwno, -1);\
+       bwno = ell + 1;\
+       bw = strcmp_dir(n + bwno - 1, p + bwno - 1, bwno, -1);\
        if ( bw < bwno ){\
          p += per;\
          if (peri){\
-           memo_pos = p;\
+           while(1){\
+             pos = max(ell, ns - per - 1) + 1;\
+             fwno = ns - pos;\
+             fw = strcmp_dir(n + pos ,p + pos, fwno , 1);\
+             if (fw < fwno ){\
+               p += fw + 1;\
+               break ;\
+             } else {\
+               bwno = ell - ns - per - 1;\
+               bw = strcmp_dir(n + ell, p + ell, bwno, -1);\
+               if ( bw < bwno ){\
+                 p += per;\
+               } else {\
+                 return p;\
+               }\
+             }\
+           }\
          }\
        } else {\
          return p;\
@@ -118,32 +132,35 @@ uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
   #define ND_END(x) !n[x]
   #define HS_END(x) !s[x]
   uchar *strstr(const uchar *s,const uchar *n)
+  #define SWITCH_IMPLEMENTATION return strstr_sse2((uchar*)s2,0,(uchar*)n,strlen(n));
 #endif
 #ifdef AS_MEMMEM
   #define STRCHR(s,c) strchr(s,s_end-s,c)
   #define ND_END(x) (x==ns)
   #define HS_END(x) (x==ss)
   uchar *memmem(const uchar *s,size_t ss,const uchar *n,size_t ns)
+  #define SWITCH_IMPLEMENTATION return strstr_sse2(s2,s_end-s2,n,ns);
 #endif
 {
   uchar *s_end=NULL;
+  _AS_MEMMEM(s_end=s+ss);
   uchar *s2=s;
   int i,cnt=0;
   int m=0;
-  if(s2-s>=small_treshold) return strstr_sse2(s2,0,n,strlen(n));
+  if(s2-s>=small_treshold) SWITCH_IMPLEMENTATION
   s2=STRCHR(s2+m,n[m]);
   while(s2){
     s2=s2-m;
     for (i=m; !ND_END(i) && n[i]==s2[i]; i++);
     if (ND_END(i)){
       cnt++;
-      if(cnt==4) return strstr_sse2(s2,0,n,strlen(n));
+      if(cnt==4) SWITCH_IMPLEMENTATION
       for(i=0;i<m && n[i]==s2[i]; i++);
       if(i==m) return s2;
     }
     m=i;
     if(HS_END(m)) return NULL;
-    if(s2-s>=small_treshold) return strstr_sse2(s2,0,n,strlen(n));
+    if(s2-s>=small_treshold) SWITCH_IMPLEMENTATION
     s2++;
     s2=STRCHR(s2+m,n[m]);
   }
