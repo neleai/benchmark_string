@@ -1,9 +1,10 @@
 #include <stdlib.h>
-#include "../has_ssse3.h"
+#include <string.h>
 #include "vector.h"
 
-static inline int max(int x,int y){ return x>y ? x : y; }
-static inline int min(int x,int y){ return x<y ? x : y; }
+SI int max(int x,int y){ return x>y ? x : y; }
+SI int min(int x,int y){ return x<y ? x : y; }
+
 
 #define CHAR(x) *(x)
 static size_t strcmp_dir(const uchar *a,const uchar *b,size_t no,int dir){
@@ -12,7 +13,7 @@ static size_t strcmp_dir(const uchar *a,const uchar *b,size_t no,int dir){
   return i;
 }
 
-static int periodic(uchar *a,uchar *b,int siz){int i;
+static int periodic(uchar *a,uchar *b,int siz){
   return strcmp_dir(a,b,siz,1)==siz;
 }
 
@@ -20,8 +21,6 @@ static int periodic(uchar *a,uchar *b,int siz){int i;
    Implementation based from http://www-igm.univ-mlv.fr/~lecroq/string/node26.html
 */
 static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2,int *peri);
-
-
 
 #ifdef AS_STRSTR
    #define DETECT_ZERO_BYTE
@@ -33,7 +32,7 @@ static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2,int *peri)
   #define _AS_STRSTR(x) 
   #define _AS_MEMMEM(x) x
 #endif
-uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
+static uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
 {
 
    int fw,fwno,bw,bwno;
@@ -41,7 +40,6 @@ uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
    two_way_preprocessing(n,ns,&per,&ell,&peri);
    int check=min(ell+2,ns-1);
    uchar *skip_to=s+check;
-
    tp_vector vn0=BROADCAST(n[check-0]);
    tp_vector vn1=BROADCAST(n[check-1]);
    tp_vector e0,e1;
@@ -57,7 +55,7 @@ uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
      fwno = ns - pos;\
      fw = strcmp_dir(n + pos ,p + pos, fwno , 1);\
      if (fw < fwno ){\
-       p += fw + check - ell + 1;\
+       p += fw + 1;\
      } else {\
        bwno = ell + 1;\
        bw = strcmp_dir(n + bwno - 1, p + bwno - 1, bwno, -1);\
@@ -92,14 +90,19 @@ uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
 
   #define LOOP_END(p) return NULL;
   #define CAN_SKIP
-  #include "loop2.h"
+  #include "loop.h"
 }
 
-uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
-  int buy=8*ns,rent=0; 
+static uchar *strstr_vec( uchar *s,int ss,uchar *n,int ns){
+  /* Standalone version needs here
+     if(!strncmp(s,n,ns) return s;
+     as called from strstr we know that this cannot happen.
+   */
+  int buy=8*ns+64,rent=0; 
   tp_vector vn0=BROADCAST(n[ns-1-0]); 
   tp_vector vn1=BROADCAST(n[ns-1-1]);
   tp_vector e0,e1;
+//  s+=ns-2;
 
   #define DETECT_ZERO_BYTE
 
@@ -110,15 +113,15 @@ uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
 
   #define LOOP_BODY(p) \
     p = p - (ns - 1);\
-    if (p >= s){\
+    if(p>= s){\
       int checked=strcmp_dir(p+ns-1-2,n+ns-1-2,ns-2,-1); \
       if (checked==ns-2) return p; \
       rent+=checked;\
-      if(buy+(p-s)>rent) return strstr_two_way(p,ss,n,ns);\
+ /*     if(buy+2*(p-s)>rent)        return strstr_two_way(p,ss,n,ns);*/\
     }
 
   #define LOOP_END(p) return NULL;
-  #include "loop2.h"
+  #include "loop.h"
 }
 #undef TEST_CODE
 #undef LOOP_BODY
@@ -127,47 +130,46 @@ uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
 
 
 #ifdef AS_STRSTR
-  #define STRCHR(s,c) strchr(s,c)
-  #define ND_END(x) !n[x]
-  #define HS_END(x) !s[x]
-  uchar *strstr(const uchar *s,const uchar *n)
-  #define SWITCH_IMPLEMENTATION return strstr_sse2((uchar*)s2,0,(uchar*)n,strlen(n));
+  #define STRCHR(s,sn,c) strchr(s,c)
+  uchar *STRSTR(const uchar *s,const uchar *n)
+  #define SWITCH_IMPLEMENTATION return strstr_vec((uchar*)p,0,(uchar*)n,ns);
 #endif
 #ifdef AS_MEMMEM
-  #define STRCHR(s,c) strchr(s,s_end-s,c)
-  #define ND_END(x) (x==ns)
-  #define HS_END(x) (x==ss)
-  uchar *memmem(const uchar *s,size_t ss,const uchar *n,size_t ns)
-  #define SWITCH_IMPLEMENTATION return strstr_sse2(s2,s_end-s2,n,ns);
+  #define STRCHR(s,sn,c) strchr(s,c)
+ uchar *memmem(const uchar *s,size_t ss,const uchar *n,size_t ns)
+  #define SWITCH_IMPLEMENTATION return strstr_vec(p,s_end-p,n,ns);
 #endif
 {
-  uchar *s_end=NULL;
-  _AS_MEMMEM(s_end=s+ss);
-  uchar *s2=(uchar*)s;
-  int i,cnt=0;
-  int m=0;
-  if(s2-s>=small_treshold) SWITCH_IMPLEMENTATION
-  s2=STRCHR(s2+m,n[m]);
-  while(s2){
-    s2=s2-m;
-    for (i=m; !ND_END(i) && n[i]==s2[i]; i++);
-    if (ND_END(i)){
-      cnt++;
-      if(cnt==4) SWITCH_IMPLEMENTATION
-      for(i=0;i<m && n[i]==s2[i]; i++);
-      if(i==m) return s2;
-    }
-    m=i;
-    if(HS_END(m)) return NULL;
-    if(s2-s>=small_treshold) SWITCH_IMPLEMENTATION
-    s2++;
-    s2=STRCHR(s2+m,n[m]);
+  int buy=small_treshold,rent=0;
+#ifdef AS_MEMMEM
+  s_end=s+ss;
+  if( ns > ss) return NULL;
+#endif
+#ifdef AS_STRSTR
+  int ns=0;
+  while(n[ns]){
+    if(!s[ns]) return NULL;
+    ns++;
   }
-  return NULL;
+#endif
+  if (!ns) return (uchar*) s;
+  uchar *p=(uchar*)s;
+  p+=ns-1;
+  while(1){
+    p=(uchar*) STRCHR((char*)p,s_end-p,((char*)n)[ns-1]);
+    if(!p) return NULL;
+    p -= ns - 1;
+    int check = strcmp_dir(n + ns - 1 -1  ,p + ns - 1 -1, ns - 1 , -1);
+    if (check == ns - 1) return p;
+    rent+=check+32;
+    if(buy-(p-s)<rent) SWITCH_IMPLEMENTATION
+    p++;
+    p+= ns - 1;
+  }
 }
 
 
-int maxSuf(uchar *x, int m, int *p, int invert) {
+static int maxSuf(uchar *x, int m, int *p, int invert) {
    int ms, j, k;
    uchar a, b;
 
@@ -203,7 +205,6 @@ int maxSuf(uchar *x, int m, int *p, int invert) {
 static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2,int *peri){
   int u,v,up,vp;
   int per,ell;
-  uchar *prefix;
   u=maxSuf(n,ns,&up,0);
   v=maxSuf(n,ns,&vp,1);
   ell = (u > v) ? u :  v;

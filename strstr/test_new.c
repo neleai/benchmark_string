@@ -1,6 +1,7 @@
 // red //
 const int small_treshold= 128;
 #define AS_STRSTR
-#include "str2.h"
+#define STRSTR strstr_test
+#include "strstr.h"
 int reversed(){return 1;}
-uchar *strstr2(uchar *s,uchar *n){return strstr(s,n);}
+uchar *strstr2(uchar *s,uchar *n){return strstr_test(s,n);}
