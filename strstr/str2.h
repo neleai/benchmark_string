@@ -41,7 +41,6 @@ uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
    two_way_preprocessing(n,ns,&per,&ell,&peri);
    int check=min(ell+2,ns-1);
    uchar *skip_to=s+check;
-   uchar *memo_pos=NULL;
 
    tp_vector vn0=BROADCAST(n[check-0]);
    tp_vector vn1=BROADCAST(n[check-1]);
@@ -63,6 +62,7 @@ uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
        bwno = ell + 1;\
        bw = strcmp_dir(n + bwno - 1, p + bwno - 1, bwno, -1);\
        if ( bw < bwno ){\
+         _AS_STRSTR(for(i=0;i<per;i++) if (!p[ns+i]) return NULL);\
          p += per;\
          if (peri){\
            while(1){\
@@ -76,6 +76,7 @@ uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
                bwno = ell - ns - per - 1;\
                bw = strcmp_dir(n + ell, p + ell, bwno, -1);\
                if ( bw < bwno ){\
+                 _AS_STRSTR(for(i=0;i<per;i++) if (!p[ns+i]) return NULL);\
                  p += per;\
                } else {\
                  return p;\
@@ -92,9 +93,7 @@ uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
   #define LOOP_END(p) return NULL;
   #define CAN_SKIP
   #include "loop2.h"
-
 }
-
 
 uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
   int buy=8*ns,rent=0; 
@@ -144,7 +143,7 @@ uchar *strstr_sse2( uchar *s,int ss,uchar *n,int ns){
 {
   uchar *s_end=NULL;
   _AS_MEMMEM(s_end=s+ss);
-  uchar *s2=s;
+  uchar *s2=(uchar*)s;
   int i,cnt=0;
   int m=0;
   if(s2-s>=small_treshold) SWITCH_IMPLEMENTATION

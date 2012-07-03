@@ -22,8 +22,6 @@ SI tp_mask first_bit(tp_mask t){ return __builtin_ctzl(t);}
 SI tp_mask  last_bit(tp_mask t){ return __builtin_clzl(t);}
 
 SI tp_mask forget_first_bit(tp_mask t){return t&(t-1);}
-#define enum_bits_start(msk,i) while(msk){ i=first_bit(msk); msk=forget_first_bit(msk);
-#define enum_bits_end          }
 
 SI tp_mask get_bit(tp_mask x,int y){return (x&(((tp_mask)1)<<(y)));}
 SI tp_mask shift_down(tp_mask x,int y){ return x>>y;}

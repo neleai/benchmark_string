@@ -68,49 +68,33 @@
      }
    }
    test:;
-   #ifdef CAN_SKIP
-     tp_mask zmask=0;
-     #ifdef DETECT_ZERO_BYTE
-       #define TESTZ(u) \
-       mvec=vzero;\
-       sn=LOAD(s2+u*16);\
-       _DETECT_ZERO_BYTE;\
-       zmask|=get_mask(mvec)<<(16*u);
-       TESTZ(0);TESTZ(1);TESTZ(2);TESTZ(3);
-       if (s<s2+64)
-         zmask = zmask & ((tp_mask)1)<<s_offset;
-     #endif
-     if(zmask){
-       mask&= (((tp_mask)-1)>>1)>>(63-first_bit(zmask));
-     }
-     if(skip_to>=s2+64){ mask=0;
-     }else if (skip_to>=s2){
+#ifdef CAN_SKIP
+     if(skip_to-s2>=64){ 
+       mask=0;
+     } else if (skip_to-s2>=0){
        mask&=((tp_mask)-1)<<(skip_to-s2);
      }
-     while(mask){i=first_bit(mask);
+#endif
+     while(mask){ i=first_bit(mask);
         uchar *p=s2+i;
+        if(__builtin_expect(_TEST_ZERO_BYTE||_TEST_END,0)){
+          LOOP_END(p)
+        }
         LOOP_BODY(p)
-        if(skip_to<=p) skip_to=p+1;
-        if(skip_to>=s2+64){ mask=0;
-        }else if (skip_to>=s2){
+#ifdef CAN_SKIP
+        if(skip_to-s2>=64){ 
+          mask=0;
+        } else if (skip_to-s2>=0){
           mask&=((tp_mask)-1)<<(skip_to-s2);
         }
+#else
+        mask=forget_first_bit(mask);
+#endif
      }
-     if(zmask) {
-       uchar *p=s2+first_bit(zmask);
-       LOOP_END(p);
-     }
-   #else
-     enum_bits_start(mask,i)
-     uchar *p=s2+i;
-     if(__builtin_expect(_TEST_ZERO_BYTE||_TEST_END,0)){
-       LOOP_END(p)
-     }
-     LOOP_BODY(p)
- 
-     enum_bits_end
-   #endif
    goto start;
 
 
   #undef CAN_SKIP
+
+#undef TEST_CODE
+#undef LOOP_BODY

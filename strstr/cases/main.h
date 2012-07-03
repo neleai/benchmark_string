@@ -32,10 +32,10 @@ void try_test(int ns2,int ss2,int rnd){int i,k;
 		}
 	}
   #ifdef NOCACHE
-      for(i=0;i<ns;i+=64){ 
+      for(i=0;i<ns+64;i+=64){ 
         _mm_clflush(needle+i);
       }
-      for(i=0;i<ss;i+=64){ 
+      for(i=0;i<ss+64;i+=64){ 
         _mm_clflush(haystack+i);
       }
   #endif
