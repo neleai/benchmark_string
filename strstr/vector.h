@@ -1,5 +1,5 @@
 typedef unsigned char uchar;
-
+#include "../has_ssse3.h"
 #ifdef SCALAR
 #include "scalar.h"
 #else

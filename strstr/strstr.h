@@ -13,9 +13,6 @@ static size_t strcmp_dir(const uchar *a,const uchar *b,size_t no,int dir){
   return i;
 }
 
-static int periodic(uchar *a,uchar *b,int siz){
-  return strcmp_dir(a,b,siz,1)==siz;
-}
 
 /* Two way algorithm: CROCHEMORE M., PERRIN D., 1991, Two-way string-matching, Journal of the ACM 38(3):651-675.
    Implementation based from http://www-igm.univ-mlv.fr/~lecroq/string/node26.html
@@ -94,15 +91,10 @@ static uchar *strstr_two_way(uchar *s, int ss, uchar *n, int ns)
 }
 
 static uchar *strstr_vec( uchar *s,int ss,uchar *n,int ns){
-  /* Standalone version needs here
-     if(!strncmp(s,n,ns) return s;
-     as called from strstr we know that this cannot happen.
-   */
   int buy=8*ns+64,rent=0; 
   tp_vector vn0=BROADCAST(n[ns-1-0]); 
   tp_vector vn1=BROADCAST(n[ns-1-1]);
   tp_vector e0,e1;
-//  s+=ns-2;
 
   #define DETECT_ZERO_BYTE
 
@@ -117,7 +109,7 @@ static uchar *strstr_vec( uchar *s,int ss,uchar *n,int ns){
       int checked=strcmp_dir(p+ns-1-2,n+ns-1-2,ns-2,-1); \
       if (checked==ns-2) return p; \
       rent+=checked;\
- /*     if(buy+2*(p-s)>rent)        return strstr_two_way(p,ss,n,ns);*/\
+      if(buy+2*(p-s)>rent)        return strstr_two_way(p,ss,n,ns);\
     }
 
   #define LOOP_END(p) return NULL;
@@ -132,20 +124,20 @@ static uchar *strstr_vec( uchar *s,int ss,uchar *n,int ns){
 #ifdef AS_STRSTR
   #define STRCHR(s,sn,c) strchr(s,c)
   uchar *STRSTR(const uchar *s,const uchar *n)
-  #define SWITCH_IMPLEMENTATION return strstr_vec((uchar*)p,0,(uchar*)n,ns);
 #endif
 #ifdef AS_MEMMEM
   #define STRCHR(s,sn,c) strchr(s,c)
  uchar *memmem(const uchar *s,size_t ss,const uchar *n,size_t ns)
-  #define SWITCH_IMPLEMENTATION return strstr_vec(p,s_end-p,n,ns);
 #endif
+  #define SWITCH_IMPLEMENTATION return strstr_vec((uchar*)p,s_end-p,(uchar*)n,ns);
 {
   int buy=small_treshold,rent=0;
 #ifdef AS_MEMMEM
-  s_end=s+ss;
+  uchar *s_end=s+ss;
   if( ns > ss) return NULL;
 #endif
 #ifdef AS_STRSTR
+  uchar *s_end=NULL;
   int ns=0;
   while(n[ns]){
     if(!s[ns]) return NULL;
@@ -201,6 +193,9 @@ static int maxSuf(uchar *x, int m, int *p, int invert) {
    return(ms);
 }
  
+static int periodic(uchar *a,uchar *b,int siz){
+  return strcmp_dir(a,b,siz,1)==siz;
+}
 
 static void two_way_preprocessing(uchar *n,int ns,int *per2,int *ell2,int *peri){
   int u,v,up,vp;
