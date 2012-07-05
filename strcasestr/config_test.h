@@ -1,4 +1,4 @@
-const int align_to=512;
+const int align_to=4096;
 int get_resolution(int ss2){int resolution;//Split interval (ss2,10 ss2) into pieces of size ss2/resolution.
 	if(ss2==1     ) resolution=1;
 	if(ss2==10    ) resolution=10;
@@ -17,3 +17,5 @@ int get_runs(int ss2){int runs;//for each size we call function 'runs' times.
 	if(ss2==100000) runs=100;
 	return runs;
 }
+
+#define CHECK_TEST ((strlen(a)>=strlen(b) &&(!r || strncasecmp(r,b,strlen(b)))))

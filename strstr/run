@@ -3,17 +3,17 @@ export LD_LIBRARY_PATH=".:/opt/intel/lib/intel64"
 mkdir  tmp
 mkdir  data
 mkdir  html
+mv libc.so libfoo.so
 for I in *.[cs] ; do
-#  gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
-  icc -no-cxxlib $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
+  gcc  -L. $I -msse4 -O3 -fPIC -shared -o tmp/lib$I.so
 
   ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
 for I in cases/*.c; do
-  gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
-  icc -no-cxxlib $I -o cases/`basename $I .c` -L. -ltest -lm -g
-
+  gcc  $I -o cases/`basename $I .c` -L. -ltest -lm -g
 done
+mv libfoo.so libc.so
+gcc -nostdlib test_glibc.c -L. -fPIC -shared -o tmp/libtest_glibc.c.so
 
  cases/ts_avg
 

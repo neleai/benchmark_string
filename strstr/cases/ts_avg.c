@@ -1,4 +1,3 @@
-int resolution;
 #include "tester.h"
 #include <stdio.h>
 #include <stdint.h>

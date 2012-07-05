@@ -25,10 +25,10 @@ long ts_avg;
 __inline__ uint64_t rdtsc(void)
 {
   uint32_t lo, hi;
-  __asm__ __volatile__ (
+/*  __asm__ __volatile__ (
     "        xorl %%eax,%%eax \n"
     "        cpuid"      // serialize
-    ::: "%rax", "%rbx", "%rcx", "%rdx");
+    ::: "%rax", "%rbx", "%rcx", "%rdx");*/
   /* We cannot use "=A", since this would use %rax on x86_64 and return only the lower 32bits of the TSC */
   __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
   return (uint64_t)hi << 32 | lo;
@@ -48,6 +48,7 @@ __inline__ uint64_t rdtsc(void)
   return ((long)1000000000)*ret.tv_sec+ret.tv_nsec;
 }
 #endif
+int clock_rand=0;
 
 
 long ts_avg;
@@ -59,6 +60,11 @@ typedef struct {
 data_s *data;int data_no;
 inline void bench_start(){
   if (ts_start) err("recursive invocation of benchmarked function detected");
+
+  int i,d=rand_r(&clock_rand)%256;//introduce noise to improve precision.
+  for(i=0;i<d;i++) clock_rand=3*clock_rand+5;
+
+
   ts_start=rdtsc();
   if (!ts_start) ts_start=1;
 }
@@ -73,7 +79,7 @@ inline void _bench_end(){
 #define bench_end(x) _bench_end(); data[data_no-1].size=(x)
 void *lib;
 void init_tester(){
-  cpu_bind(sched_getcpu());
+//  cpu_bind(sched_getcpu());
 #ifdef USE_CLOCK
    clock_getres(CLOCK_MONOTONIC, &res);
 #endif

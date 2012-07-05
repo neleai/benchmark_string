@@ -1,35 +1,48 @@
+export LD_LIBRARY_PATH=".:/opt/intel/lib/intel64"
 #!/bin/sh
-for I in *.c; do
-  gcc $I -mssse3 -O3 -fPIC -shared -o tmp/lib$I.so
+mkdir  tmp
+mkdir  data
+mkdir  html
+mv libc.so libfoo.so
+for I in *.[cs] ; do
+  gcc  -L. $I -msse4 -O3 -fPIC -shared -o tmp/lib$I.so
+
   ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
 for I in cases/*.c; do
-  gcc $I -o cases/`basename $I .c` -L. -ltest -lm -g
+  gcc  $I -o cases/`basename $I .c` -L. -ltest -lm -g
 done
+mv libfoo.so libc.so
+gcc -nostdlib test_glibc.c -L. -fPIC -shared -o tmp/libtest_glibc.c.so
 
-LD_LIBRARY_PATH=. cases/ts_avg
+ cases/ts_avg
 
 comp(){
   echo $1 > tmp/result_$1
   ln -s -f tmp/lib$I.so libtest.so
+  echo ln -s -f tmp/lib$I.so libtest.so
+  echo   LD_LIBRARY_PATH=$LD_LIBRARY_PATH cases/$2 pes_align $3 $4 $5
 	echo $1 $2 $3 $4 $5
-  LD_LIBRARY_PATH=. cases/$2 pes_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+  rm data/plot*.dat
+  cases/$2 pes_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
   cp data/plot.dat  data/pes${1}_$GNAME.dat
   cp data/plot_r.dat data/pes${1}_$GNAME_r.dat
   cp data/plot_rng.dat data/pes${1}_${GNAME}_rng.dat
   if [ -e tmp/output ] ; then
     diff -u tmp/output_$1 tmp/output
   fi
+  rm data/plot*.dat
 
-  LD_LIBRARY_PATH=. cases/$2 opt_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+   cases/$2 opt_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
   cp data/plot.dat  data/opt${1}_$GNAME.dat
   cp data/plot_r.dat data/opt${1}_$GNAME_r.dat
   cp data/plot_rng.dat data/opt${1}_${GNAME}_rng.dat
   if [ -e tmp/output ] ; then
     diff -u tmp/output_$1 tmp/output
   fi
+  rm data/plot*.dat
 
-  LD_LIBRARY_PATH=. cases/$2 rnd_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
+   cases/$2 rnd_align $3 $4 $5  >> tmp/result_$1 2> tmp/output_$1
   cp data/plot.dat  data/rnd${1}_$GNAME.dat
   cp data/plot_r.dat data/rnd${1}_$GNAME_r.dat
   cp data/plot_rng.dat data/rnd${1}_${GNAME}_rng.dat
@@ -61,7 +74,7 @@ gnuplotfile(){
   echo set xlabel "'haystack size'" >> tmp/plot.gp
   echo set ylabel "'$2'" >> tmp/plot.gp
   echo "plot \\" >> tmp/plot.gp
-  for I in *.c; do
+  for I in *.[cs] ; do
 		COL=`head -n1 $I | cut --delimiter=" " -f2`
     echo "\"data/pes${I}_${GNAME}$1.dat\" $3 title '$I' linecolor rgb \"$COL\", \\" >> tmp/plot.gp
     echo "\"data/rnd${I}_${GNAME}$1.dat\" $3 notitle  linecolor rgb \"$COL\", \\" >> tmp/plot.gp
@@ -76,7 +89,8 @@ gnuplotfile(){
 
 draw(){
   rm -f tmp/output
-  for I in *.c; do
+  for I in *.[cs] ; do
+    echo $I
     comp $I $1 $2 $3 $4 $5
   done 
   gnuplotfile ""     "instructions"            "using 1:2 with lines"
@@ -94,14 +108,19 @@ chmod a+r html/test_r.html
 export N=1
 try(){
   echo $1 $2 $3 $4
-  html "<tr><td>*_$1_*_$3_$4</td>"
+  html "<tr>"
+  for NO in 1 10 100 1000 10000 100000; do
+    export GNAME="$1_${NO}_$3_$4"
+    html "<td align='center' >$1 *_align ${NO} $3 $4 </td>"
+  done 
+  html "</tr>"
+  html "<tr>"
   for NO in 1 10 100 1000 10000 100000; do
     export GNAME="$1_${NO}_$3_$4"
     export GNAME_r="$1_${NO}_$3_$4_r"
     html_a "<td><img src='$GNAME.png'></img></td>"
     html_r "<td><img src='$GNAME_r.png'></img></td>"
     html_rng "<td><img src='${GNAME}_rng.png'></img></td>"
-
   done
   html "</tr>"
 }

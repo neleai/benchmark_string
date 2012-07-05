@@ -57,33 +57,12 @@ SI long  get_mask(MBTYPE x)
 #define GET_BIT(x,y) (x&(1<<(y)))
 
 #define PREFETCH(x)	_mm_prefetch(x,_MM_HINT_NTA);
-static unsigned char tolower_ary[256];
-static unsigned char *casefold_equivalence_class[256];
-int          casefold_equivalence_class_no[256];  
-static unsigned char _casefold_equivalence_class[512];
-static void calculate_tables(){int i,j;
-	int chr=0;
-	for(i=0;i<256;i++) tolower_ary[i]=tolower(i);
-	for(i=0;i<256;i++) {
-		for(j=0;j<i;j++) if (tolower(i)==tolower(j)) {
-			casefold_equivalence_class[i]=casefold_equivalence_class[j];
-			casefold_equivalence_class_no[i]=casefold_equivalence_class_no[j];
-			goto skip;
-		}
-		casefold_equivalence_class[i]= &_casefold_equivalence_class[chr];	
-		for(j=i;j<256;j++) if(tolower(i)==tolower(j)){
-			_casefold_equivalence_class[chr++]=j;
-		}
-		_casefold_equivalence_class[chr++]=0;
-		casefold_equivalence_class_no[i]=strlen(casefold_equivalence_class[i]);
-		skip:;
-	}
-}
+
 SI tp_mask kill_first(long x){	return ((tp_mask)(-1))<<x;}
 SI tp_mask kill_last (long x){	return ((tp_mask)(-1))>>x;}
 SI CHAR(char *a){
 #ifdef CASE_INSENSITIVE
-return tolower_ary[*a];
+return tolower(*a);
 #else
 return *a;
 #endif
@@ -99,14 +78,16 @@ SI tp_vector test_range(tp_vector v,char from,char to){
 	return _mm_cmplt_epi8(v,tv);
 }
 #ifdef CASE_INSENSITIVE
-SI tp_vector LOAD(char* x){tp_mask mask;
+SI tp_vector LOAD(MBTYPE* x){tp_mask mask;
 	MBTYPE high_bit=make_mask(128);
 	MBTYPE m=_mm_load_si128(x);
   MBTYPE l= AND(test_range(m,'A','Z'),high_bit);
 	m=OR(m,_mm_srli_epi64(l,2));
-	if (get_mask(m)){int i;
-		for (i=0;i<BYTES_AT_ONCE;i++){
-			((unsigned char*)&m)[i]=tolower_ary[((unsigned char*)&m)[i]];
+	if (mask=get_mask(m)){int i;
+		while(mask){
+      i=first_bit(mask);
+			((unsigned char*)&m)[i]=tolower(((unsigned char*)&m)[i]);
+			mask=forget_bits(mask,i+1);
 		}
 	}
 	return m;

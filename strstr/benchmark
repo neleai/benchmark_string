@@ -1,22 +1,28 @@
 try random $N 5
-try random $N 100
+try random $N 33
+try random $N 129
 
 try random_nocache $N 5
-try random_nocache $N 100
+try random_nocache $N 33
+try random_nocache $N 129
+
+
 
 try random16 $N 5
+try random16 $N 33
 try random16 $N 100
-
-try aaaa $N 4
-try aaaa $N 16
-try aaaa $N 64
-try aaaa $N 256
 
 try aaab $N 4
 try aaab $N 16
-try aaab $N 64
-try aaab $N 256
+try aaab $N 128
 
+try aaaa $N 4
+try aaaa $N 16
+try aaaa $N 128
+
+try bababac $N 4
+try bababac $N 16
+try bababac $N 128
 
 try planted $N 10 dist1 
 try planted $N 10 dist2 

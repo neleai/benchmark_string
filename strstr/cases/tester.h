@@ -36,19 +36,19 @@ __inline__ uint64_t rdtsc(void)
 #else
 #include <time.h>
 struct timespec res;
-unsigned int clock_rand;
+int clock_rand;
 __inline__ uint64_t rdtsc(void)
 {
   struct timespec ret;
   clock_gettime(CLOCK_MONOTONIC,&ret);
 
-  int i,d=rand_r(&clock_rand)%res.tv_nsec;//introduce noise to improve precision.
+  int i,d=rand_r(clock_rand)%res.tv_nsec;//introduce noise to improve precision.
   for(i=0;i<d;i++) clock_rand=3*clock_rand+5;
 
   return ((long)1000000000)*ret.tv_sec+ret.tv_nsec;
 }
 #endif
-unsigned int clock_rand=0;
+int clock_rand=0;
 
 
 long ts_avg;
@@ -109,9 +109,9 @@ void fini_tester(){
   plot_sd =fopen("data/plot_sd.dat","w");
   int i=0,i2,k; double flen,mean,variance;int m,j;
   for(m=1;m<1000000000;m*=10){
-    for(j=resolution;j<10*resolution;j++){
-      flen=m*j/resolution;
-      for(i2=i;i2<data_no && data[i2].size < m*(j+1)/resolution;i2++);
+    for(j=2;j<20;j++){
+      flen=m*j/2.0;
+      for(i2=i;i2<data_no && data[i2].size < m*(j+1)/2;i2++);
       if (i2-i>20) {
         qsort(data+i,i2-i,sizeof(data_s),(__compar_fn_t)less_time);
         mean=0; variance=0;
