@@ -19,27 +19,28 @@
 tp_vector vn0=BROADCAST(MASK_CONVERT(n[ns-1-0]));
 tp_vector vn1=BROADCAST(MASK_CONVERT(n[ns-1-1]));
 tp_vector e0,e1;
-#ifdef AS_STRSTR
+#if defined(STRSTR) || defined(STRCASESTR)
 #define DETECT_ZERO_BYTE
 #endif
-#ifdef AS_STRCASESTR
-#define DETECT_ZERO_BYTE
-#endif
-#ifdef AS_MEMMEM
+
+#ifdef MEMMEM
 #define DETECT_END s_end
 #endif
 
+#define NEEDS_PREVIOUS_VECTOR
+
 #ifdef USE_ARITHMETIC
 #define TEST_CODE(so,sn) vzero;\
-        e0   =XOR(CONCAT(sn,so,BYTES_AT_ONCE-0),vn0);\
-        e1   =XOR(CONCAT(sn,so,BYTES_AT_ONCE-1),vn1);\
-        mvec=TEST_ZERO(OR(e0,e1));
+   sn   = CASE_CONVERT(sn);\
+   e0   = XOR(CONCAT(sn,so,UCHARS_IN_VECTOR-0),vn0);\
+   e1   = XOR(CONCAT(sn,so,UCHARS_IN_VECTOR-1),vn1);\
+   mvec = TEST_ZERO(OR(e0,e1));
 #else
 #define TEST_CODE(so,sn) vzero;\
-     sn   = CASE_CONVERT(sn);\
-     e0   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-0),vn0); \
-     e1   = TEST_EQ(CONCAT(sn,so,BYTES_AT_ONCE-1),vn1); \
-     mvec = (AND(e0,e1));
+   sn   = CASE_CONVERT(sn);\
+   e0   = TEST_EQ(CONCAT(sn,so,UCHARS_IN_VECTOR-0),vn0); \
+   e1   = TEST_EQ(CONCAT(sn,so,UCHARS_IN_VECTOR-1),vn1); \
+   mvec = (AND(e0,e1));
 #endif
 
 #define LOOP_END(p) return NULL;

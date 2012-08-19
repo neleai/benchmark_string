@@ -1,105 +1,151 @@
+/* Copyright (C) 2012 Free Software Foundation, Inc.
+   This file is part of the GNU C Library.
+
+   The GNU C Library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
+
+   The GNU C Library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public
+   License asize_t with the GNU C Library; if not, see
+   <http://www.gnu.org/licenses/>.  */
+
+#define unroll 4
+
 #include <stdint.h>
-#include <stdlib.h>
 
 #include <emmintrin.h>
 #ifdef USE_SSSE3
-  #define _HAS_SSSE3(x,y) x
-  #include <tmmintrin.h>
+#define _HAS_SSSE3(x,y) x
+#include <tmmintrin.h>
 #else
-  #define _HAS_SSSE3(x,y) y
+#define _HAS_SSSE3(x,y) y
 #endif
 #ifdef USE_SSE4_1
-  #define _HAS_SSE4_1(x,y) x
-  #undef  _HAS_SSSE3
-  #define _HAS_SSSE3( x,y) x
-  #include <smmintrin.h>
+#define _HAS_SSE4_1(x,y) x
+#undef  _HAS_SSSE3
+#define _HAS_SSSE3( x,y) x
+#include <smmintrin.h>
 #else
-  #define _HAS_SSE4_1(x,y) y
+#define _HAS_SSE4_1(x,y) y
 #endif
 
+typedef unsigned char uchar;
 typedef __m128i tp_vector;
 typedef unsigned long tp_mask;
-#define SI static inline
-#define BYTES_AT_ONCE sizeof(tp_vector)
-#define PARA (BYTES_AT_ONCE*unroll)
-#define VSIZ_BYTE sizeof(tp_vector)
-#define VSIZ_BIT  (VSIZ_BYTE*8)
-#define MSIZ_BYTE sizeof(tp_mask)
-#define MSIZ_BIT  (MSIZ_BYTE*8)
-
-#define CACHE_LINE_SIZE 64
-#define PREFETCH(x)	_mm_prefetch(((char *)x),_MM_HINT_T0);
-#define ALIGN(x,u)         s_offset=((size_t) x)%((u)*BYTES_AT_ONCE);           s2=((uchar *)x)-s_offset;
-
-SI tp_mask get_mask(tp_vector x){  return  (tp_mask)((unsigned int)_mm_movemask_epi8(x)); }
-SI unsigned int NONZERO_MASK(tp_vector x){ return _HAS_SSE4_1(!_mm_testz_si128(x,x),get_mask(x));         }
-
-SI tp_mask first_bit(tp_mask t,int y){ return __builtin_ctzl(t);}
-
-SI tp_mask bit_i(int i){            return ((tp_mask) 1)<<i;}
-SI tp_mask shift_down(tp_mask x,int y){ return x>>y;}
-SI tp_mask shift_up  (tp_mask x,int y){ return x<<y;}
-
-SI tp_mask forget_first_bit(tp_mask t,int i){return t&(t-1);}
-SI tp_mask forget_before(tp_mask x,int y){return x&((y>=PARA) ? 0 : ((y<0) ? x : shift_up(  (tp_mask)-1,y)));}
-SI tp_mask forget_after( tp_mask x,int y){return x&((y>=PARA) ? x : ((y<0) ? 0 : shift_down((tp_mask)-1,63-y)));}
-SI tp_mask get_bit(tp_mask x,int y){return x&bit_i(y);      }
 
 
-
-
-SI tp_vector BYTE_AT(uchar c,int shift)
-{
-  return _mm_set_epi64x(((uint64_t)c)<<(8*shift),((uint64_t)c)<<(8*(shift-8)));
-}
-
-#define TEST_EQ  _mm_cmpeq_epi8
-#define TEST_ZERO(x) TEST_EQ(x,vzero)
-#define AND  _mm_and_si128
-#define ANDNOT(x,y) _mm_andnot_si128(y,x)
-#define OR   _mm_or_si128
-#define XOR  _mm_xor_si128
-#define SHIFT_DOWN _mm_srli_si128
-#define SHIFT_UP   _mm_slli_si128
-
-#define CONCAT(x,y,n) ((n==0) ? (y) : ((n==BYTES_AT_ONCE) ? (x) : _HAS_SSSE3( _mm_alignr_epi8(x,y,n),\
-                                                                              OR(SHIFT_UP(x,BYTES_AT_ONCE-(n)),SHIFT_DOWN(y,(n))))))
-
-SI tp_vector BROADCAST(uchar c)
+static inline tp_vector BROADCAST(uchar c)
 {
   return _mm_set1_epi8(c);
 }
-
-SI tp_vector BROADCAST_ZERO(void){
-	tp_vector m;
-	m=XOR(m,m);
-  return m;
+static inline tp_vector LOAD(uchar* x)
+{
+  return  _mm_load_si128( (tp_vector*)(x));
+}
+static inline tp_vector LOAD_UNALIGNED(uchar* x)
+{
+  return  _mm_loadu_si128((tp_vector*)(x));
 }
 
-SI tp_vector TEST_RANGE(tp_vector v,uchar from,uchar to){
-	tp_vector fv=BROADCAST(-127-from);
-	v=_mm_add_epi8(v,fv);
-	tp_vector tv=BROADCAST(-127+to-from+1);
-	return _mm_cmplt_epi8(v,tv);
+#define PREFETCH(x)	_mm_prefetch(((char *)x),_MM_HINT_T0);
+
+static inline tp_mask get_mask(tp_vector x)
+{
+  /*gcc unnecesary adds sign extension instructions for pkmovmskb.*/
+  return  (tp_mask)((unsigned int)
+                    _mm_movemask_epi8(x));
+}
+static inline unsigned int NONZERO_MASK(tp_vector x)
+{
+  return _HAS_SSE4_1(!_mm_testz_si128(x,x),
+                     get_mask(x));
 }
 
-SI tp_vector parallel_tolower(tp_vector m){tp_mask mask; /*TODO sse4 insert*/
-	tp_vector high_bit=BROADCAST(128);
-  tp_vector l= AND(TEST_RANGE(m,'A','Z'),high_bit);
-	m=OR(m,_mm_srli_epi64(l,2));
-	if ((mask=get_mask(m))){int i;
-    while(mask){ i=first_bit(mask,i); mask=forget_first_bit(mask,i);
-			((uchar*)&m)[i]=tolower(((uchar*)&m)[i]);
-    }
-	}
-	return m;
+#ifdef USE_SSE2_NO_BSF
+static char first_bit_hash[]= {0,37,50,8,0,21,0,0,38,54,5,51,9,0,30,0,22,12,1,0,0,0,0,39,0,55,0,35,6,52,28,10,0,0,33,31,0,0,23,0,13,44,0,2,0,0,25,0,0,0,0,0,40,15,0,0,56,62,46,0,19,36,7,0,0,53,4,0,29,11,0,0,0,0,34,0,27,32,0,0,0,43,0,0,24,0,0,14,0,61,45,18,0,0,3,0,0,0,0,26,0,42,0,0,0,60,17,0,0,0,0,41,0,59,16,0,0,58,0,57,0,63,47,48,0,0,49,20};
+static inline tp_mask first_bit(tp_mask x,int y)
+{
+  /* ones has form 2**(tz+1)-1 where tb is number of trailing zereos.*/
+  tp_mask ones=x^(x-1);
+  /* Calculate perfect hash.*/
+  return first_bit_hash[(903385529620038207L*ones)>>57];
+}
+#else
+static inline tp_mask first_bit(tp_mask x,int y)
+{
+  return __builtin_ctzl(x);
+}
+#endif
+static inline tp_mask bit_i(int i)
+{
+  return ((tp_mask) 1)<<i;
 }
 
-#define LOAD(x) _mm_load_si128((tp_vector*)(x))
-#define LOAD_UNALIGNED(x) _mm_loadu_si128(x)
+MASK_OP(get_bit         , x&bit_i(y))
+MASK_OP(shift_down      , x>>y )
+MASK_OP(shift_up        , x<<y )
+MASK_OP(forget_first_bit, x&(x-1))
+MASK_OP(forget_before   , x&((y>=unroll*UCHARS_IN_VECTOR) ? 0 : ((y<0) ? x :\
+                             shift_up(  (tp_mask)-1,y))))
+MASK_OP(forget_after    , x&((y>=unroll*UCHARS_IN_VECTOR) ? x : ((y<0) ? 0 :\
+                             shift_down((tp_mask)-1,63-y))))
 
-#define unroll 4
-#define DO_ACTION ACTION(0) ACTION(1) ACTION(2) ACTION(3)
+
+BIN_OP(TEST_EQ,_mm_cmpeq_epi8( x,y))
+#define TEST_ZERO(x) TEST_EQ(x,vzero)
+BIN_OP(AND   ,_mm_and_si128(   x,y))
+BIN_OP(OR    ,_mm_or_si128(    x,y))
+BIN_OP(ANDNOT,_mm_andnot_si128(y,x))
+BIN_OP(XOR   ,_mm_xor_si128(   x,y))
+BIN_OP(ADD   ,_mm_add_epi8(    x,y))
+BIN_OP(SUB   ,_mm_sub_epi8(    x,y))
+#define HAS_PARALLEL_MIN
+BIN_OP(MINI   ,_mm_min_epu8(    x,y))
+
+#define SHIFT_DOWN _mm_srli_si128
+#define SHIFT_UP   _mm_slli_si128
+
+#define CONCAT(x,y,n) ((n==0) ? (y) : ((n==UCHARS_IN_VECTOR) ? (x) : \
+                       _HAS_SSSE3( _mm_alignr_epi8(x,y,n),\
+                       OR(SHIFT_UP(x,UCHARS_IN_VECTOR-(n)),SHIFT_DOWN(y,(n))))))
+
+
+
+
+static inline tp_vector TEST_RANGE(tp_vector x,tp_vector y,tp_vector z)
+{
+  /* For unsigned byte we can test x<=y<=z by single comparison y-x< z-x+1. 
+     A signed byte comparison can be reduced to unsigned one by 
+     substracting 128 from both sides.*/
+  tp_vector fv=ADD(BROADCAST(128),x);
+  tp_vector v=SUB(y,fv);
+  tp_vector tv=SUB(ADD(z,BROADCAST(1)),fv);
+  return _mm_cmplt_epi8(v,tv);
+}
+
+static inline tp_vector TEST_RANGE_C(tp_vector v,uchar from,uchar to)
+{
+  /* If gcc did constant folding on sse we could just use
+     TEST_RANGE(BROADCAST('A'),v,BROADCAST('Z'));.*/
+  tp_vector fv=BROADCAST(-128-from);
+  v=ADD(v,fv);
+  tp_vector tv=BROADCAST(-128+to-from+1);
+  return _mm_cmplt_epi8(v,tv);
+}
+
+
+
+#if unroll==1
+#define AGREGATE_MASK    mask0
+#elif unroll==2
+#define AGREGATE_MASK   (mask0|(mask1<<16))
+#elif unroll==4
+/*Has one dependency less than mask0|(mask1<<16)|(mask2<<32)|(mask3<<48)*/
 #define AGREGATE_MASK   (mask0|(mask1<<16))|((mask2|(mask3<<16))<<32)
-#define AGREGATE_VECTOR OR(OR(mvec0,mvec1),OR(mvec2,mvec3))
-
+#endif

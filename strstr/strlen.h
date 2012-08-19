@@ -16,18 +16,9 @@
    <http://www.gnu.org/licenses/>.  */
 
 
-#ifdef AS_WCSLEN
-  #define WIDE_VERSION
-  #define AS_STRLEN
-  #define STRLEN WCSLEN
-#endif
-#ifdef AS_WCSNLEN
-  #define WIDE_VERSION
-  #define AS_STRNLEN
-  #define STRNLEN WCSNLEN
-#endif
-
+#define unroll 4
 #define prefetch 8
+
 #include "vector.h"
 
 #define DETECT_ZERO_BYTE

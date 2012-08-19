@@ -36,19 +36,19 @@ __inline__ uint64_t rdtsc(void)
 #else
 #include <time.h>
 struct timespec res;
-int clock_rand;
+unsigned int clock_rand;
 __inline__ uint64_t rdtsc(void)
 {
   struct timespec ret;
   clock_gettime(CLOCK_MONOTONIC,&ret);
 
-  int i,d=rand_r(clock_rand)%res.tv_nsec;//introduce noise to improve precision.
+  int i,d=rand_r(&clock_rand)%res.tv_nsec;//introduce noise to improve precision.
   for(i=0;i<d;i++) clock_rand=3*clock_rand+5;
 
   return ((long)1000000000)*ret.tv_sec+ret.tv_nsec;
 }
 #endif
-int clock_rand=0;
+unsigned int clock_rand=0;
 
 
 long ts_avg;
@@ -66,13 +66,9 @@ inline void bench_start(){
 
 
   ts_start=rdtsc();
-  for(i=0;i<16;i++) clock_rand=3*clock_rand+5;
-
   if (!ts_start) ts_start=1;
 }
-inline void _bench_end(){ int i;
-  for(i=0;i<16;i++) clock_rand=3*clock_rand+5;
-
+inline void _bench_end(){
   if (!ts_start) err("bench_end without bench_start");
   uint64_t ts_end=rdtsc();
   data[data_no].time=ts_end-ts_start-ts_avg;
@@ -113,9 +109,9 @@ void fini_tester(){
   plot_sd =fopen("data/plot_sd.dat","w");
   int i=0,i2,k; double flen,mean,variance;int m,j;
   for(m=1;m<1000000000;m*=10){
-    for(j=2;j<20;j++){
-      flen=m*j/2.0;
-      for(i2=i;i2<data_no && data[i2].size < m*(j+1)/2;i2++);
+    for(j=resolution;j<10*resolution;j++){
+      flen=m*j/resolution;
+      for(i2=i;i2<data_no && data[i2].size < m*(j+1)/resolution;i2++);
       if (i2-i>20) {
         qsort(data+i,i2-i,sizeof(data_s),(__compar_fn_t)less_time);
         mean=0; variance=0;
