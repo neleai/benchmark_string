@@ -109,7 +109,7 @@ MASK_OP(forget_after    , x&((y>=unroll*UCHARS_IN_VECTOR) ? x : ((y<0) ? 0 :\
 
 
 BIN_OP(TEST_EQ,_mm_cmpeq_epi8( x,y))
-#define TEST_ZERO(x) TEST_EQ(x,vzero)
+#define TEST_ZERO(x) TEST_EQ(x,BROADCAST(0))
 BIN_OP(AND   ,_mm_and_si128(   x,y))
 BIN_OP(OR    ,_mm_or_si128(    x,y))
 BIN_OP(ANDNOT,_mm_andnot_si128(y,x))

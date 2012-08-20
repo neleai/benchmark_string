@@ -55,7 +55,7 @@ TOLOWER(*(x)),\
 #endif
 
 
-static inline size_t strcmp_dir(const uchar *a,const uchar *b,size_t no)
+static inline size_t strcmp_dir(uchar *a,uchar *b,size_t no)
 {
   #define PAR_CMP     va=LOAD_UNALIGNED(a+i);\
                     vb=LOAD_UNALIGNED(b+i);\
@@ -152,16 +152,15 @@ static uchar *strstr_two_way(uchar *s, uchar *s_end, uchar *n, size_t ns)
 #include "strstr_vec.h"
 }
 
-#ifdef STRCASESTR
 
-#endif
+
 static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
 {
   /*First find occurences last two characters by vector algorithm,
     then test characters before. 
     If we tested superlinear number of characters switch to 
     two way algorithm.*/
-  size_t buy=8*ns+64,rent=0;
+  size_t buy=(ns>>2)+16,rent=0;
   size_t check_last=_STR_CASESTR_MEM(2,0,2);
   /*For strcasestr we do aproximate matching, false positives can 
     happen so we need to check also last two characters.*/
@@ -170,18 +169,8 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
     return strstr_two_way(s,s_end,n,ns);
 #undef CASECHECK
 #endif
-  tp_mask   phase2mask=0;
-  uchar phase2n[UCHARS_IN_VECTOR];
-  int ii;
-  for (ii=0; ii<min(ns-check_last,UCHARS_IN_VECTOR); ii++)
-    {
-      phase2n[UCHARS_IN_VECTOR-1-ii]=CHAR(n+ns-1-check_last-ii);
-      phase2mask|=bit_i(UCHARS_IN_VECTOR-1-ii);
-    }
-  tp_vector phase2v=LOAD_UNALIGNED(phase2n);
-  /*TODO use pcmpistrm to possibly kill next 15 positions*/
 
-  size_t check = ns - min(ns, UCHARS_IN_VECTOR+check_last);
+  size_t check = ns - min(ns, check_last);
   s += ns-2;
   tp_vector  __attribute__((unused)) diff=BROADCAST('A'^'a');
 #define CASE_CONVERT(x) _STR_CASESTR_MEM(x, OR(x,diff),  x)
@@ -189,82 +178,61 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
 #define PHASE2_CONVERT(x) _STR_CASESTR_MEM(x, parallel_tolower(x), x)
 #define LOOP_BODY(p)\
   p -= ns - 1;\
-  /*Check characters (ns-2-UCHARS_IN_VECTOR,ns-2)*/\
   /*See preconditions for strstr_vec.*/\
-  if(((get_mask(TEST_EQ(\
-        PHASE2_CONVERT(LOAD_UNALIGNED(\
-                       p+ns-check_last-UCHARS_IN_VECTOR)),\
-        phase2v))&phase2mask)==phase2mask)){\
-     size_t checked=strcmp_dir(p, n, check );\
-     if (checked == check)\
-       FOUND(p);\
-     rent+=checked;\
-     if(buy+2*(p-s)<rent)\
-        return strstr_two_way(p,s_end,n,ns);\
-  }
+  size_t checked=strcmp_dir(p, n, check );\
+  if (checked == check)\
+     FOUND(p);\
+  rent+=checked>>4;\
+  if(buy+((p-s)>>3)<rent)\
+     return strstr_two_way(p,s_end,n,ns);\
 
 #include "strstr_vec.h"
 }
 
 
+/*determine length of shorter string*/
+static inline size_t str_shorterlen(uchar *a,uchar *b){
+  tp_vector va,vb; tp_mask mask;
+  int i,no=0;
+  while(1){
+    if (((size_t) (a+no))%4096>=4096-sizeof(tp_vector)||((size_t) (a+no))%4096>=4096-sizeof(tp_vector)){
+      for (i=0;i<16;i++) if (!a[i+no]||!b[i+no]) return i+no;
+    }else {
+      va=LOAD_UNALIGNED(a+no);  vb=LOAD_UNALIGNED(b+no);
+      mask = get_mask(TEST_ZERO(MINI(va,vb)));
+      if (mask) return no+first_bit(mask,0);
+    }
+    no+=UCHARS_IN_VECTOR;
+  }
+}
 
 #ifdef STRSTR
-uchar *STRSTR(const uchar *s,const uchar *n)
+uchar *STRSTR(const uchar *_s,const uchar *_n)
 #endif
 #ifdef STRCASESTR
-uchar *STRCASESTR(const uchar *s,const uchar *n)
+uchar *STRCASESTR(const uchar *_s,const uchar *_n)
 #endif
 #ifdef MEMMEM
-uchar *MEMMEM(const uchar *s,size_t ss,const uchar *n,size_t ns)
+uchar *MEMMEM(const uchar *_s,size_t ss,const uchar *_n,size_t ns)
 #endif
 {
+  uchar *s=_s,*n=_n;
+#ifdef STRCASESTR
   TOLOWER_INIT();
+#endif
   size_t buy=small_treshold,rent=0;
   uchar *p=(uchar*)s;
 #if defined( STRSTR) || defined(STRCASESTR)
-  /* TODO handle case when ss<ns by searching for end of n,s in parallel.*/
-  size_t ns=0,ss;
-  while(n[ns])
-    {
-      if(!s[ns]) return NULL;
-      ns++;
-    }
+  size_t ns,ss;
+  ns = str_shorterlen((uchar *) n,(uchar *) s);
+  if (n[ns]) return NULL;
 #else
   if( ns > ss) return NULL;
 #endif
   if (!ns) return (uchar*) s;
   uchar *s_end=(uchar*)((s+ss>=s) ? s+ss : ((uchar*)((long)-1)));
-  /*For strstr and memmem this decreases startup cost.
-    For strcasestr we align haystack.*/
-  size_t check=ns-_STR_CASESTR_MEM(1,0,1);
-  size_t page_offset= ((size_t)s)%4096;
-  p += check;
-  while(1)
-    {
-#define STRCHR(s,sn,c) _STR_CASESTR_MEM( strchr((char*)s,c),\
-                                            (*(s-1) ? s : NULL),\
-                                            memchr((void*)s,c,sn))
-      /*strpbrk(s,tolower_class[(uchar) c]) is too slow -cca 100 cycles.*/
-      p=(uchar*) STRCHR(p,s_end-p,((char*)n)[ns-1]);
-      if(!p) return NULL;
-      p -= check;
-      size_t checked = strcmp_dir(n, p, check);
-      if (checked == check) FOUND(p);
-      rent += check + 32;
-      /* Next implementation is faster but has large startup cost. 
-         This is a buy or rent problem.
-         http://en.wikipedia.org/wiki/Ski_rental_problem */
-      if(buy < rent + (p - s) &&
-          p >= s - page_offset + UCHARS_IN_VECTOR)
-        {
-          /*Next implementations need two invariants.
-            First  is that string started before position that is passed.
-            Second is that p - UCHARS_IN_VECTOR is valid memory*/
-          return strstr_vec((uchar*)p+1,s_end,(uchar*)n,ns);
-        }
-      p++;
-      p += check;
-    }
+
+  return strstr_vec((uchar*)s,s_end,(uchar*)n,ns);
 }
 
 /*Two way preprocessing.*/
