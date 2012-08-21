@@ -153,6 +153,22 @@ static uchar *strstr_two_way(uchar *s, uchar *s_end, uchar *n, size_t ns)
 }
 
 
+static uchar *strstr_short(uchar *s,uchar *s_end ,uchar *n,size_t ns){
+  size_t check_last=_STR_CASESTR_MEM(2,0,2);
+
+  size_t check = ns - min(ns, check_last);
+  s += ns-2;
+  tp_vector  __attribute__((unused)) diff=BROADCAST('A'^'a');
+#define CASE_CONVERT(x) _STR_CASESTR_MEM(x, OR(x,diff),  x)
+#define MASK_CONVERT(x) _STR_CASESTR_MEM(x, x|('A'^'a'), x)
+#define LOOP_BODY(p)\
+  p -= ns - 1;\
+  size_t checked=strcmp_dir(p, n, check );\
+  if (checked == check)\
+     FOUND(p);\
+
+#include "strstr_vec.h"
+}
 
 static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
 {
@@ -164,21 +180,14 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
   size_t check_last=_STR_CASESTR_MEM(2,0,2);
   /*For strcasestr we do aproximate matching, false positives can 
     happen so we need to check also last two characters.*/
-#ifdef STRCASESTR
-  if (!(TOLOWER_CASE_CHECK(n[ns-1]) || TOLOWER_CASE_CHECK(n[ns-2])))
-    return strstr_two_way(s,s_end,n,ns);
-#undef CASECHECK
-#endif
 
   size_t check = ns - min(ns, check_last);
   s += ns-2;
   tp_vector  __attribute__((unused)) diff=BROADCAST('A'^'a');
 #define CASE_CONVERT(x) _STR_CASESTR_MEM(x, OR(x,diff),  x)
 #define MASK_CONVERT(x) _STR_CASESTR_MEM(x, x|('A'^'a'), x)
-#define PHASE2_CONVERT(x) _STR_CASESTR_MEM(x, parallel_tolower(x), x)
 #define LOOP_BODY(p)\
   p -= ns - 1;\
-  /*See preconditions for strstr_vec.*/\
   size_t checked=strcmp_dir(p, n, check );\
   if (checked == check)\
      FOUND(p);\
@@ -195,8 +204,8 @@ static inline size_t str_shorterlen(uchar *a,uchar *b){
   tp_vector va,vb; tp_mask mask;
   int i,no=0;
   while(1){
-    if (((size_t) (a+no))%4096>=4096-sizeof(tp_vector)||((size_t) (a+no))%4096>=4096-sizeof(tp_vector)){
-      for (i=0;i<16;i++) if (!a[i+no]||!b[i+no]) return i+no;
+    if (__builtin_expect(((size_t) (a+no))%4096>=4096-sizeof(tp_vector)||((size_t) (a+no))%4096>=4096-sizeof(tp_vector),0)){
+      for (i=0;i<UCHARS_IN_VECTOR;i++) if (!a[i+no]||!b[i+no]) return i+no;
     }else {
       va=LOAD_UNALIGNED(a+no);  vb=LOAD_UNALIGNED(b+no);
       mask = get_mask(TEST_ZERO(MINI(va,vb)));
@@ -216,12 +225,8 @@ uchar *STRCASESTR(const uchar *_s,const uchar *_n)
 uchar *MEMMEM(const uchar *_s,size_t ss,const uchar *_n,size_t ns)
 #endif
 {
-  uchar *s=_s,*n=_n;
-#ifdef STRCASESTR
-  TOLOWER_INIT();
-#endif
-  size_t buy=small_treshold,rent=0;
-  uchar *p=(uchar*)s;
+  uchar *s=(uchar *)_s,*n=(uchar *)_n;
+
 #if defined( STRSTR) || defined(STRCASESTR)
   size_t ns,ss;
   ns = str_shorterlen((uchar *) n,(uchar *) s);
@@ -229,10 +234,15 @@ uchar *MEMMEM(const uchar *_s,size_t ss,const uchar *_n,size_t ns)
 #else
   if( ns > ss) return NULL;
 #endif
-  if (!ns) return (uchar*) s;
-  uchar *s_end=(uchar*)((s+ss>=s) ? s+ss : ((uchar*)((long)-1)));
-
-  return strstr_vec((uchar*)s,s_end,(uchar*)n,ns);
+  if (!ns) return s;
+  uchar *s_end=((s+ss>=s) ? s+ss : ((uchar*)((long)-1)));
+#ifdef STRCASESTR
+  TOLOWER_INIT();
+  if (!(TOLOWER_CASE_CHECK(n[ns-1]) || TOLOWER_CASE_CHECK(n[ns-2])))
+    return strstr_two_way(s,s_end,n,ns);
+#endif
+  if (ns<=30*UCHARS_IN_VECTOR) return strstr_short(s,s_end,n,ns);
+  return strstr_vec(s,s_end,n,ns);
 }
 
 /*Two way preprocessing.*/

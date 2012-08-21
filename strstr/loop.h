@@ -64,7 +64,6 @@ if  (DETECT_END == s)
 
 
 #define TEST(u) \
-     mvec=vzero;\
      so=sn;\
      sn=sz##u= LOAD(s2+u*UCHARS_IN_VECTOR);\
      mvec    = TEST_CODE(so,sn); \
@@ -86,13 +85,13 @@ s2=(uchar *)(((size_t) s)&((~((size_t) unroll*sizeof(tp_vector)-1))));
 #ifdef NEEDS_PREVIOUS_VECTOR
 sn=(s-s2 < sizeof(tp_vector)) ? LOAD(s2-sizeof(tp_vector)) : vzero;
 #endif
+
 tp_vector mvec,zvec=vzero;
 tp_mask mask, __attribute__((unused)) zmask;
 /*We could use array of vectors and loop for actions but gcc 
   does not unroll them and produces slow code.*/
 #undef ACTION
-#define ACTION(x)  tp_vector mvec##x;\
-                   tp_vector sz##x;\
+#define ACTION(x)  tp_vector mvec##x,sz##x;\
                    tp_mask mask##x;\
                    TEST(x)
 DO_ACTION;
@@ -141,10 +140,6 @@ while(1)
 
     if(NONZERO_MASK(OR(AGREGATE_VECTOR,zvec))||_DETECT_END(unroll))
       {
-        /* on x64 or is destructive operation
-           in case of strlen it is faster to recalculate
-           mvec0,mvec2 than move them to separate registers.*/
-
 #ifdef DETECT_ZERO_BYTE
   #undef ACTION
   #define ACTION(x) mvec##x=OR(mvec##x,TEST_ZERO(sz##x));
