@@ -162,7 +162,6 @@ int end=0;
 #define ACTION(x)  mask##x=get_mask(TEST_ZERO(sz##x));
 DO_ACTION;
 zmask=AGREGATE_MASK;
-if (s>s2)
   zmask=forget_before(zmask,s_offset);
 
 if(zmask) end = first_bit(zmask,0)+1;

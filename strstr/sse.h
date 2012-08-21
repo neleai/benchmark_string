@@ -103,9 +103,9 @@ MASK_OP(shift_down      , x>>y )
 MASK_OP(shift_up        , x<<y )
 MASK_OP(forget_first_bit, x&(x-1))
 MASK_OP(forget_before   , x&((y>=unroll*UCHARS_IN_VECTOR) ? 0 : ((y<0) ? x :\
-                             shift_up(  (tp_mask)-1,y))))
+                             shift_up(   ~((tp_mask)0),y))))
 MASK_OP(forget_after    , x&((y>=unroll*UCHARS_IN_VECTOR) ? x : ((y<0) ? 0 :\
-                             shift_down((tp_mask)-1,63-y))))
+                             shift_down( ~((tp_mask)0),63-y))))
 
 
 BIN_OP(TEST_EQ,_mm_cmpeq_epi8( x,y))
