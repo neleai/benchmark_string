@@ -70,7 +70,8 @@ static inline size_t strcmp_dir(uchar *a,uchar *b,size_t no)
   size_t i,j;
   tp_vector va,vb;
   tp_mask mask;
-//  for(i=0;i<no;i++) if(CHAR(a+i)!=CHAR(b+i)) return i;
+  for(i=0;i<no;i++) if(CHAR(a+i)!=CHAR(b+i)) return i;
+  return no;
   if (no< UCHARS_IN_VECTOR) {
     i= no - UCHARS_IN_VECTOR;
     PAR_CMP
@@ -88,13 +89,9 @@ static inline size_t strcmp_dir(uchar *a,uchar *b,size_t no)
 
 /* Two way algorithm: CROCHEMORE M., PERRIN D., 1991,
  Two-way string-matching, Journal of the ACM 38(3):651-675.
-   Implementation based from http://www-igm.univ-mlv.fr/~lecroq/string/node26.html
 
-
-   We use vectorized algorithm to find occurences of fragments
-   of size ns-check starting at n+check-1
-   On occurence we do step of two way algorithm and
-   tell finder in skip_to variable where it should resume search.
+  Two modifications are done to improve practical performance, 
+  First is to 
 */
 
 static void two_way_preprocessing(uchar *n,size_t ns,size_t *per2,size_t *ell2);
@@ -102,54 +99,26 @@ static uchar *strstr_two_way(uchar *s, uchar *s_end, uchar *n, size_t ns)
 {
   size_t ell,   per;
   two_way_preprocessing(n,ns,&per,&ell);
-  size_t fw,fw_no,bw,bw_no;
-  size_t fw_from,fw_to,bw_from,bw_to;
-  size_t check=ns-2;
-  fw_from = ell;
-  fw_to   = max(ell,check);
-  bw_from = min(ell,check);
-  bw_to   = 0;
-  fw_no   = fw_to   - fw_from;
-  bw_no   = bw_from - bw_to;
+  size_t fw,bw;
 
-  uchar *skip_to=s+check;
-  s+=ns-2;
-
-#define CAN_SKIP
-#define CASE_CONVERT(x) _STR_CASESTR_MEM(x, parallel_tolower(x), x)
-#define MASK_CONVERT(x) CHAR(&x)
-
-#define LOOP_BODY(p)\
-  p -= ns - 1;\
-  fw = strcmp_dir(n + fw_from ,p + fw_from, fw_no);\
-  if (fw != fw_no )\
-    {\
-      p += fw + 1;\
-    }\
-  else\
-    {\
-      bw = strcmp_dir(n, p, bw_no);\
-      if ( bw == bw_no ){\
-         FOUND(p);\
-         while(1)/*never reached unless when matching all occurences.*/\
-           {\
-            if (_STR_CASESTR_MEM(0,p+ns+per>s_end,0))\
-              return NULL;\
-            fw=strcmp_dir(p+ns,n+ns-per,per);\
-            if(fw==per){\
-              FOUND(p);\
-              p += per;\
-            } else {\
-              p += fw + ns - per - ell;\
-              break;\
-            }\
-           }\
-      } else\
-         p += per;\
-    }\
-  skip_to = p + (ns - 1);
-
-#include "strstr_vec.h"
+  while(1) {
+    uchar *p=strchr(s+ell,n[ell]);
+    if (!p) return NULL;
+    s = p - ell;
+    fw = strcmp_dir(n+ell,s+ell,ns-ell);
+    if (fw==ns-ell) {
+      bw = strcmp_dir(n,s,ell);
+      if (bw == ell){
+        FOUND(s);
+      }
+      s+=per;
+    } else {
+      s+=fw+1;
+      
+    }
+      if (_STR_CASESTR_MEM(!s[ell],!s[ell],s+ns>s_end)) 
+        return NULL;
+  }
 }
 
 
@@ -191,7 +160,7 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
   size_t checked=strcmp_dir(p, n, check );\
   if (checked == check)\
      FOUND(p);\
-  rent+=checked>>4;\
+  rent+=4+(checked>>4);\
   if(buy+((p-s)>>3)<rent)\
      return strstr_two_way(p,s_end,n,ns);\
 
@@ -241,7 +210,7 @@ uchar *MEMMEM(const uchar *_s,size_t ss,const uchar *_n,size_t ns)
   if (!(TOLOWER_CASE_CHECK(n[ns-1]) || TOLOWER_CASE_CHECK(n[ns-2])))
     return strstr_two_way(s,s_end,n,ns);
 #endif
-  if (ns<=30*UCHARS_IN_VECTOR) return strstr_short(s,s_end,n,ns);
+//  if (ns<=30*UCHARS_IN_VECTOR) return strstr_short(s,s_end,n,ns);
   return strstr_vec(s,s_end,n,ns);
 }
 

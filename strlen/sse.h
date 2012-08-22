@@ -17,6 +17,11 @@
 
 #define unroll 4
 
+#ifdef USE_AVX
+#define USE_SSSE3
+#endif
+
+
 #include <stdint.h>
 
 #include <emmintrin.h>
@@ -57,10 +62,16 @@ static inline tp_vector LOAD_UNALIGNED(uchar* x)
 
 static inline tp_mask get_mask(tp_vector x)
 {
-  /*gcc unnecesary adds sign extension instructions for pkmovmskb.*/
-  return  (tp_mask)((unsigned int)
-                    _mm_movemask_epi8(x));
+  return  (tp_mask)(_mm_movemask_epi8(x));
 }
+
+static inline tp_mask get_inv_mask(tp_vector x)
+{
+  return  (tp_mask)(_mm_movemask_epi8(x))^((1<<16)-1);
+}
+
+
+
 static inline unsigned int NONZERO_MASK(tp_vector x)
 {
   return _HAS_SSE4_1(!_mm_testz_si128(x,x),
@@ -92,13 +103,13 @@ MASK_OP(shift_down      , x>>y )
 MASK_OP(shift_up        , x<<y )
 MASK_OP(forget_first_bit, x&(x-1))
 MASK_OP(forget_before   , x&((y>=unroll*UCHARS_IN_VECTOR) ? 0 : ((y<0) ? x :\
-                             shift_up(  (tp_mask)-1,y))))
+                             shift_up(   ~((tp_mask)0),y))))
 MASK_OP(forget_after    , x&((y>=unroll*UCHARS_IN_VECTOR) ? x : ((y<0) ? 0 :\
-                             shift_down((tp_mask)-1,63-y))))
+                             shift_down( ~((tp_mask)0),63-y))))
 
 
 BIN_OP(TEST_EQ,_mm_cmpeq_epi8( x,y))
-#define TEST_ZERO(x) TEST_EQ(x,vzero)
+#define TEST_ZERO(x) TEST_EQ(x,BROADCAST(0))
 BIN_OP(AND   ,_mm_and_si128(   x,y))
 BIN_OP(OR    ,_mm_or_si128(    x,y))
 BIN_OP(ANDNOT,_mm_andnot_si128(y,x))
@@ -106,7 +117,8 @@ BIN_OP(XOR   ,_mm_xor_si128(   x,y))
 BIN_OP(ADD   ,_mm_add_epi8(    x,y))
 BIN_OP(SUB   ,_mm_sub_epi8(    x,y))
 #define HAS_PARALLEL_MIN
-BIN_OP(MINI   ,_mm_min_epu8(    x,y))
+BIN_OP(MINI   ,_mm_min_epu8(   x,y))
+BIN_OP(MAXI   ,_mm_max_epu8(   x,y))
 
 #define SHIFT_DOWN _mm_srli_si128
 #define SHIFT_UP   _mm_slli_si128
@@ -139,7 +151,36 @@ static inline tp_vector TEST_RANGE_C(tp_vector v,uchar from,uchar to)
   return _mm_cmplt_epi8(v,tv);
 }
 
+#include "parallel_tolower.h"
+static inline tp_vector parallel_tolower(tp_vector m)
+{
+  int i;
+  tp_vector high_bit=BROADCAST(128);
+  tp_vector l= AND(TEST_RANGE_C(m,'A','Z'),high_bit);
+  m=OR(m,_mm_srli_epi64(l,2));
+  if (get_mask(m))
+    for(i=0; i<UCHARS_IN_VECTOR; i++)
+      {
+        ((uchar*)&m)[i]=tolower_fixed[((uchar*)&m)[i]];
+      }
+  return m;
+}
 
+static uchar last[]={64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1};
+
+inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vector a3){
+  a0=AND(a0,LOAD(last+0*UCHARS_IN_VECTOR));
+  a1=AND(a1,LOAD(last+1*UCHARS_IN_VECTOR));
+  a2=AND(a2,LOAD(last+2*UCHARS_IN_VECTOR));
+  a3=AND(a3,LOAD(last+3*UCHARS_IN_VECTOR));
+  tp_vector a = MAXI(MAXI(a0,a1),MAXI(a2,a3));
+  a = MAXI(a,SHIFT_DOWN(a,8));
+  a = MAXI(a,SHIFT_DOWN(a,4));
+  a = MAXI(a,SHIFT_DOWN(a,2));
+  a = MAXI(a,SHIFT_DOWN(a,1));
+  tp_mask m =(tp_mask) ( _mm_cvtsi128_si64(a));
+  return 64-m;
+}
 
 #if unroll==1
 #define AGREGATE_MASK    mask0
