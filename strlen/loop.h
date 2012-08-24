@@ -102,6 +102,23 @@ DO_ACTION;
   DO_ACTION;
 #endif
 
+#ifdef FIRST_BYTE_ONLY
+    i=first_bit_vectors(mvec0,mvec1,mvec2,mvec3,s_offset);
+    uchar __attribute__((unused)) *p=s+i;
+    if (_DETECT_END(unroll) && DETECT_END <= p){
+      p= DETECT_END-1;
+      LOOP_END(p);
+    }
+    if (i==64) goto start;
+    if(__builtin_expect(_TEST_ZERO_BYTE,0))
+      {
+        LOOP_END(p)
+      }
+    LOOP_BODY(p)
+
+#endif
+
+
 #undef ACTION
 #define ACTION(x) mask##x=get_mask(mvec##x);
 DO_ACTION;
@@ -144,6 +161,21 @@ while(1)
   #undef ACTION
   #define ACTION(x) mvec##x=OR(mvec##x,TEST_ZERO(sz##x));
   DO_ACTION;
+#endif
+
+#ifdef FIRST_BYTE_ONLY
+    i=first_bit_vectors(mvec0,mvec1,mvec2,mvec3,0);
+    uchar __attribute__((unused)) *p=s2+i;
+    if (_DETECT_END(unroll) && DETECT_END <= p){
+      p= DETECT_END-1;
+      LOOP_END(p);
+    }
+    if(__builtin_expect(_TEST_ZERO_BYTE,0))
+      {
+        LOOP_END(p)
+      }
+    LOOP_BODY(p)
+
 #endif
 
 #undef ACTION

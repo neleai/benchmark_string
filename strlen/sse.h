@@ -166,21 +166,35 @@ static inline tp_vector parallel_tolower(tp_vector m)
   return m;
 }
 
-static uchar last[]={64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1};
+static unsigned char first_byte_idx[32791 +1]={ [1]=0,[6]=16,[11]=32,[24]=48,[2]=1,[7]=17,[12]=33,[25]=49,[4]=2,[9]=18,[14]=34,[27]=50,[8]=3,[13]=19,[18]=35,[31]=51,[16]=4,[21]=20,[26]=36,[39]=52,[32]=5,[37]=21,[42]=37,[55]=53,[64]=6,[69]=22,[74]=38,[87]=54,[128]=7,[133]=23,[138]=39,[151]=55,[256]=8,[261]=24,[266]=40,[279]=56,[512]=9,[517]=25,[522]=41,[535]=57,[1024]=10,[1029]=26,[1034]=42,[1047]=58,[2048]=11,[2053]=27,[2058]=43,[2071]=59,[4096]=12,[4101]=28,[4106]=44,[4119]=60,[8192]=13,[8197]=29,[8202]=45,[8215]=61,[16384]=14,[16389]=30,[16394]=46,[16407]=62,[32768]=15,[32773]=31,[32778]=47,[32791]=63 };
 
-inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vector a3){
-  a0=AND(a0,LOAD(last+0*UCHARS_IN_VECTOR));
-  a1=AND(a1,LOAD(last+1*UCHARS_IN_VECTOR));
-  a2=AND(a2,LOAD(last+2*UCHARS_IN_VECTOR));
-  a3=AND(a3,LOAD(last+3*UCHARS_IN_VECTOR));
+static inline first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vector a3,int forget){
+  tp_mask m0=get_mask(a0);
+  if (m0) return 0 +first_byte_idx[(m0&(-m0))+0 ];
+  tp_mask m1=get_mask(a1);
+  if (m1) return 16+first_byte_idx[(m1&(-m1))+5 ];
+  tp_mask m2=get_mask(a2); 
+  if (m2) return 32+first_byte_idx[(m2&(-m2))+10];
+  tp_mask m3=get_mask(a3);
+  if (m3) return 48+first_byte_idx[(m3&(-m3))+21];
+  return 64;
+}
+/*
+static uchar byte_rindex[] __attribute__ ((aligned (64)))={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1};
+
+static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vector a3,int forget){
+  a0=AND(a0,LOAD(byte_rindex+64-forget+0*UCHARS_IN_VECTOR));
+  a1=AND(a1,LOAD(byte_rindex+64-forget+1*UCHARS_IN_VECTOR));
+  a2=AND(a2,LOAD(byte_rindex+64-forget+2*UCHARS_IN_VECTOR));
+  a3=AND(a3,LOAD(byte_rindex+64-forget+3*UCHARS_IN_VECTOR));
   tp_vector a = MAXI(MAXI(a0,a1),MAXI(a2,a3));
   a = MAXI(a,SHIFT_DOWN(a,8));
   a = MAXI(a,SHIFT_DOWN(a,4));
   a = MAXI(a,SHIFT_DOWN(a,2));
   a = MAXI(a,SHIFT_DOWN(a,1));
-  tp_mask m =(tp_mask) ( _mm_cvtsi128_si64(a));
+  tp_mask m =(tp_mask) (uchar)( _mm_cvtsi128_si64(a));
   return 64-m;
-}
+}*/
 
 #if unroll==1
 #define AGREGATE_MASK    mask0

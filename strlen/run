@@ -6,7 +6,7 @@ mkdir  html
 mv libc.so libfoo.so
 mv libc.so.6 libfoo.so.6
 for I in *.[cs] ; do
-  gcc  -L. $I -msse4 -O3 -fPIC -shared -o tmp/lib$I.so
+  gcc-4.7  -L. $I -msse4 -O3 -fPIC -shared -o tmp/lib$I.so
 
   ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
