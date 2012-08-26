@@ -116,18 +116,6 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
   #define INIT_SO_VECTOR (s-ns+1<s2 ? LOAD(s2-UCHARS_IN_VECTOR) : vzero)
   tp_vector  __attribute__((unused)) diff=BROADCAST('A'^'a');
 
-#define PHASE2 {\
-  tp_vector vn;int i;\
-  tp_vector v0=LOAD(s2-UCHARS_IN_VECTOR),v1=LOAD(s2),v2=LOAD(s2+UCHARS_IN_VECTOR),v3=LOAD(s2+2*UCHARS_IN_VECTOR),v4=LOAD(s2+3*UCHARS_IN_VECTOR);\
-  v4=CONCAT(v4,v3,UCHARS_IN_VECTOR-2);v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-2);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-2);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-2);v0=SHIFT_UP(v0,2);\
-  for (i=2;i<ns && i<UCHARS_IN_VECTOR;i++){\
-    vn=BROADCAST(n[ns-1-i]);\
-    mvec0=OR(mvec0,XOR(v1,vn));mvec1=OR(mvec1,XOR(v2,vn));mvec2=OR(mvec2,XOR(v3,vn));mvec3=OR(mvec3,XOR(v4,vn));\
-    if (!NONZERO_MVECS) break;\
-    v4=CONCAT(v4,v3,UCHARS_IN_VECTOR-1);v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-1);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-1);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-1);v0=SHIFT_UP(v0,1);\
-  }\
-  mask=mask&MASK_MVECS;\
-}
 
 #define CASE_CONVERT(x) _STR_CASESTR_MEM(x, OR(x,diff),  x)
 #define MASK_CONVERT(x) _STR_CASESTR_MEM(x, x|('A'^'a'), x)
@@ -151,10 +139,30 @@ tp_vector vn1=BROADCAST(MASK_CONVERT(n[ns-1-1]));
 #define DETECT_END s_end
 #endif
 
+#define TEST_CODE_LONG
+#define TEST_CODE(so,sn,u)     AND(TEST_EQ(sn,vn0),TEST_EQ(CONCAT(sn,so,UCHARS_IN_VECTOR-1),vn1))
+#define TEST_CODE_ZERO(so,sn,u) OR(XOR(sn,vn0),XOR(CONCAT(sn,so,UCHARS_IN_VECTOR-1),vn1))
+
+tp_vector vo,vn,v0,v1,v2,v3;
+#ifdef ZERO_VARIANT
+  #define PHASE2_TEST(u) mvec##u=OR(mvec##u,XOR(v##u,vn));
+#else 
+  #define PHASE2_TEST(u) mvec##u=AND(mvec##u,TEST_EQ(v##u,vn));
+#endif
+#define PHASE2 {\
+  int i;\
+  vo=LOAD(s2-UCHARS_IN_VECTOR);v0=LOAD(s2);v1=LOAD(s2+1*UCHARS_IN_VECTOR);v2=LOAD(s2+2*UCHARS_IN_VECTOR);v3=LOAD(s2+3*UCHARS_IN_VECTOR);\
+  v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-2);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-2);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-2);v0=CONCAT(v0,vo,UCHARS_IN_VECTOR-2);vo=SHIFT_UP(vo,2);\
+  for (i=2; i<ns && i<UCHARS_IN_VECTOR;i++){\
+    vn=BROADCAST(n[ns-1-i]);\
+    PHASE2_TEST(0);PHASE2_TEST(1);PHASE2_TEST(2);PHASE2_TEST(3);\
+    if(!NONZERO_MVECS) break;\
+    v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-1);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-1);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-1);v0=CONCAT(v0,vo,UCHARS_IN_VECTOR-1);vo=SHIFT_UP(vo,1);\
+  }\
+  mask=mask&MASK_MVECS;\
+}
 
 
-#define TEST_CODE_ZERO(so,sn) OR(XOR(sn,vn0),XOR(CONCAT(sn,so,UCHARS_IN_VECTOR-1),vn1))
-#define ZERO_VARIANT
 
 #define LOOP_END(p) return NULL;
 #include "loop.h"

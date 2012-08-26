@@ -73,11 +73,16 @@ if  (DETECT_END <= s)
 #define _DETECT_END(u)  0
 #endif
 
+#ifdef TEST_CODE_LONG
+  #define _TEST_CODE(so,sn,u) TEST_CODE(so,sn,u)
+#else
+  #define _TEST_CODE(so,sn,u) TEST_CODE(sn)
+#endif
 
 #define TEST(u) \
      so=sn;\
      sn=zvec##u= LOAD(s2+u*UCHARS_IN_VECTOR);\
-     mvec##u = TEST_CODE(so,sn); 
+     mvec##u = _TEST_CODE(so,sn,u); 
 
 
 int  i;
