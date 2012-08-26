@@ -143,7 +143,6 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
 
 tp_vector vn0=BROADCAST(MASK_CONVERT(n[ns-1-0]));
 tp_vector vn1=BROADCAST(MASK_CONVERT(n[ns-1-1]));
-tp_vector e0,e1;
 #if defined(STRSTR) || defined(STRCASESTR)
 #define DETECT_ZERO_BYTE
 #endif
@@ -154,7 +153,7 @@ tp_vector e0,e1;
 
 
 
-#define TEST_CODE(so,sn) OR(XOR(sn,vn0),TEST_EQ(XOR(sn,so,UCHARS_IN_VECTOR-1),vn1))
+#define TEST_CODE_ZERO(so,sn) OR(XOR(sn,vn0),XOR(CONCAT(sn,so,UCHARS_IN_VECTOR-1),vn1))
 #define ZERO_VARIANT
 
 #define LOOP_END(p) return NULL;

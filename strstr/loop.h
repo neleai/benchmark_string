@@ -54,7 +54,7 @@
 
 #ifdef ZERO_VARIANT
   #undef TEST_CODE
-  #define TEST_CODE TEST_CODE_ZERO
+  #define TEST_CODE(so,sn) TEST_CODE_ZERO(so,sn)
   #undef MASK_MVECS 
   #define MASK_MVECS MASK_MVECS_ZERO
   #undef NONZERO_MVECS 
