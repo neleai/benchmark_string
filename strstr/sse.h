@@ -202,6 +202,4 @@ inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vecto
 #define NONZERO_MVECS get_mask(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)))
 #define NONZERO_ZVECS get_mask(TEST_ZERO(MINI(MINI(zvec0,zvec1),MINI(zvec2,zvec3))))
 
-#define NONZERO_MVECS_ZVECS get_mask(OR(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)),TEST_ZERO(MINI(MINI(zvec0,zvec1),MINI(zvec2,zvec3)))))
-
 #endif

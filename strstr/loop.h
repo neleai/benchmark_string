@@ -90,7 +90,7 @@ tp_vector vzero=BROADCAST(0);
 
 int s_offset;
 uchar* s2,  __attribute__((unused))*endp=NULL;
-tp_vector sn, __attribute__((unused)) so,__attribute__((unused))sold;
+tp_vector sn, __attribute__((unused)) so;
 
 #ifdef FAST_START
 s_offset=(((size_t) s)%(sizeof(tp_vector)))/sizeof(uchar);
@@ -103,7 +103,6 @@ s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))));
 #ifdef INIT_SO_VECTOR
   sn=INIT_SO_VECTOR;
 #endif
-sold=sn;
 
 
 tp_mask mask=0, __attribute__((unused)) zmask=0;
@@ -141,7 +140,6 @@ start:
 ;
 while(1)
   {
-    sold=sn;
     s2+=UNROLL*UCHARS_IN_VECTOR;
     PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
 
@@ -149,7 +147,7 @@ while(1)
 #define ACTION(x) TEST(x)
     DO_ACTION;
 
-    if ( NONZERO_MVECS_ZVECS || _DETECT_END(UNROLL)){
+    if ( NONZERO_ZVECS || _DETECT_END(UNROLL)){
       mask=MASK_MVECS;
 #ifdef DETECT_ZERO_BYTE
       if (NONZERO_ZVECS){
@@ -163,7 +161,10 @@ while(1)
       }
       goto test;
     }
-
+    if (NONZERO_MVECS ){
+      mask=MASK_MVECS;
+      goto test;
+    }
   }
 test:; /*We need this flow otherwise gcc would duplicate this fragment.*/
 
