@@ -1,15 +1,15 @@
-#try random $N 5
+try random $N 5
 #try random $N 33
 #try random $N 129
 
-#try random_nocache $N 5
+try random_nocache $N 5
 #try random_nocache $N 33
 #try random_nocache $N 129
 
-try tw_worst $N 16
-try tw_worst $N 17
-try tw_worst $N 31
-try tw_worst $N 64
+#try tw_worst $N 16
+#try tw_worst $N 17
+#try tw_worst $N 31
+#try tw_worst $N 64
 
 
 

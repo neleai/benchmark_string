@@ -21,8 +21,11 @@ int try_test(int ns2,int ss2,int rnd){int i,k;
 
 	needle[ns]=0;
 	haystack[ss]=0;
-	if (ns<=ss)
-		for(k=0;k<ns;k++) haystack[ss-ns+k]=needle[k];
+  if(ns<=ss &&rand_r(&r_seed)%2000){
+    expected=1;
+		  for(k=0;k<ns;k++) haystack[ss-ns+k]=needle[k];
+  }else
+    expected=0;
 
 	if(reversed()){
 		if(ss>ns){

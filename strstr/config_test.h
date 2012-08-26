@@ -17,4 +17,4 @@ int get_runs(int ss2){int runs;//for each size we call function 'runs' times.
 	if(ss2==100000) runs=100;
 	return runs;
 }
-#define CHECK_TEST ((ns <= ss &&  r == NULL) || (ns<=ss&&( !r||strncmp(r,needle,strlen(needle)))))
+#define CHECK_TEST ((expected &&  r == NULL) || (expected &&( !r||strncmp(r,needle,strlen(needle)))))

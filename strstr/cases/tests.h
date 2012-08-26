@@ -1,3 +1,4 @@
+long expected;
 #include "../config_test.h"
 #include "tester.h"
 #ifndef CHECK_TEST
