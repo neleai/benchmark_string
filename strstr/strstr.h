@@ -72,16 +72,18 @@ static inline size_t memcmp_cnt(uchar *a,uchar *b,size_t no)
 */
 
 static void two_way_preprocessing(uchar *n,size_t ns,size_t *per2,size_t *ell2);
-static uchar *strstr_two_way(uchar *s, uchar *s_end, uchar *n, size_t ns)
+static __attribute__((noinline)) uchar *strstr_two_way(uchar *s, uchar *s_end, uchar *n, size_t ns)
 {
   size_t ell,   per;
   two_way_preprocessing(n,ns,&per,&ell);
   size_t fw,bw;
 
   while(1) {
+    #ifdef STRSTR
     uchar *p=strchr(s+ell,n[ell]);
     if (!p) return NULL;
     s = p - ell;
+    #endif
     fw = memcmp_cnt(n+ell,s+ell,ns-ell);
     if (fw==ns-ell) {
       bw = memcmp_cnt(n,s,ell);
@@ -209,11 +211,11 @@ uchar *MEMMEM(const uchar *_s,size_t ss,const uchar *_n,size_t ns)
 #endif
 #ifdef STRCASESTR
   TOLOWER_INIT();
-  if (ns==1 || !(TOLOWER_CASE_CHECK(n[ns-1]) || TOLOWER_CASE_CHECK(n[ns-2])))
+  if (!(TOLOWER_CASE_CHECK(n[ns-1]) || TOLOWER_CASE_CHECK(n[ns-2])))
     return strstr_two_way(s,s_end,n,ns);
 #endif
-  if (!ns) return s;
-  if (ns==1) return _STR_CASESTR_MEM(strchr(s,n[0]),NULL,memchr(s,n[0],ss));
+  if (!ns)   return s;
+  if (ns==1) return _STR_CASESTR_MEM(strchr(s,n[0]),strstr_two_way(s,s_end,n,ns),memchr(s,n[0],ss));
   uchar *s_end=((s+ss>=s) ? s+ss : ((uchar*)((long)-1)));
 
   return strstr_vec(s,s_end,n,ns);
@@ -254,7 +256,7 @@ int ms, j, k;
 
 }
 
-static void two_way_preprocessing(uchar *n,size_t ns,size_t *per,size_t *ell)
+static __attribute__((noinline)) void two_way_preprocessing(uchar *n,size_t ns,size_t *per,size_t *ell)
 {
   size_t u,v,up,vp;
   u=maxSuf(n,ns,&up,0);
