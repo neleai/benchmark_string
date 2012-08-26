@@ -183,10 +183,10 @@ inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vecto
 }
 
 #if unroll==1
-#define AGREGATE_MASK    mask0
+#define AGREGATE_MASK    get_mask(mvec0)
 #elif unroll==2
-#define AGREGATE_MASK   (mask0|(mask1<<16))
+#define AGREGATE_MASK   (get_mask(mvec0)|(get_mask(mvec1)<<16))
 #elif unroll==4
 /*Has one dependency less than mask0|(mask1<<16)|(mask2<<32)|(mask3<<48)*/
-#define AGREGATE_MASK   (mask0|(mask1<<16))|((mask2|(mask3<<16))<<32)
+#define AGREGATE_MASK   (get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32)
 #endif

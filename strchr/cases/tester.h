@@ -66,12 +66,12 @@ inline void bench_start(){
 
 
   ts_start=rdtsc();
-  for(i=0;i<16;i++) clock_rand=3*clock_rand+5;
+  //for(i=0;i<16;i++) clock_rand=3*clock_rand+5;
 
   if (!ts_start) ts_start=1;
 }
 inline void _bench_end(){ int i;
-  for(i=0;i<16;i++) clock_rand=3*clock_rand+5;
+  //for(i=0;i<16;i++) clock_rand=3*clock_rand+5;
 
   if (!ts_start) err("bench_end without bench_start");
   uint64_t ts_end=rdtsc();

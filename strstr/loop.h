@@ -15,32 +15,42 @@
    License asize_t with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-/* basic string search loop. To use it define macros below and include this file.
-  TEST_CODE(sn)     You are given vector sn consisting of consecutive sequence of bytes 
+/* basic string search loop. To use it include this file in function. We detect pattern in local
+  variable s that you describe by following macros:
+
+  UNROLL number of vectors handled in one step. Typically 4
+
+  TEST_CODE(so,sn)  You are given vector sn consisting of consecutive sequence of bytes 
                     from string s. You should return an vector. This vector determines following:
                     For bytes with highest bit set to 1 a loop invokes macro
                     LOOP_BODY(p) where p is position of corresponding byte.
-  LOOP_BODY(p)      see above
-  
-                  If you define an macro
-  NEEDS_PREVIOUS_VECTOR 
-                    then macro TEST_CODE is supplied an additional argument:
-  TEST_CODE(so,sn)  
-                    Argument so consist of byte immidately before those of sn. 
-                    It is your responsibility to ensure that a loop can 
-                    read sizeof(tp_vector) bytes before s.
-                    Usage remains unchanged
+  TEST_CODE_ZERO(so,sn) As test code except detecting zero bytes
 
-  DETECT_END(p)     When byte p is reached call macro    LOOP_END(p)
+    s.........................
+      | s2    | s2 + VS| s2 + 2VS| s2 + 3VS|
+  
+      | so    |  sn    |
+
+  Argument so is not active unless you define macro:
+  NEEDS_PREVIOUS_VECTOR 
+                  Then You have to declare so variable and initialize it to handle initial case:
+               s......................
+      | s2 | s2+VS | s3+2VS | s4+3VS |
+  
+ | so | sn |
+
+
+  LOOP_BODY(p)      see above
+    
+  FIRST_MATCH_ONLY By default loop finds all occurences of TEST_CODE pattern.
+                   If LOOP_BODY always exits function then this uses faster alternative.
+
+                   
+  DETECT_END(x)     When position p >= x is reached then we call macro LOOP_END(p)
   DETECT_ZERO_BYTE  When first zero byte is reached call LOOP_END(p)
   LOOP_END(p)       see above
 
-  CAN_SKIP          You have to define skip_to variable. Then a loop will not call
-                    LOOP_BODY(p) when p<skip_to. A LOOP_END condition will still be processed.
 
-  This file should be included inside function. A loop uses local variable s as matched string.
-  Note that implementation by callback is complicated by fact that you usualy need a closure to
-       share arguments.
 */
 
 #ifdef DETECT_ZERO_BYTE
@@ -72,132 +82,104 @@ if  (DETECT_END == s)
 
 int  i;
 tp_vector vzero=BROADCAST(0);
-tp_vector sn, __attribute__((unused)) so;
-int s_offset;
-uchar* s2;
-/* As wide characters must be aligned this cannot happen.
-  if (((size_t) s)%sizeof(uchar)) 
-  exit(-1); */
-s_offset=(((size_t) s)%((unroll)*sizeof(tp_vector)))/sizeof(uchar);
-s2=(uchar *)(((size_t) s)&((~((size_t) unroll*sizeof(tp_vector)-1))));
-/*line s2=s-s_offset; is clearer but produces slower code*/
-
-#ifdef NEEDS_PREVIOUS_VECTOR
-sn=(s-s2 < sizeof(tp_vector)) ? LOAD(s2-sizeof(tp_vector)) : vzero;
+tp_vector sn;
+#ifndef NEEDS_PREVIOUS_VECTOR
+  tp_vector  __attribute__((unused)) so;
 #endif
 
+int s_offset;
+uchar* s2,  __attribute__((unused))*endp=NULL;
+s_offset=(((size_t) s)%((UNROLL)*sizeof(tp_vector)))/sizeof(uchar);
+s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))));
+/*line s2=s-s_offset; is clearer but produces slower code*/
+
 tp_vector mvec,zvec=vzero;
-tp_mask mask, __attribute__((unused)) zmask;
+tp_mask mask=0, __attribute__((unused)) zmask=0;
 /*We could use array of vectors and loop for actions but gcc 
-  does not unroll them and produces slow code.*/
+  does not UNROLL them and produces slow code.*/
 #undef ACTION
 #define ACTION(x)  tp_vector mvec##x,sz##x;\
                    tp_mask mask##x;\
-                   TEST(x)
+                   TEST(x);\
+                   mask##x=get_mask(mvec##x);
 DO_ACTION;
+mask=AGREGATE_MASK;
 
 #ifdef DETECT_ZERO_BYTE
   #undef ACTION
-  #define ACTION(x) mvec##x=OR(mvec##x,TEST_ZERO(sz##x));
+  #define ACTION(x) mvec##x=TEST_ZERO(sz##x);
   DO_ACTION;
+  zmask=AGREGATE_MASK;
 #endif
 
-#undef ACTION
-#define ACTION(x) mask##x=get_mask(mvec##x);
-DO_ACTION;
-mask=AGREGATE_MASK;
-mask=forget_before(mask,s_offset);
-
-if (mask||_DETECT_END(unroll)) goto test;
+mask =forget_before(mask ,s_offset);
+zmask=forget_before(zmask,s_offset);
+if (zmask ) {
+  endp=s2+first_bit(zmask);
+  if (_DETECT_END(UNROLL) && DETECT_END < endp) endp=DETECT_END;
+  goto test;
+}
+if (_DETECT_END(UNROLL)) {
+  endp=DETECT_END;
+  goto test;
+}
+if (mask) goto test;
 start:
 ;
 while(1)
   {
-    s2+=unroll*UCHARS_IN_VECTOR;
+    s2+=UNROLL*UCHARS_IN_VECTOR;
     PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
 
 #undef ACTION
 #define ACTION(x) TEST(x)
     DO_ACTION;
 #ifdef DETECT_ZERO_BYTE
-#if unroll==1
-  zvec=zvec0;
-#elif unroll==2
-#ifdef HAS_PARALLEL_MIN
-  zvec=TEST_ZERO(MINI(sz0,sz1));
-#else
-  zvec=OR(OR(TEST_ZERO(sz0),TEST_ZERO(sz1)));
-#endif
-#elif unroll==4
 #ifdef HAS_PARALLEL_MIN
   zvec=TEST_ZERO(MINI(MINI(sz0,sz1),MINI(sz2,sz3)));
 #else
   zvec=OR(OR(TEST_ZERO(sz0),TEST_ZERO(sz1)),
           OR(TEST_ZERO(sz2),TEST_ZERO(sz3)));
 #endif
-#endif
-#endif
+    if(NONZERO_MASK(zvec)){
+      mask=AGREGATE_MASK;
+      #undef ACTION
+      #define ACTION(x) mvec##x=TEST_ZERO(sz##x);
+      DO_ACTION;
+      zmask=AGREGATE_MASK;
+      endp=s2+first_bit(zmask);
+      if (_DETECT_END(UNROLL) && DETECT_END < endp) endp=DETECT_END;
+      goto test;
 
-    if(NONZERO_MASK(OR(AGREGATE_VECTOR,zvec))||_DETECT_END(unroll))
+    }
+#endif
+    if(_DETECT_END(UNROLL)){
+      mask=AGREGATE_MASK;
+      endp=DETECT_END;
+      goto test;
+    }
+    if(NONZERO_MASK(AGREGATE_VECTOR))
       {
-#ifdef DETECT_ZERO_BYTE
-  #undef ACTION
-  #define ACTION(x) mvec##x=OR(mvec##x,TEST_ZERO(sz##x));
-  DO_ACTION;
-#endif
-
-#undef ACTION
-#define ACTION(x) mask##x=get_mask(mvec##x);
-        DO_ACTION;
         mask=AGREGATE_MASK;
         goto test;
       }
   }
 test:; /*We need this flow otherwise gcc would duplicate this fragment.*/
-int end=0;
-#ifdef CAN_SKIP
-/* detect zero byte so it cannot be skipped.*/
-#ifdef DETECT_ZERO_BYTE
-#undef ACTION
-#define ACTION(x)  mask##x=get_mask(TEST_ZERO(sz##x));
-DO_ACTION;
-zmask=AGREGATE_MASK;
-  zmask=forget_before(zmask,s_offset);
 
-if(zmask) end = first_bit(zmask,0)+1;
+#ifdef PHASE2
+PHASE2
 #endif
-if(skip_to>s2)
-  mask=forget_before(mask,skip_to-s2);
-#endif
-if (_DETECT_END(unroll)) /*we need to handle case when end is at start of next page here*/
-  {
-    end = min(DETECT_END-s2-1,end ? (end-1) : unroll*UCHARS_IN_VECTOR)+1;
-  }
-if (end)
-  {
-    mask=forget_after(mask,end-1);
-  }
 i=0;
 while(mask)
   {
     i=first_bit(mask,i);
     uchar __attribute__((unused)) *p=s2+i;
-    if(__builtin_expect(_TEST_ZERO_BYTE,0))
-      {
-        LOOP_END(p)
-      }
-    LOOP_BODY(p)
-#ifdef CAN_SKIP
-    mask=forget_before(mask,skip_to-s2);
-#else
+    LOOP_BODY(p);
     mask=forget_first_bit(mask,i);
-#endif
   }
-if(end)
-  {
-    uchar __attribute__((unused)) *p=(uchar *) DETECT_END;
-    LOOP_END(p);
-  }
+if (endp){
+  LOOP_END(endp);
+}
 
 goto start;
 

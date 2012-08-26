@@ -78,14 +78,26 @@ static inline unsigned int NONZERO_MASK(tp_vector x)
                      get_mask(x));
 }
 
+static unsigned char first_byte_idx[32791 +1]={ [1]=0,[6]=16,[11]=32,[24]=48,[2]=1,[7]=17,[12]=33,[25]=49,[4]=2,[9]=18,[14]=34,[27]=50,[8]=3,[13]=19,[18]=35,[31]=51,[16]=4,[21]=20,[26]=36,[39]=52,[32]=5,[37]=21,[42]=37,[55]=53,[64]=6,[69]=22,[74]=38,[87]=54,[128]=7,[133]=23,[138]=39,[151]=55,[256]=8,[261]=24,[266]=40,[279]=56,[512]=9,[517]=25,[522]=41,[535]=57,[1024]=10,[1029]=26,[1034]=42,[1047]=58,[2048]=11,[2053]=27,[2058]=43,[2071]=59,[4096]=12,[4101]=28,[4106]=44,[4119]=60,[8192]=13,[8197]=29,[8202]=45,[8215]=61,[16384]=14,[16389]=30,[16394]=46,[16407]=62,[32768]=15,[32773]=31,[32778]=47,[32791]=63 };
+
+
 #ifdef USE_SSE2_NO_BSF
 static char first_bit_hash[]= {0,37,50,8,0,21,0,0,38,54,5,51,9,0,30,0,22,12,1,0,0,0,0,39,0,55,0,35,6,52,28,10,0,0,33,31,0,0,23,0,13,44,0,2,0,0,25,0,0,0,0,0,40,15,0,0,56,62,46,0,19,36,7,0,0,53,4,0,29,11,0,0,0,0,34,0,27,32,0,0,0,43,0,0,24,0,0,14,0,61,45,18,0,0,3,0,0,0,0,26,0,42,0,0,0,60,17,0,0,0,0,41,0,59,16,0,0,58,0,57,0,63,47,48,0,0,49,20};
 static inline tp_mask first_bit(tp_mask x,int y)
 {
-  /* ones has form 2**(tz+1)-1 where tb is number of trailing zereos.*/
-  tp_mask ones=x^(x-1);
-  /* Calculate perfect hash.*/
-  return first_bit_hash[(903385529620038207L*ones)>>57];
+  x=x&(-x);
+  if( (uint32_t) x){
+    if ((uint16_t) x) 
+      return (first_byte_idx+0)[(uint16_t) x];
+    else 
+      return (first_byte_idx+5)[(uint16_t) ( ((uint32_t) x)>>16)];
+  } else {
+    x=x>>32;
+    if ((uint16_t) x) 
+      return (first_byte_idx+10)[(uint16_t) x];
+    else 
+      return (first_byte_idx+23)[(uint16_t) ( ((uint32_t) x)>>16)];
+  }
 }
 #else
 static inline tp_mask first_bit(tp_mask x,int y)
@@ -166,17 +178,15 @@ static inline tp_vector parallel_tolower(tp_vector m)
   return m;
 }
 
-static unsigned char first_byte_idx[32791 +1]={ [1]=0,[6]=16,[11]=32,[24]=48,[2]=1,[7]=17,[12]=33,[25]=49,[4]=2,[9]=18,[14]=34,[27]=50,[8]=3,[13]=19,[18]=35,[31]=51,[16]=4,[21]=20,[26]=36,[39]=52,[32]=5,[37]=21,[42]=37,[55]=53,[64]=6,[69]=22,[74]=38,[87]=54,[128]=7,[133]=23,[138]=39,[151]=55,[256]=8,[261]=24,[266]=40,[279]=56,[512]=9,[517]=25,[522]=41,[535]=57,[1024]=10,[1029]=26,[1034]=42,[1047]=58,[2048]=11,[2053]=27,[2058]=43,[2071]=59,[4096]=12,[4101]=28,[4106]=44,[4119]=60,[8192]=13,[8197]=29,[8202]=45,[8215]=61,[16384]=14,[16389]=30,[16394]=46,[16407]=62,[32768]=15,[32773]=31,[32778]=47,[32791]=63 };
-
 static inline first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vector a3,int forget){
   tp_mask m0=get_mask(a0);
-  if (m0) return 0 +first_byte_idx[(m0&(-m0))+0 ];
+  if (m0) return first_byte_idx[(m0&(-m0))+0 ];
   tp_mask m1=get_mask(a1);
-  if (m1) return 16+first_byte_idx[(m1&(-m1))+5 ];
+  if (m1) return first_byte_idx[(m1&(-m1))+5 ];
   tp_mask m2=get_mask(a2); 
-  if (m2) return 32+first_byte_idx[(m2&(-m2))+10];
+  if (m2) return first_byte_idx[(m2&(-m2))+10];
   tp_mask m3=get_mask(a3);
-  if (m3) return 48+first_byte_idx[(m3&(-m3))+21];
+  if (m3) return first_byte_idx[(m3&(-m3))+21];
   return 64;
 }
 /*

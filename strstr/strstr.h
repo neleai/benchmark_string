@@ -55,7 +55,7 @@ TOLOWER(*(x)),\
 #endif
 
 
-static inline size_t strcmp_dir(uchar *a,uchar *b,size_t no)
+static inline size_t memcmp_cnt(uchar *a,uchar *b,size_t no)
 {
   #define PAR_CMP     va=LOAD_UNALIGNED(a+i);\
                     vb=LOAD_UNALIGNED(b+i);\
@@ -105,9 +105,9 @@ static uchar *strstr_two_way(uchar *s, uchar *s_end, uchar *n, size_t ns)
     uchar *p=strchr(s+ell,n[ell]);
     if (!p) return NULL;
     s = p - ell;
-    fw = strcmp_dir(n+ell,s+ell,ns-ell);
+    fw = memcmp_cnt(n+ell,s+ell,ns-ell);
     if (fw==ns-ell) {
-      bw = strcmp_dir(n,s,ell);
+      bw = memcmp_cnt(n,s,ell);
       if (bw == ell){
         FOUND(s);
       }
@@ -122,22 +122,6 @@ static uchar *strstr_two_way(uchar *s, uchar *s_end, uchar *n, size_t ns)
 }
 
 
-static uchar *strstr_short(uchar *s,uchar *s_end ,uchar *n,size_t ns){
-  size_t check_last=_STR_CASESTR_MEM(2,0,2);
-
-  size_t check = ns - min(ns, check_last);
-  s += ns-2;
-  tp_vector  __attribute__((unused)) diff=BROADCAST('A'^'a');
-#define CASE_CONVERT(x) _STR_CASESTR_MEM(x, OR(x,diff),  x)
-#define MASK_CONVERT(x) _STR_CASESTR_MEM(x, x|('A'^'a'), x)
-#define LOOP_BODY(p)\
-  p -= ns - 1;\
-  size_t checked=strcmp_dir(p, n, check );\
-  if (checked == check)\
-     FOUND(p);\
-
-#include "strstr_vec.h"
-}
 
 static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
 {
@@ -153,11 +137,24 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
   size_t check = ns - min(ns, check_last);
   s += ns-2;
   tp_vector  __attribute__((unused)) diff=BROADCAST('A'^'a');
+
+#define PHASE2 {\
+  tp_vector vn;int i;\
+  tp_vector v0=LOAD(s2-UCHARS_IN_VECTOR),v1=LOAD(s2),v2=LOAD(s2+UCHARS_IN_VECTOR),v3=LOAD(s2+2*UCHARS_IN_VECTOR),v4=LOAD(s2+3*UCHARS_IN_VECTOR);\
+  v4=CONCAT(v4,v3,UCHARS_IN_VECTOR-2);v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-2);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-2);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-2);v0=SHIFT_UP(v0,2);\
+  for (i=2;i<ns && i<UCHARS_IN_VECTOR;i++){\
+    vn=BROADCAST(n[ns-1-i]);\
+    mask=mask&(AGREGATE_MASK);\
+    if (!mask) break;\
+    v4=CONCAT(v4,v3,UCHARS_IN_VECTOR-1);v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-1);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-1);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-1);v0=SHIFT_UP(v0,1);\
+  }\
+}
+
 #define CASE_CONVERT(x) _STR_CASESTR_MEM(x, OR(x,diff),  x)
 #define MASK_CONVERT(x) _STR_CASESTR_MEM(x, x|('A'^'a'), x)
 #define LOOP_BODY(p)\
   p -= ns - 1;\
-  size_t checked=strcmp_dir(p, n, check );\
+  size_t checked=memcmp_cnt(p, n, check );\
   if (checked == check)\
      FOUND(p);\
   rent+=4+(checked>>4);\
@@ -255,6 +252,6 @@ static void two_way_preprocessing(uchar *n,size_t ns,size_t *per,size_t *ell)
   v=maxSuf(n,ns,&vp,1);
   *ell = (u > v) ? u :  v;
   *per = (u > v) ? up : vp;
-  if (strcmp_dir(n, n + *per, *ell) != *ell)
+  if (memcmp_cnt(n, n + *per, *ell) != *ell)
     *per = max(*ell, ns - *ell) + 1;
 }
