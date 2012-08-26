@@ -27,7 +27,6 @@ tp_vector e0,e1;
 #define DETECT_END s_end
 #endif
 
-#define NEEDS_PREVIOUS_VECTOR
 
 #ifdef USE_ARITHMETIC
 #define TEST_CODE(so,sn) vzero;\

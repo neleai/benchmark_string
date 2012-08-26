@@ -72,13 +72,13 @@ By defining macro WIDE_VERSION you can use same operations that work at 32-bit i
 #undef BIN_OP
 #undef MASK_OP
 
-#if unroll==1
+#if UNROLL==1
 #define DO_ACTION ACTION(0)
 #define AGREGATE_VECTOR  mvec0
-#elif unroll==2
+#elif UNROLL==2
 #define DO_ACTION ACTION(0) ACTION(1)
 #define  AGREGATE_VECTOR    OR(mvec0,mvec1)
-#elif unroll==4
+#elif UNROLL==4
 #define DO_ACTION ACTION(0) ACTION(1) ACTION(2) ACTION(3)
 #define AGREGATE_VECTOR OR(OR(mvec0,mvec1),OR(mvec2,mvec3))
 #endif

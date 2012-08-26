@@ -6,19 +6,24 @@
 #try random_nocache $N 33
 #try random_nocache $N 129
 
+try tw_worst $N 16
+try tw_worst $N 17
+try tw_worst $N 31
+try tw_worst $N 64
+
 
 
 #try random16 $N 5
 #try random16 $N 33
 #try random16 $N 100
 
-try aaaa $N 5
-try aaaa $N 10
-try aaaa $N 20
-try aaaa $N 40
-try aaaa $N 80
-try aaaa $N 160
-try aaaa $N 320
+#try aaaa $N 5
+#try aaaa $N 10
+#try aaaa $N 20
+#try aaaa $N 40
+#try aaaa $N 80
+#try aaaa $N 160
+#try aaaa $N 320
 
 
 #try aaab $N 4

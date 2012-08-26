@@ -31,9 +31,8 @@
   
       | so    |  sn    |
 
-  Argument so is not active unless you define macro:
-  NEEDS_PREVIOUS_VECTOR 
-                  Then You have to declare so variable and initialize it to handle initial case:
+
+   INIT_SO_VECTOR 
                s......................
       | s2 | s2+VS | s3+2VS | s4+3VS |
   
@@ -82,16 +81,16 @@ if  (DETECT_END == s)
 
 int  i;
 tp_vector vzero=BROADCAST(0);
-tp_vector sn;
-#ifndef NEEDS_PREVIOUS_VECTOR
-  tp_vector  __attribute__((unused)) so;
-#endif
 
 int s_offset;
 uchar* s2,  __attribute__((unused))*endp=NULL;
 s_offset=(((size_t) s)%((UNROLL)*sizeof(tp_vector)))/sizeof(uchar);
 s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))));
 /*line s2=s-s_offset; is clearer but produces slower code*/
+tp_vector sn, __attribute__((unused)) so;
+#ifdef INIT_SO_VECTOR
+  sn=INIT_SO_VECTOR;
+#endif
 
 tp_vector mvec,zvec=vzero;
 tp_mask mask=0, __attribute__((unused)) zmask=0;
@@ -115,7 +114,7 @@ mask=AGREGATE_MASK;
 mask =forget_before(mask ,s_offset);
 zmask=forget_before(zmask,s_offset);
 if (zmask ) {
-  endp=s2+first_bit(zmask);
+  endp=s2+first_bit(zmask,0);
   if (_DETECT_END(UNROLL) && DETECT_END < endp) endp=DETECT_END;
   goto test;
 }
@@ -147,8 +146,9 @@ while(1)
       #define ACTION(x) mvec##x=TEST_ZERO(sz##x);
       DO_ACTION;
       zmask=AGREGATE_MASK;
-      endp=s2+first_bit(zmask);
+      endp=s2+first_bit(zmask,0);
       if (_DETECT_END(UNROLL) && DETECT_END < endp) endp=DETECT_END;
+      mask=forget_after(mask,endp-s2);
       goto test;
 
     }
@@ -156,6 +156,7 @@ while(1)
     if(_DETECT_END(UNROLL)){
       mask=AGREGATE_MASK;
       endp=DETECT_END;
+      mask=forget_after(mask,endp-s2);
       goto test;
     }
     if(NONZERO_MASK(AGREGATE_VECTOR))

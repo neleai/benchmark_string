@@ -57,33 +57,10 @@ TOLOWER(*(x)),\
 
 static inline size_t memcmp_cnt(uchar *a,uchar *b,size_t no)
 {
-  #define PAR_CMP     va=LOAD_UNALIGNED(a+i);\
-                    vb=LOAD_UNALIGNED(b+i);\
-                    mask=get_inv_mask(TEST_EQ(va,vb));
-  #define PAR_CMP_CNT while(mask)\
-                      {\
-                       j=first_bit(mask,j);\
-                       if(_STR_CASESTR_MEM(1,CHAR(a+i+j)!=CHAR(b+i+j),1)) return i+j;\
-                       mask=forget_first_bit(mask,j);\
-                      }
-
   size_t i,j;
   tp_vector va,vb;
   tp_mask mask;
   for(i=0;i<no;i++) if(CHAR(a+i)!=CHAR(b+i)) return i;
-  return no;
-  if (no< UCHARS_IN_VECTOR) {
-    i= no - UCHARS_IN_VECTOR;
-    PAR_CMP
-    mask=forget_before(mask,UCHARS_IN_VECTOR-no);
-    PAR_CMP_CNT
-  } else {
-    for (i=0; i+UCHARS_IN_VECTOR <no;i+=UCHARS_IN_VECTOR){
-      PAR_CMP PAR_CMP_CNT
-    }
-    i=no-UCHARS_IN_VECTOR;
-    PAR_CMP PAR_CMP_CNT
-  }
   return no;
 }
 
@@ -130,12 +107,13 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
     If we tested superlinear number of characters switch to 
     two way algorithm.*/
   size_t buy=(ns>>2)+16,rent=0;
-  size_t check_last=_STR_CASESTR_MEM(2,0,2);
+  size_t check_last=_STR_CASESTR_MEM(UCHARS_IN_VECTOR,0,UCHARS_IN_VECTOR);
   /*For strcasestr we do aproximate matching, false positives can 
     happen so we need to check also last two characters.*/
 
   size_t check = ns - min(ns, check_last);
-  s += ns-2;
+  s += ns-1;
+  #define INIT_SO_VECTOR (s-ns+1<s2 ? LOAD(s2-UCHARS_IN_VECTOR) : vzero)
   tp_vector  __attribute__((unused)) diff=BROADCAST('A'^'a');
 
 #define PHASE2 {\
@@ -144,6 +122,7 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
   v4=CONCAT(v4,v3,UCHARS_IN_VECTOR-2);v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-2);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-2);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-2);v0=SHIFT_UP(v0,2);\
   for (i=2;i<ns && i<UCHARS_IN_VECTOR;i++){\
     vn=BROADCAST(n[ns-1-i]);\
+    mvec0=TEST_EQ(v1,vn);mvec1=TEST_EQ(v2,vn);mvec2=TEST_EQ(v3,vn);mvec3=TEST_EQ(v4,vn);\
     mask=mask&(AGREGATE_MASK);\
     if (!mask) break;\
     v4=CONCAT(v4,v3,UCHARS_IN_VECTOR-1);v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-1);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-1);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-1);v0=SHIFT_UP(v0,1);\
@@ -201,48 +180,50 @@ uchar *MEMMEM(const uchar *_s,size_t ss,const uchar *_n,size_t ns)
   if( ns > ss) return NULL;
 #endif
   if (!ns) return s;
+  if (ns==1) return _STR_CASESTR_MEM(strchr(s,n[0]),TODO,memchr(s,n[0],ss));
   uchar *s_end=((s+ss>=s) ? s+ss : ((uchar*)((long)-1)));
 #ifdef STRCASESTR
   TOLOWER_INIT();
   if (!(TOLOWER_CASE_CHECK(n[ns-1]) || TOLOWER_CASE_CHECK(n[ns-2])))
     return strstr_two_way(s,s_end,n,ns);
 #endif
-//  if (ns<=30*UCHARS_IN_VECTOR) return strstr_short(s,s_end,n,ns);
+
   return strstr_vec(s,s_end,n,ns);
 }
 
 /*Two way preprocessing.*/
-static inline size_t maxSuf(uchar *n, size_t ns, size_t *per, size_t invert)
+static inline size_t maxSuf(uchar *n, size_t ns, size_t *p, size_t invert)
 {
-  /*Note that per+ms+1<ns.*/
-  size_t p=0,ms=0, j=1, k;
+int ms, j, k;
+   uchar a, b;
 
-  while (j + k < ns)
-  {
-    while (CHAR(n + j +  k) == CHAR(n + ms + k) &&
-        j+k < ns && k < p){
-      k++;
-    }
-    if(j+k==ns) return ns;
-    if (k == p) {
-      j += p;
-      j++;
-    } else {
-      uint64_t cmp =  CHAR(n + j +  k) - CHAR(n + ms + k);
-      if(invert) cmp= -cmp;
-      if (cmp > 0)
-      {
-        j += k;
-        p = j - ms;
-      } else {
-        ms = j;
-        p = 0;
+   ms = -1;
+   j = 0;
+   k = *p = 1;
+   while (j + k < ns) {
+      a = CHAR(n + j + k);
+      b = CHAR(n + ms + k);
+      if (invert ? (a > b) : (a < b)) {
+         j += k;
+         k = 1;
+         *p = j - ms;
       }
-      j++;
-    }
-  }
-  *per =(p+1);
-  return ms;
+      else
+         if (a == b)
+            if (k != *p)
+               ++k;
+            else {
+               j += *p;
+               k = 1;
+            }
+         else { /* a > b */
+            ms = j;
+            j = ms + 1;
+            k = *p = 1;
+         }
+   }
+   return(ms+1);
+
 }
 
 static void two_way_preprocessing(uchar *n,size_t ns,size_t *per,size_t *ell)

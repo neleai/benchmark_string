@@ -15,7 +15,7 @@
    License asize_t with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-#define unroll 4
+#define UNROLL 4
 
 #ifdef USE_AVX
 #define USE_SSSE3
@@ -102,9 +102,9 @@ MASK_OP(get_bit         , x&bit_i(y))
 MASK_OP(shift_down      , x>>y )
 MASK_OP(shift_up        , x<<y )
 MASK_OP(forget_first_bit, x&(x-1))
-MASK_OP(forget_before   , x&((y>=unroll*UCHARS_IN_VECTOR) ? 0 : ((y<0) ? x :\
+MASK_OP(forget_before   , x&((y>=UNROLL*UCHARS_IN_VECTOR) ? 0 : ((y<0) ? x :\
                              shift_up(   ~((tp_mask)0),y))))
-MASK_OP(forget_after    , x&((y>=unroll*UCHARS_IN_VECTOR) ? x : ((y<0) ? 0 :\
+MASK_OP(forget_after    , x&((y>=UNROLL*UCHARS_IN_VECTOR) ? x : ((y<0) ? 0 :\
                              shift_down( ~((tp_mask)0),63-y))))
 
 
@@ -182,11 +182,11 @@ inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vecto
   return 64-m;
 }
 
-#if unroll==1
+#if UNROLL==1
 #define AGREGATE_MASK    get_mask(mvec0)
-#elif unroll==2
+#elif UNROLL==2
 #define AGREGATE_MASK   (get_mask(mvec0)|(get_mask(mvec1)<<16))
-#elif unroll==4
+#elif UNROLL==4
 /*Has one dependency less than mask0|(mask1<<16)|(mask2<<32)|(mask3<<48)*/
 #define AGREGATE_MASK   (get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32)
 #endif
