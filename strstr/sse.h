@@ -182,13 +182,18 @@ inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vecto
   return 64-m;
 }
 
+
 #if UNROLL==1
 #define AGREGATE_MASK    get_mask(mvec0)
 #elif UNROLL==2
 #define AGREGATE_MASK   (get_mask(mvec0)|(get_mask(mvec1)<<16))
 #elif UNROLL==4
 /*Has one dependency less than mask0|(mask1<<16)|(mask2<<32)|(mask3<<48)*/
-#define AGREGATE_MASK   (get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32)
+#define get_ZERO(x) get_mask(TEST_ZERO(x))
+#define MASK_MVECS   (get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32)
+#define MASK_ZVECS   (get_ZERO(zvec0)|(get_ZERO(zvec1)<<16))|((get_ZERO(zvec2)|(get_ZERO(zvec3)<<16))<<32)
 
 #define NONZERO_MVECS get_mask(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)))
+#define NONZERO_ZVECS get_mask(TEST_ZERO(MINI(MINI(zvec0,zvec1),MINI(zvec2,zvec3))))
+
 #endif
