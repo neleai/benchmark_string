@@ -179,14 +179,14 @@ uchar *MEMMEM(const uchar *_s,size_t ss,const uchar *_n,size_t ns)
 #else
   if( ns > ss) return NULL;
 #endif
-  if (!ns) return s;
-  if (ns==1) return _STR_CASESTR_MEM(strchr(s,n[0]),TODO,memchr(s,n[0],ss));
-  uchar *s_end=((s+ss>=s) ? s+ss : ((uchar*)((long)-1)));
 #ifdef STRCASESTR
   TOLOWER_INIT();
-  if (!(TOLOWER_CASE_CHECK(n[ns-1]) || TOLOWER_CASE_CHECK(n[ns-2])))
+  if (ns==1 || !(TOLOWER_CASE_CHECK(n[ns-1]) || TOLOWER_CASE_CHECK(n[ns-2])))
     return strstr_two_way(s,s_end,n,ns);
 #endif
+  if (!ns) return s;
+  if (ns==1) return _STR_CASESTR_MEM(strchr(s,n[0]),NULL,memchr(s,n[0],ss));
+  uchar *s_end=((s+ss>=s) ? s+ss : ((uchar*)((long)-1)));
 
   return strstr_vec(s,s_end,n,ns);
 }

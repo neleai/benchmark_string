@@ -159,7 +159,7 @@ while(1)
       mask=forget_after(mask,endp-s2);
       goto test;
     }
-    if(NONZERO_MASK(AGREGATE_VECTOR))
+    if(NONZERO_MVECS)
       {
         mask=AGREGATE_MASK;
         goto test;
