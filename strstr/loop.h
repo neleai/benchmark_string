@@ -31,14 +31,9 @@
   
       | so    |  sn    |
 
+  If you use so define STRING_START to inform how far before s we can read
 
-   INIT_SO_VECTOR 
-               s......................
-      | s2 | s2+VS | s3+2VS | s4+3VS |
   
- | so | sn |
-
-
   LOOP_BODY(p)      see above
     
   FIRST_MATCH_ONLY By default loop finds all occurences of TEST_CODE pattern.
@@ -91,28 +86,55 @@ tp_vector vzero=BROADCAST(0);
 int s_offset;
 uchar* s2,  __attribute__((unused))*endp=NULL;
 tp_vector sn, __attribute__((unused)) so;
+tp_mask mask=0, __attribute__((unused)) zmask=0;
 
-#ifdef FAST_START
-s_offset=(((size_t) s)%(sizeof(tp_vector)))/sizeof(uchar);
-s2=(uchar *)(((size_t) s)&((~((size_t) sizeof(tp_vector)-1))));
-
-#endif
 s_offset=(((size_t) s)%((UNROLL)*sizeof(tp_vector)))/sizeof(uchar);
 s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))));
 /*line s2=s-s_offset; is clearer but produces slower code*/
-#ifdef INIT_SO_VECTOR
-  sn=INIT_SO_VECTOR;
+#ifdef STRING_START
+  sn=((STRING_START<s2) ? LOAD(s2-UCHARS_IN_VECTOR) : vzero);
 #endif
 
 
-tp_mask mask=0, __attribute__((unused)) zmask=0;
 /*We could use array of vectors and loop for actions but gcc 
   does not UNROLL them and produces slow code.*/
 #undef ACTION
 #define ACTION(x)  tp_vector mvec##x,zvec##x;
 DO_ACTION;
 
+#ifdef FIRST_MATCH_ONLY
+ s_offset=(((size_t) s)%(sizeof(tp_vector)))/sizeof(uchar);
+ s2=(uchar *)(((size_t) s)&((~((size_t) sizeof(tp_vector)-1))));
+ #ifdef DETECT_ZERO_BYTE
+  #define DETECT_ZERO_BYTE2 mvec0=OR(mvec0,TEST_ZERO(sz0));
+ #else
+  #define DETECT_ZERO_BYTE2
+ #endif 
 
+ so=sn;
+ sn=sz0=LOAD(s2);
+ mvec0=TEST_CODE(so,sn);
+ DETECT_ZERO_BYTE2
+ mask=get_mask(mvec0);
+ mask=forget_before(mask,s_offset);
+ if (mask){
+   uchar *p=s2+first_bit(mask,0);
+   LOOP_BODY(p);
+ }
+ s2+=UCHARS_IN_VECTOR;
+ #define TEST2  so=sn;\
+ sn=sz0=LOAD(s2);\
+ mvec0=TEST_CODE(so,sn);\
+ DETECT_ZERO_BYTE2;\
+ if (NONZERO_VECTOR(mvec0)){\
+   uchar *p=FIRST_BIT(mvec0);\
+   LOOP_BODY(p);\
+ }\
+ s2+=UCHARS_IN_VECTOR;
+ TEST2; TEST2; TEST2; TEST2;TEST2;TEST2;TEST2;TEST2
+ s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))));
+ goto start;
+#endif
 
 #undef ACTION
 #define ACTION(x) TEST(x)

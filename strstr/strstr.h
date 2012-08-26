@@ -109,13 +109,10 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
     If we tested superlinear number of characters switch to 
     two way algorithm.*/
   size_t buy=(ns>>2)+16,rent=0;
-  size_t check_last=_STR_CASESTR_MEM(UCHARS_IN_VECTOR,0,UCHARS_IN_VECTOR);
-  /*For strcasestr we do aproximate matching, false positives can 
-    happen so we need to check also last two characters.*/
-
-  size_t check = ns - min(ns, check_last);
+  
+  size_t check = ns - min(ns, UCHARS_IN_VECTOR);
   s += ns-1;
-  #define INIT_SO_VECTOR (s-ns+1<s2 ? LOAD(s2-UCHARS_IN_VECTOR) : vzero)
+  #define STRING_START s-ns+1
   tp_vector  __attribute__((unused)) diff=BROADCAST('A'^'a');
 
 
@@ -153,7 +150,7 @@ tp_vector vo,vn,v0,v1,v2,v3;
 #endif
 #define PHASE2 {\
   int i;\
-  vo=LOAD(s2-UCHARS_IN_VECTOR);v0=LOAD(s2);v1=LOAD(s2+1*UCHARS_IN_VECTOR);v2=LOAD(s2+2*UCHARS_IN_VECTOR);v3=LOAD(s2+3*UCHARS_IN_VECTOR);\
+  vo=((STRING_START<s2) ? LOAD(s2-UCHARS_IN_VECTOR) : vzero);v0=LOAD(s2);v1=LOAD(s2+1*UCHARS_IN_VECTOR);v2=LOAD(s2+2*UCHARS_IN_VECTOR);v3=LOAD(s2+3*UCHARS_IN_VECTOR);\
   v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-2);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-2);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-2);v0=CONCAT(v0,vo,UCHARS_IN_VECTOR-2);vo=SHIFT_UP(vo,2);\
   for (i=2; i<ns && i<UCHARS_IN_VECTOR;i++){\
     vn=BROADCAST(n[ns-1-i]);\
