@@ -149,7 +149,7 @@ while(1)
 #define ACTION(x) TEST(x)
     DO_ACTION;
 
-    if ( NONZERO_ZVECS || _DETECT_END(UNROLL)){
+    if ( NONZERO_MVECS_ZVECS || _DETECT_END(UNROLL)){
       mask=MASK_MVECS;
 #ifdef DETECT_ZERO_BYTE
       if (NONZERO_ZVECS){
@@ -163,10 +163,7 @@ while(1)
       }
       goto test;
     }
-    if (NONZERO_MVECS ){
-      mask=MASK_MVECS;
-      goto test;
-    }
+
   }
 test:; /*We need this flow otherwise gcc would duplicate this fragment.*/
 

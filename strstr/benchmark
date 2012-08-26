@@ -2,7 +2,7 @@ try random $N 5
 #try random $N 33
 #try random $N 129
 
-try random_nocache $N 5
+#try random_nocache $N 5
 #try random_nocache $N 33
 #try random_nocache $N 129
 
@@ -17,10 +17,10 @@ try random16 $N 5
 #try random16 $N 33
 #try random16 $N 100
 
-try aaaa $N 5
-try aaaa $N 10
-try aaaa $N 16
-try aaaa $N 20
+#try aaaa $N 5
+#try aaaa $N 10
+#try aaaa $N 16
+#try aaaa $N 20
 #try aaaa $N 40
 #try aaaa $N 80
 #try aaaa $N 160
