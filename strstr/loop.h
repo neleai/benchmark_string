@@ -52,16 +52,18 @@
 
 */
 
-#ifdef DETECT_ZERO_BYTE
-#define _DETECT_ZERO_BYTE mvec= OR(mvec,TEST_ZERO(sz));
-#define _TEST_ZERO_BYTE (*p==0)
-#else
-#define _DETECT_ZERO_BYTE
-#define _TEST_ZERO_BYTE 0
+#ifdef ZERO_VARIANT
+  #undef TEST_CODE
+  #define TEST_CODE TEST_CODE_ZERO
+  #undef MASK_MVECS 
+  #define MASK_MVECS MASK_MVECS_ZERO
+  #undef NONZERO_MVECS 
+  #define NONZERO_MVECS NONZERO_MVECS_ZERO
 #endif
+
 #ifdef DETECT_END
 #define _DETECT_END(u) (DETECT_END<=s2+u*UCHARS_IN_VECTOR)
-if  (DETECT_END == s)
+if  (DETECT_END <= s)
   {
     uchar __attribute__((unused)) *p=(uchar*) s;
     LOOP_END(p);
@@ -74,9 +76,8 @@ if  (DETECT_END == s)
 
 #define TEST(u) \
      so=sn;\
-     sn=sz##u= LOAD(s2+u*UCHARS_IN_VECTOR);\
-     mvec    = TEST_CODE(so,sn); \
-     mvec##u = mvec;
+     sn=zvec##u= LOAD(s2+u*UCHARS_IN_VECTOR);\
+     mvec##u = TEST_CODE(so,sn); 
 
 
 int  i;
@@ -84,86 +85,83 @@ tp_vector vzero=BROADCAST(0);
 
 int s_offset;
 uchar* s2,  __attribute__((unused))*endp=NULL;
+tp_vector sn, __attribute__((unused)) so,__attribute__((unused))sold;
+
+#ifdef FAST_START
+s_offset=(((size_t) s)%(sizeof(tp_vector)))/sizeof(uchar);
+s2=(uchar *)(((size_t) s)&((~((size_t) sizeof(tp_vector)-1))));
+
+#endif
 s_offset=(((size_t) s)%((UNROLL)*sizeof(tp_vector)))/sizeof(uchar);
 s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))));
 /*line s2=s-s_offset; is clearer but produces slower code*/
-tp_vector sn, __attribute__((unused)) so;
 #ifdef INIT_SO_VECTOR
   sn=INIT_SO_VECTOR;
 #endif
+sold=sn;
 
-tp_vector mvec,zvec=vzero;
+
 tp_mask mask=0, __attribute__((unused)) zmask=0;
 /*We could use array of vectors and loop for actions but gcc 
   does not UNROLL them and produces slow code.*/
 #undef ACTION
-#define ACTION(x)  tp_vector mvec##x,sz##x;\
-                   tp_mask mask##x;\
-                   TEST(x);\
-                   mask##x=get_mask(mvec##x);
+#define ACTION(x)  tp_vector mvec##x,zvec##x;
 DO_ACTION;
-mask=AGREGATE_MASK;
+
+
+
+#undef ACTION
+#define ACTION(x) TEST(x)
+DO_ACTION;
+mask=MASK_MVECS;
 
 #ifdef DETECT_ZERO_BYTE
-  #undef ACTION
-  #define ACTION(x) mvec##x=TEST_ZERO(sz##x);
-  DO_ACTION;
-  zmask=AGREGATE_MASK;
+  zmask=MASK_ZVECS;
 #endif
 
-mask =forget_before(mask ,s_offset);
-zmask=forget_before(zmask,s_offset);
-if (zmask ) {
-  endp=s2+first_bit(zmask,0);
-  if (_DETECT_END(UNROLL) && DETECT_END < endp) endp=DETECT_END;
+if (forget_before(mask|zmask,s_offset) || _DETECT_END(UNROLL)){
+  mask =forget_before( mask,s_offset);
+  zmask=forget_before(zmask,s_offset);
+  if (zmask){
+    endp=s2+first_bit(zmask,0);
+    mask=forget_after(mask,endp-s2);
+  }
+  if (_DETECT_END(UNROLL) && (!endp || endp>DETECT_END)){
+    mask=forget_after(mask,endp-s2);
+    endp=DETECT_END;
+  }
   goto test;
 }
-if (_DETECT_END(UNROLL)) {
-  endp=DETECT_END;
-  goto test;
-}
-if (mask) goto test;
 start:
 ;
 while(1)
   {
+    sold=sn;
     s2+=UNROLL*UCHARS_IN_VECTOR;
     PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
 
 #undef ACTION
 #define ACTION(x) TEST(x)
     DO_ACTION;
-#ifdef DETECT_ZERO_BYTE
-#ifdef HAS_PARALLEL_MIN
-  zvec=TEST_ZERO(MINI(MINI(sz0,sz1),MINI(sz2,sz3)));
-#else
-  zvec=OR(OR(TEST_ZERO(sz0),TEST_ZERO(sz1)),
-          OR(TEST_ZERO(sz2),TEST_ZERO(sz3)));
-#endif
-    if(NONZERO_MASK(zvec)){
-      mask=AGREGATE_MASK;
-      #undef ACTION
-      #define ACTION(x) mvec##x=TEST_ZERO(sz##x);
-      DO_ACTION;
-      zmask=AGREGATE_MASK;
-      endp=s2+first_bit(zmask,0);
-      if (_DETECT_END(UNROLL) && DETECT_END < endp) endp=DETECT_END;
-      mask=forget_after(mask,endp-s2);
-      goto test;
 
-    }
+    if ( NONZERO_ZVECS || _DETECT_END(UNROLL)){
+      mask=MASK_MVECS;
+#ifdef DETECT_ZERO_BYTE
+      if (NONZERO_ZVECS){
+        endp=s2+ZVECS_FIRST;
+        mask=forget_after(mask,endp-s2);
+      }
 #endif
-    if(_DETECT_END(UNROLL)){
-      mask=AGREGATE_MASK;
-      endp=DETECT_END;
-      mask=forget_after(mask,endp-s2);
+      if (_DETECT_END(UNROLL) && (!endp || endp>DETECT_END)){
+        mask=forget_after(mask,endp-s2);
+        endp=DETECT_END;
+      }
       goto test;
     }
-    if(NONZERO_MVECS)
-      {
-        mask=AGREGATE_MASK;
-        goto test;
-      }
+    if (NONZERO_MVECS ){
+      mask=MASK_MVECS;
+      goto test;
+    }
   }
 test:; /*We need this flow otherwise gcc would duplicate this fragment.*/
 

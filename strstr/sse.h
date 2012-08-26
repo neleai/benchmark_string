@@ -190,8 +190,14 @@ inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vecto
 #elif UNROLL==4
 /*Has one dependency less than mask0|(mask1<<16)|(mask2<<32)|(mask3<<48)*/
 #define get_ZERO(x) get_mask(TEST_ZERO(x))
-#define MASK_MVECS   (get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32)
-#define MASK_ZVECS   (get_ZERO(zvec0)|(get_ZERO(zvec1)<<16))|((get_ZERO(zvec2)|(get_ZERO(zvec3)<<16))<<32)
+#define MASK_MVECS   ((get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32))
+#define MASK_ZVECS   ((get_ZERO(zvec0)|(get_ZERO(zvec1)<<16))|((get_ZERO(zvec2)|(get_ZERO(zvec3)<<16))<<32))
+
+#define MASK_MVECS_ZERO   ((get_ZERO(mvec0)|(get_ZERO(mvec1)<<16))|((get_ZERO(mvec2)|(get_ZERO(mvec3)<<16))<<32))
+#define NONZERO_MVECS_ZERO get_mask(TEST_ZERO(MINI(MINI(mvec0,mvec1),MINI(mvec2,mvec3))))
+
+
+#define ZVECS_FIRST  first_bit(MASK_ZVECS,0)
 
 #define NONZERO_MVECS get_mask(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)))
 #define NONZERO_ZVECS get_mask(TEST_ZERO(MINI(MINI(zvec0,zvec1),MINI(zvec2,zvec3))))

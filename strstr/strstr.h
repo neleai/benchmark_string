@@ -122,11 +122,11 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
   v4=CONCAT(v4,v3,UCHARS_IN_VECTOR-2);v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-2);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-2);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-2);v0=SHIFT_UP(v0,2);\
   for (i=2;i<ns && i<UCHARS_IN_VECTOR;i++){\
     vn=BROADCAST(n[ns-1-i]);\
-    mvec0=TEST_EQ(v1,vn);mvec1=TEST_EQ(v2,vn);mvec2=TEST_EQ(v3,vn);mvec3=TEST_EQ(v4,vn);\
-    mask=mask&(AGREGATE_MASK);\
-    if (!mask) break;\
+    mvec0=OR(mvec0,XOR(v1,vn));mvec1=OR(mvec1,XOR(v2,vn));mvec2=OR(mvec2,XOR(v3,vn));mvec3=OR(mvec3,XOR(v4,vn));\
+    if (!NONZERO_MVECS) break;\
     v4=CONCAT(v4,v3,UCHARS_IN_VECTOR-1);v3=CONCAT(v3,v2,UCHARS_IN_VECTOR-1);v2=CONCAT(v2,v1,UCHARS_IN_VECTOR-1);v1=CONCAT(v1,v0,UCHARS_IN_VECTOR-1);v0=SHIFT_UP(v0,1);\
   }\
+  mask=mask&MASK_MVECS;\
 }
 
 #define CASE_CONVERT(x) _STR_CASESTR_MEM(x, OR(x,diff),  x)
@@ -140,7 +140,28 @@ static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n,size_t ns)
   if(buy+((p-s)>>3)<rent)\
      return strstr_two_way(p,s_end,n,ns);\
 
-#include "strstr_vec.h"
+
+tp_vector vn0=BROADCAST(MASK_CONVERT(n[ns-1-0]));
+tp_vector vn1=BROADCAST(MASK_CONVERT(n[ns-1-1]));
+tp_vector e0,e1;
+#if defined(STRSTR) || defined(STRCASESTR)
+#define DETECT_ZERO_BYTE
+#endif
+
+#ifdef MEMMEM
+#define DETECT_END s_end
+#endif
+
+
+
+#define TEST_CODE(so,sn) OR(XOR(sn,vn0),TEST_EQ(XOR(sn,so,UCHARS_IN_VECTOR-1),vn1))
+#define ZERO_VARIANT
+
+#define LOOP_END(p) return NULL;
+#include "loop.h"
+
+
+
 }
 
 

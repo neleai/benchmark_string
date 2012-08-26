@@ -35,11 +35,7 @@ tp_vector e0,e1;
    e1   = XOR(CONCAT(sn,so,UCHARS_IN_VECTOR-1),vn1);\
    mvec = TEST_ZERO(OR(e0,e1));
 #else
-#define TEST_CODE(so,sn) vzero;\
-   sn   = CASE_CONVERT(sn);\
-   e0   = TEST_EQ(CONCAT(sn,so,UCHARS_IN_VECTOR-0),vn0); \
-   e1   = TEST_EQ(CONCAT(sn,so,UCHARS_IN_VECTOR-1),vn1); \
-   mvec = (AND(e0,e1));
+#define TEST_CODE(so,sn) OR(XOR(sn,vn0),TEST_EQ(XOR(sn,so,UCHARS_IN_VECTOR-1),vn1))
 #endif
 
 #define LOOP_END(p) return NULL;
