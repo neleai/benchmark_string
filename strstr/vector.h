@@ -53,8 +53,10 @@ By defining macro WIDE_VERSION you can use same operations that work at 32-bit i
 #define WIDE_VERSION_STF(x) #x
 #define WIDE_VERSION_CONCAT(a,b) WIDE_VERSION_STF(a##b)
 #ifdef WIDE_VERSION
+  #define WNAME(x) wcs##x
   #define WIDE_VERSION_HEADER(x) WIDE_VERSION_CONCAT(x,_string_wide.h)
 #else
+  #define WNAME(x) str##x
   #define WIDE_VERSION_HEADER(x) WIDE_VERSION_CONCAT(x,_string.h)
 #endif
 
