@@ -93,6 +93,7 @@ uchar* s2, __attribute__((unused)) * p;
 #endif
 
 #ifdef SHORT_START
+  #define SHORT(x,y) x
   s_offset=(((size_t) s)%(sizeof(tp_vector)))/sizeof(uchar);
   s2      =(uchar *)(((size_t) s)&((~((size_t) sizeof(tp_vector)-1))));
 /*line s2=s-s_offset; is clearer but produces slower code*/
@@ -107,16 +108,16 @@ sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
     _DETECT_END(1);
 
   TEST_SHORT
-  MASK_LOOP_SHORT_FIRST(s_offset,endp);
+  MASK_LOOP_FIRST(s_offset,endp);
   s2+=UCHARS_IN_VECTOR;
   TEST_SHORT(endp);
-  MASK_LOOP_SHORT(endp);
+  MASK_LOOP(endp);
   s2+=UCHARS_IN_VECTOR;
   TEST_SHORT(endp);
-  MASK_LOOP_SHORT(endp);
+  MASK_LOOP(endp);
   s2+=UCHARS_IN_VECTOR;
   TEST_SHORT(endp);
-  MASK_LOOP_SHORT(endp);
+  MASK_LOOP(endp);
   s2+=UCHARS_IN_VECTOR;
  
   s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))))-UNROLL*UCHARS_IN_VECTOR;
@@ -125,6 +126,7 @@ sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
   #endif
 
 #else
+  #define SHORT(x,y) y
   s_offset=(((size_t) s)%((UNROLL)*sizeof(tp_vector)))/sizeof(uchar);
   s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))));
   #ifdef S_START
@@ -135,7 +137,8 @@ sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
   TEST_LARGE
   MASK_LOOP_FIRST(s_offset,endp);
 #endif
-
+#undef  SHORT
+#define SHORT(x,y) y
 
 start:;
 while(1)
@@ -146,9 +149,14 @@ while(1)
     TEST_LARGE;
     MASK_LOOP(endp);
   }
+/*gcc likes to duplicate code so we avoid this by jump.*/
 epilog:;
 MASK_EPILOG
 epilog_end:;
+MASK_EPILOG_END
+#undef  SHORT
+#define SHORT(x,y) x
+epilog_end_short:;
 MASK_EPILOG_END
 
 
