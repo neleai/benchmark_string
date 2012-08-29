@@ -1,4 +1,5 @@
 /* red */
+#include <string.h>
 int reversed(){return 1;}
 #define AS_STRSTR
 #define USE_SSSE3

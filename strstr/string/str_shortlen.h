@@ -11,7 +11,7 @@ static inline size_t str_shorterlen(uchar *a,uchar *b){
     }else {
       va=LOAD_UNALIGNED(a+no);  vb=LOAD_UNALIGNED(b+no);
       mask = get_mask(TEST_ZERO(MINI(va,vb)));
-      if (mask) return no+first_bit(mask,0);
+      if (mask) return no+first_bit(mask);
     }
     no+=UCHARS_IN_VECTOR;
   }
@@ -27,7 +27,7 @@ static inline size_t str_shorter(uchar *a){
   if (__builtin_expect(((size_t) (a))%4096<=4096-sizeof(tp_vector),0)){
     va=LOAD_UNALIGNED(a);  
     mask = get_ZERO(va);
-    if (mask) return first_bit(mask,0);
+    if (mask) return first_bit(mask);
   } 
   return WNAME(len)(a+UCHARS_IN_VECTOR)+UCHARS_IN_VECTOR;
 }

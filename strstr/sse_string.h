@@ -80,7 +80,7 @@ static inline unsigned int NONZERO_MASK(tp_vector x)
 
 #ifdef USE_SSE2_NO_BSF
 static char first_bit_hash[]= {0,37,50,8,0,21,0,0,38,54,5,51,9,0,30,0,22,12,1,0,0,0,0,39,0,55,0,35,6,52,28,10,0,0,33,31,0,0,23,0,13,44,0,2,0,0,25,0,0,0,0,0,40,15,0,0,56,62,46,0,19,36,7,0,0,53,4,0,29,11,0,0,0,0,34,0,27,32,0,0,0,43,0,0,24,0,0,14,0,61,45,18,0,0,3,0,0,0,0,26,0,42,0,0,0,60,17,0,0,0,0,41,0,59,16,0,0,58,0,57,0,63,47,48,0,0,49,20};
-static inline tp_mask first_bit(tp_mask x,int y)
+static inline tp_mask first_bit(tp_mask x)
 {
   /* ones has form 2**(tz+1)-1 where tb is number of trailing zereos.*/
   tp_mask ones=x^(x-1);
@@ -88,7 +88,7 @@ static inline tp_mask first_bit(tp_mask x,int y)
   return first_bit_hash[(903385529620038207L*ones)>>57];
 }
 #else
-static inline tp_mask first_bit(tp_mask x,int y)
+static inline tp_mask first_bit(tp_mask x)
 {
   return __builtin_ctzl(x);
 }
@@ -97,11 +97,10 @@ static inline tp_mask bit_i(int i)
 {
   return ((tp_mask) 1)<<i;
 }
-
+static inline tp_mask forget_first_bit(tp_mask x){ return x&(x-1); }
 MASK_OP(get_bit         , x&bit_i(y))
 MASK_OP(shift_down      , x>>y )
 MASK_OP(shift_up        , x<<y )
-MASK_OP(forget_first_bit, x&(x-1))
 MASK_OP(forget_before   , x&((y>=UNROLL*UCHARS_IN_VECTOR) ? 0 : ((y<0) ? x :\
                              shift_up(   ~((tp_mask)0),y))))
 MASK_OP(forget_after    , x&((y>=UNROLL*UCHARS_IN_VECTOR) ? x : ((y<0) ? 0 :\
@@ -195,11 +194,11 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
 #define ZVECS_FIRST  first_bit(MASK_ZVECS,0)
 
 #define NONZERO_MVECS get_mask(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)))
-#define NONZERO_ZVECS _DETECT_ZERO_BYTE(get_mask(TEST_ZERO(MINI(MINI(zvec0,zvec1),MINI(zvec2,zvec3)))),0)
+#define NONZERO_ZVECS _DETECT_ZERO_BYTE(get_mask(TEST_ZERO(MINI(MINI(sn0,sn1),MINI(sn2,sn3)))),0)
 
 
 #define MASK_LOOP_FIRST(offset,endp) \
-  { tp_mask mask,zmask;\
+  {\
     mask =MASK_MVECS;\
     zmask=MASK_ZVECS;\
     if ( forget_before(mask|zmask,offset) || endp){\
@@ -230,14 +229,14 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
   }
 
 #define MASK_EPILOG \
- while(mask){ p=s2+first_bit(mask)\
+ while(mask){ p=s2+first_bit(mask);\
     LOOP_BODY(p);\
     mask=forget_first_bit(mask);\
   }\
   goto start;
 #define MASK_EPILOG_END \
   mask=forget_after(mask,endp-s2);\
-  while(mask){ p=s2+first_bit(mask)\
+  while(mask){ p=s2+first_bit(mask);\
     LOOP_BODY(p);\
     mask=forget_first_bit(mask);\
   }\

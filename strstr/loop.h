@@ -47,15 +47,18 @@ performance can be improved by
 
 */
 
+#ifndef PHASE2
+#define PHASE2
+#endif
+
+uchar *endp=NULL;
+tp_mask mask,zmask;
+
 #ifdef DETECT_ZERO_BYTE
   #define _DETECT_ZERO_BYTE(x,y) x
 #else
   #define _DETECT_ZERO_BYTE(x,y) y
 #endif
-#ifndef PHASE2
-#define PHASE2
-#endif
-
 #ifdef DETECT_END
 #define _DETECT_END(u) if (s_end<=s2+u*UCHARS_IN_VECTOR) endp = s_end;
 /* For users that rely on invalid pointers suppresed by zero size */
@@ -77,9 +80,6 @@ tp_vector sn, __attribute__((unused)) so;
 int s_offset;
 uchar* s2, __attribute__((unused)) * p;
 
-#ifdef S_START
-sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
-#endif
 
 
 #if UNROLL==4
@@ -96,6 +96,11 @@ sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
   s_offset=(((size_t) s)%(sizeof(tp_vector)))/sizeof(uchar);
   s2      =(uchar *)(((size_t) s)&((~((size_t) sizeof(tp_vector)-1))));
 /*line s2=s-s_offset; is clearer but produces slower code*/
+#ifdef S_START
+sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
+#endif
+
+
   #define TEST_SHORT\
     TEST(0);\
     PHASE2_SHORT;\
@@ -113,12 +118,20 @@ sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
   TEST_SHORT(endp);
   MASK_LOOP_SHORT(endp);
   s2+=UCHARS_IN_VECTOR;
-
+ 
   s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))))-UNROLL*UCHARS_IN_VECTOR;
+  #ifdef S_START
+  sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
+  #endif
 
 #else
   s_offset=(((size_t) s)%((UNROLL)*sizeof(tp_vector)))/sizeof(uchar);
   s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))));
+  #ifdef S_START
+  sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
+  #endif
+
+
   TEST_LARGE
   MASK_LOOP_FIRST(s_offset,endp);
 #endif

@@ -19,7 +19,7 @@ static inline size_t memcmp_cnt(uchar *a,uchar *b,size_t no)
   return no;
 }
 
-#include "string/str_twoway.h"
+#include "string/str_two_way.h"
 static uchar *strstr_vec(    uchar *s, uchar *s_end, uchar *n, size_t ns);
 
 
@@ -67,9 +67,9 @@ uchar *MEMMEM(const void *_s,size_t ss,const void *_n,size_t ns)
 
 
 #ifdef ZERO_VARIANT
-  #define PHASE2_TEST(u) mvec##u=OR(mvec##u,XOR(v##u,vn));
+  #define PHASE2_TEST(u) mvec##u=OR(mvec##u,XOR(sn##u,vn));
 #else 
-  #define PHASE2_TEST(u) mvec##u=AND(mvec##u,TEST_EQ(v##u,vn));
+  #define PHASE2_TEST(u) mvec##u=AND(mvec##u,TEST_EQ(sn##u,vn));
 #endif
 #define PHASE2_SHORT \
   int i;\
@@ -78,7 +78,7 @@ uchar *MEMMEM(const void *_s,size_t ss,const void *_n,size_t ns)
   sno=((s_start<s2) ? LOAD_P2(s2-UCHARS_IN_VECTOR) : BROADCAST(0));\
   sn0=CONCAT(sn0,sno,UCHARS_IN_VECTOR-2);sno=SHIFT_UP(sno,2);\
   for (i=2; i<ns && i<UCHARS_IN_VECTOR;i++){\
-    vn=BROADCAST(CHAR(n+ns-1-i));\
+    tp_vector vn=BROADCAST(CHAR(n+ns-1-i));\
     PHASE2_TEST(0);\
     if(!NONZERO_MVECS) break;\
     sn0=CONCAT(sn0,sno,UCHARS_IN_VECTOR-1);sno=SHIFT_UP(sno,1);\
@@ -93,7 +93,7 @@ uchar *MEMMEM(const void *_s,size_t ss,const void *_n,size_t ns)
   sno=((s_start<s2) ? LOAD_P2(s2-UCHARS_IN_VECTOR) : BROADCAST(0));\
   sn3=CONCAT(sn3,sn2,UCHARS_IN_VECTOR-2);sn2=CONCAT(sn2,sn1,UCHARS_IN_VECTOR-2);sn1=CONCAT(sn1,sn0,UCHARS_IN_VECTOR-2);sn0=CONCAT(sn0,sno,UCHARS_IN_VECTOR-2);sno=SHIFT_UP(sno,2);\
   for (i=2; i<ns && i<UCHARS_IN_VECTOR;i++){\
-    vn=BROADCAST(CHAR(n+ns-1-i));\
+    tp_vector vn=BROADCAST(CHAR(n+ns-1-i));\
     PHASE2_TEST(0);PHASE2_TEST(1);PHASE2_TEST(2);PHASE2_TEST(3);\
     if(!NONZERO_MVECS) break;\
     sn3=CONCAT(sn3,sn2,UCHARS_IN_VECTOR-1);sn2=CONCAT(sn2,sn1,UCHARS_IN_VECTOR-1);sn1=CONCAT(sn1,sn0,UCHARS_IN_VECTOR-1);sn0=CONCAT(sn0,sno,UCHARS_IN_VECTOR-1);sno=SHIFT_UP(sno,1);\
@@ -112,7 +112,9 @@ uchar *MEMMEM(const void *_s,size_t ss,const void *_n,size_t ns)
      return strstr_two_way(p,s_end,n,ns);
 
 #define S_START s_start
-uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n, uchar ns){  
+static uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n, size_t ns){  
+  size_t buy=ns/2,rent=0;
+  size_t check = ns-min(ns,UCHARS_IN_VECTOR);
   uchar *s_start=s;
   s+=ns-1;
   tp_vector vn0=BROADCAST(CHAR(n+ns-1)),vn1=BROADCAST(CHAR(n+ns-2));
