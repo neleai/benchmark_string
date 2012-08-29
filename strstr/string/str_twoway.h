@@ -49,7 +49,7 @@ static __attribute__((noinline)) uchar *strstr_two_way(uchar *s, uchar *s_end, u
 #ifdef WIDE_VERSION
     uchar *p=wcschr(s+ell,n[ell]);
 #else
-    uchar *p=_STR_CASESTR_MEM(strchr(s+ell,n[ell]),s+ell,memchr(s+ell,n[ell],s_end-(s+ell)));
+    uchar *p=_STR_CASESTR_MEM(WNAME(chr)(s+ell,n[ell]),s+ell,memchr(s+ell,n[ell],s_end-(s+ell)));
 #endif
     if (!p) return NULL;
     s = p - ell;
