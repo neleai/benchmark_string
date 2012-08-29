@@ -21,26 +21,18 @@
   TEST_EQ(x,y)      - set highest bit of bytes that are equal to 1 and 0 otherwise,rest is unspecified.
   BROADCAST(c)      - return vector such that all bytes have value c
   AND,OR,XOR,ANDNOT - do logic operation bytewise
-  SHIFT_UP(x,k), SHIFT_DOWN(x,k) shift vector x k bytes up/down
   CONCAT(xlow,xhigh,k) concatenate xlow,xhigh and return bytes from k-th.
-  In shifts and concatenation k must be constant.
+  SHIFT_UP(x,k), SHIFT_DOWN(x,k) shift vector x k bytes up/down
+  When implementation allows variable shifts then it defines VARIABLE_SHIFT macro.
+
   A implementation may support function
   TEST_RANGE(x,y,z) - set highest bit of bytes that xi <= yi <= zi to 1 and 0 otherwise,rest is unspecified
   MINI(x,y)         - calculate bytewise minimum fo x,y
-  To support other vector extension see sysdeps/x86_64/sse.h file.
-*/
-/*
-  Resulting vectors are turned into implementation specific mask by function get_mask, such that value highest bit of i-th uchar of vector v 
-   is equal to get_mask(v)&bit_i(i). 
-  Multiple masks mask0,mask1... can be concatenated by platform specific macro AGREGATE_MASK into single mask.
-  For mask m an first and last i such that m&get_bit(i) is nonzero can be obtained by calling 
+  MAXI(x,y)         - calculate bytewise maximum fo x,y
 
-  first_bit(m,hint)  where hint is promise that first_bit(m)>hint. 
-  forget_first_bit(m,hint) zeroes first_bit(m,hint)-th bit of m.
-  forget_before(m,i)       zeroes bits bit_i(j) for j<i.
-  forget_after( m,i)       zeroes bits bit_i(j) for j>i. 
-
-By defining macro WIDE_VERSION you can use same operations that work at 32-bit integers instead of bytes. 
+  By defining macro WIDE_VERSION you can use same operations that work at 32-bit integers instead of bytes. 
+  
+  Individual extensions are in sysdeps/arch/foo_string.h and sysdeps/arch/foo_string_wide.h
 */
 
 #define UCHARS_IN_VECTOR (sizeof(tp_vector)/sizeof(uchar))
@@ -78,16 +70,7 @@ By defining macro WIDE_VERSION you can use same operations that work at 32-bit i
 #undef BIN_OP
 #undef MASK_OP
 
-#if unroll==1
-#define DO_ACTION ACTION(0)
-#define AGREGATE_VECTOR  mvec0
-#elif unroll==2
-#define DO_ACTION ACTION(0) ACTION(1)
-#define  AGREGATE_VECTOR    OR(mvec0,mvec1)
-#elif unroll==4
-#define DO_ACTION ACTION(0) ACTION(1) ACTION(2) ACTION(3)
-#define AGREGATE_VECTOR OR(OR(mvec0,mvec1),OR(mvec2,mvec3))
-#endif
+
 
 static inline size_t min(size_t x,size_t y)
 {

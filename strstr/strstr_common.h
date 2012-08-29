@@ -75,7 +75,7 @@ uchar *MEMMEM(const void *_s,size_t ss,const void *_n,size_t ns)
   int i;\
   tp_vector sno;\
   if(NONZERO_MVECS){\
-  sno=((s_start<s2) ? LOAD_P2(s2-UCHARS_IN_VECTOR) : vzero);\
+  sno=((s_start<s2) ? LOAD_P2(s2-UCHARS_IN_VECTOR) : BROADCAST(0));\
   sn0=CONCAT(sn0,sno,UCHARS_IN_VECTOR-2);sno=SHIFT_UP(sno,2);\
   for (i=2; i<ns && i<UCHARS_IN_VECTOR;i++){\
     vn=BROADCAST(CHAR(n+ns-1-i));\
@@ -90,7 +90,7 @@ uchar *MEMMEM(const void *_s,size_t ss,const void *_n,size_t ns)
   int i;\
   tp_vector sno;\
   if(NONZERO_MVECS){\
-  sno=((s_start<s2) ? LOAD_P2(s2-UCHARS_IN_VECTOR) : vzero);\
+  sno=((s_start<s2) ? LOAD_P2(s2-UCHARS_IN_VECTOR) : BROADCAST(0));\
   sn3=CONCAT(sn3,sn2,UCHARS_IN_VECTOR-2);sn2=CONCAT(sn2,sn1,UCHARS_IN_VECTOR-2);sn1=CONCAT(sn1,sn0,UCHARS_IN_VECTOR-2);sn0=CONCAT(sn0,sno,UCHARS_IN_VECTOR-2);sno=SHIFT_UP(sno,2);\
   for (i=2; i<ns && i<UCHARS_IN_VECTOR;i++){\
     vn=BROADCAST(CHAR(n+ns-1-i));\
@@ -111,8 +111,9 @@ uchar *MEMMEM(const void *_s,size_t ss,const void *_n,size_t ns)
   if(buy+((p-s)>>3)<rent)\
      return strstr_two_way(p,s_end,n,ns);
 
+#define S_START s_start
 uchar *strstr_vec(uchar *s,uchar *s_end,uchar *n, uchar ns){  
-  s_start=s;
+  uchar *s_start=s;
   s+=ns-1;
   tp_vector vn0=BROADCAST(CHAR(n+ns-1)),vn1=BROADCAST(CHAR(n+ns-2));
   #include "loop.h"

@@ -15,119 +15,129 @@
    License asize_t with the GNU C Library; if not, see
    <http://www.gnu.org/licenses/>.  */
 
-/* basic string search loop. To use it define macros below and include this file.
+/* Basic string search loop. String functions are implemented by including this file inside corresponding function.
+    
+  This loop matches string in local variable 
+  s                 string to match
+
   LOOP_TEST(so,sn)  You are given vector sn consisting of consecutive sequence of bytes 
                     from string s. You should return an vector. This vector determines following:
                     For bytes with highest bit set to 1 a loop invokes macro
                     LOOP_BODY(p) where p is position of corresponding byte.
+                    See string/vector.h for vector expression description.
   LOOP_BODY(p)      see above
   
-                  If you define an macro
-  NEEDS_PREVIOUS_VECTOR 
-                    then argument so of macro LOOP_TEST will consist of
-                    Argument so consist of byte immidately before those of sn. 
-                    To decide what bytes before s should be read define s_start variable 
-                    with starting position.
-
-  DETECT_END(p)     When byte p is reached call macro    LOOP_END(p)
-  DETECT_ZERO_BYTE  When first zero byte is reached call LOOP_END(p)
+  
+  You can handle terminating condition by defining
+  DETECT_END        When address in local variable s_end is reached LOOP_END(s_end) is called.
+  DETECT_ZERO_BYTE  When zero byte is reached LOOP_END(p) is called
   LOOP_END(p)       see above
+
+  When you match multibyte pattern then to also handle ending condition you should set bytes that correspond 
+  to end of your pattern. 
 
   PHASE2            More lowlevel matching can be done by defining PHASE2 macro
                     You can access vectors sn0,sn1,sn2,sn3 with input and modify mvec0,mvec1,mvec2,mvec3
                     with results of LOOP_TEST. 
-                    
+  PHASE2_SHORT      As phase2 except only mvec0 is relevant. 
+             
+performance can be improved by       
+  SHORT_START       do 
+  PREFETCH x        prefetch address 64*x after current address if implementation supports it.
 
-  This file should be included inside function. A loop uses local variable s as matched string.
-  Note that implementation by callback is complicated by fact that you usualy need a closure to
-       share arguments.
 */
 
+#ifdef DETECT_ZERO_BYTE
+  #define _DETECT_ZERO_BYTE(x,y) x
+#else
+  #define _DETECT_ZERO_BYTE(x,y) y
+#endif
 #ifndef PHASE2
 #define PHASE2
 #endif
 
 #ifdef DETECT_END
-#define _DETECT_END(u) (DETECT_END<=s2+u*UCHARS_IN_VECTOR)
+#define _DETECT_END(u) if (s_end<=s2+u*UCHARS_IN_VECTOR) endp = s_end;
 /* For users that rely on invalid pointers suppresed by zero size */
-if  (DETECT_END <= s) 
+if  (s_end == s) 
   {
-    LOOP_END(s);
+    LOOP_END(s_end);
   }
 #else
-#define     DETECT_END  ((uchar*)NULL)
-#define _DETECT_END(u)  0
+#define _DETECT_END(u)  
 #endif
 
 #define TEST(u) \
      so = sn;\
-     sn = sn##u = zvec##u = LOAD(s2+u*UCHARS_IN_VECTOR);\
+     sn = sn##u  = LOAD(s2+u*UCHARS_IN_VECTOR);\
      mvec##u  = LOOP_TEST(so,sn); \
 
 int  i;
 tp_vector sn, __attribute__((unused)) so;
 int s_offset;
 uchar* s2, __attribute__((unused)) * p;
-s_offset=(((size_t) s)%((unroll)*sizeof(tp_vector)))/sizeof(uchar);
-s2=(uchar *)(((size_t) s)&((~((size_t) unroll*sizeof(tp_vector)-1))));
-/*line s2=s-s_offset; is clearer but produces slower code*/
 
-#ifdef NEEDS_PREVIOUS_VECTOR
-sn=(s_start < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
+#ifdef S_START
+sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
 #endif
 
-tp_vector mvec,zvec=BROADCAST(0);
-tp_mask mask, __attribute__((unused)) zmask;
+
+#if UNROLL==4
 /*We could use array of vectors and loop for actions but gcc 
   does not unroll them and produces slow code.*/
-#undef ACTION
-#define ACTION(u)  tp_vector mvec##u,zvec##u,sn##u;
+  tp_vector mvec0,sn0,mvec1,sn1,mvec2,sn2,mvec3,sn3;
+#define TEST_LARGE \
+  TEST(0); TEST(1); TEST(2); TEST(3);\
+  PHASE2\
+  _DETECT_END(4);
+#endif
 
 #ifdef SHORT_START
+  s_offset=(((size_t) s)%(sizeof(tp_vector)))/sizeof(uchar);
+  s2      =(uchar *)(((size_t) s)&((~((size_t) sizeof(tp_vector)-1))));
+/*line s2=s-s_offset; is clearer but produces slower code*/
+  #define TEST_SHORT\
+    TEST(0);\
+    PHASE2_SHORT;\
+    _DETECT_END(1);
+
+  TEST_SHORT
+  MASK_LOOP_SHORT_FIRST(s_offset,endp);
+  s2+=UCHARS_IN_VECTOR;
+  TEST_SHORT(endp);
+  MASK_LOOP_SHORT(endp);
+  s2+=UCHARS_IN_VECTOR;
+  TEST_SHORT(endp);
+  MASK_LOOP_SHORT(endp);
+  s2+=UCHARS_IN_VECTOR;
+  TEST_SHORT(endp);
+  MASK_LOOP_SHORT(endp);
+  s2+=UCHARS_IN_VECTOR;
+
+  s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))))-UNROLL*UCHARS_IN_VECTOR;
+
 #else
-DO_ACTION;
-PHASE2
-
-mask=MASK_MVECS;
-
-#ifdef DETECT_ZERO_BYTE
-  ZERO_CALC_FORGET(s_offset);
+  s_offset=(((size_t) s)%((UNROLL)*sizeof(tp_vector)))/sizeof(uchar);
+  s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))));
+  TEST_LARGE
+  MASK_LOOP_FIRST(s_offset,endp);
 #endif
 
-if (forget_before(mask|zmask,s_offset) || _DETECT_END(UNROLL)){
-  mask =forget_before( mask,s_offset);
-  zmask=forget_before(zmask,s_offset);
-  if (zmask){
-    endp=s2+first_bit(zmask,0);
-    mask=forget_after(mask,endp-s2);
-  }
-  if (_DETECT_END(UNROLL) && (!endp || endp>DETECT_END)){
-    mask=forget_after(mask,endp-s2);
-    endp=DETECT_END;
-  }
-  goto test;
-}
 
-#endif
-
-start:
-;
+start:;
 while(1)
   {
-    s2+=unroll*UCHARS_IN_VECTOR;
+    s2+=UNROLL*UCHARS_IN_VECTOR;
     PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
 
-#undef ACTION
-#define ACTION(x) TEST(x)
-    DO_ACTION;
-
+    TEST_LARGE;
+    MASK_LOOP(endp);
   }
-test:; /*We need this flow otherwise gcc would duplicate this fragment.*/
-TEST_LOOP
-goto start;
+epilog:;
+MASK_EPILOG
+epilog_end:;
+MASK_EPILOG_END
 
-
-#undef CAN_SKIP
 
 #undef LOOP_TEST
 #undef LOOP_BODY

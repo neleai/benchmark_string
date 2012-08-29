@@ -24,12 +24,11 @@ static inline size_t str_shorter(uchar *a){
   #endif
   tp_vector va,vb; tp_mask mask;
   int i,no=0;
-    if (__builtin_expect(((size_t) (a))%4096<=4096-sizeof(tp_vector),0)){
-      va=LOAD_UNALIGNED(a);  
-      mask = get_ZERO(va);
-      if (mask) return first_bit(mask,0);
-    }
-  }
+  if (__builtin_expect(((size_t) (a))%4096<=4096-sizeof(tp_vector),0)){
+    va=LOAD_UNALIGNED(a);  
+    mask = get_ZERO(va);
+    if (mask) return first_bit(mask,0);
+  } 
   return WNAME(len)(a+UCHARS_IN_VECTOR)+UCHARS_IN_VECTOR;
 }
 

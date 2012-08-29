@@ -80,7 +80,7 @@ static inline unsigned int NONZERO_MASK(tp_vector x)
 
 #ifdef USE_SSE2_NO_BSF
 static char first_bit_hash[]= {0,37,50,8,0,21,0,0,38,54,5,51,9,0,30,0,22,12,1,0,0,0,0,39,0,55,0,35,6,52,28,10,0,0,33,31,0,0,23,0,13,44,0,2,0,0,25,0,0,0,0,0,40,15,0,0,56,62,46,0,19,36,7,0,0,53,4,0,29,11,0,0,0,0,34,0,27,32,0,0,0,43,0,0,24,0,0,14,0,61,45,18,0,0,3,0,0,0,0,26,0,42,0,0,0,60,17,0,0,0,0,41,0,59,16,0,0,58,0,57,0,63,47,48,0,0,49,20};
-static inline tp_mask first_bit(tp_mask x)
+static inline tp_mask first_bit(tp_mask x,int y)
 {
   /* ones has form 2**(tz+1)-1 where tb is number of trailing zereos.*/
   tp_mask ones=x^(x-1);
@@ -88,17 +88,11 @@ static inline tp_mask first_bit(tp_mask x)
   return first_bit_hash[(903385529620038207L*ones)>>57];
 }
 #else
-static inline tp_mask first_bit(tp_mask x)
+static inline tp_mask first_bit(tp_mask x,int y)
 {
   return __builtin_ctzl(x);
 }
 #endif
-
-static inline char first_bit_short_ary[]= {[0]=16,[1]=0,[2]=1,[4]=2,[8]=3,[16]=4,[32]=5,[64]=6,[128]=7,[256]=8,[512]=9,[1024]=10,[2048]=11,[4096]=12,[8192]=13,[16384]=14,[32768]=15 };
-static inline tp_mask first_bit_short(tp_mask x){
-  return first_bit_short_ary[x&(-x)];
-}
-
 static inline tp_mask bit_i(int i)
 {
   return ((tp_mask) 1)<<i;
@@ -158,7 +152,7 @@ static inline tp_vector TEST_RANGE_C(tp_vector v,uchar from,uchar to)
 }
 
 #include "parallel_tolower.h"
-static inline tp_vector PARALLEL_TOLOWER(tp_vector m)
+static inline tp_vector parallel_tolower(tp_vector m)
 {
   int i;
   tp_vector high_bit=BROADCAST(128);
@@ -172,117 +166,81 @@ static inline tp_vector PARALLEL_TOLOWER(tp_vector m)
   return m;
 }
 
-
-#ifdef HAS_PARALLEL_MIN
-static inline  tp_vector HORIZONTAL_MINI(tp_vector a){
-  /*Cannot be checked by preprocessor.*/
-  if (UCHARS_IN_VECTOR>32){
-    printf("size not supported"); abort(); 
-  }
-  if (UCHARS_IN_VECTOR>16) a=MINI(a,SHIFT_DOWN(a,16));
-  if (UCHARS_IN_VECTOR>8)  a=MINI(a,SHIFT_DOWN(a,8));
-  if (UCHARS_IN_VECTOR>4)  a=MINI(a,SHIFT_DOWN(a,4));
-  if (UCHARS_IN_VECTOR>2)  a=MINI(a,SHIFT_DOWN(a,2));
-  if (UCHARS_IN_VECTOR>1)  a=MINI(a,SHIFT_DOWN(a,1));  
-  return a;
-}
-static inline  tp_vector HORIZONTAL_MAXI(tp_vector a){
-  /*Cannot be checked by preprocessor.*/
-  if (UCHARS_IN_VECTOR>32){
-    printf("size not supported"); abort(); 
-  }
-  if (UCHARS_IN_VECTOR>16) a=MAXI(a,SHIFT_DOWN(a,16));
-  if (UCHARS_IN_VECTOR>8)  a=MAXI(a,SHIFT_DOWN(a,8));
-  if (UCHARS_IN_VECTOR>4)  a=MAXI(a,SHIFT_DOWN(a,4));
-  if (UCHARS_IN_VECTOR>2)  a=MAXI(a,SHIFT_DOWN(a,2));
-  if (UCHARS_IN_VECTOR>1)  a=MAXI(a,SHIFT_DOWN(a,1));  
-  return a;
-}
-
 static uchar last[]={64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38,37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1};
 
-static inline tp_mask first_nonzero_byte_maxi(tp_vector a){
-  a=AND(a,LOAD(last+3*UCHARS_IN_VECTOR));
-  a = HORIZONTAL_MAXI(a);
-  tp_mask m =(tp_mask) ( _mm_cvtsi128_si64(a));
-  return 16-m;
-}
-static inline tp_mask first_nonzero_byte_maxi4(tp_vector a0,tp_vector a1,tp_vector a2,tp_vector a3){
+static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,tp_vector a3){
   a0=AND(a0,LOAD(last+0*UCHARS_IN_VECTOR));
   a1=AND(a1,LOAD(last+1*UCHARS_IN_VECTOR));
   a2=AND(a2,LOAD(last+2*UCHARS_IN_VECTOR));
   a3=AND(a3,LOAD(last+3*UCHARS_IN_VECTOR));
-  tp_vector a = HORIZONTAL_MAXI(MAXI(MAXI(a0,a1),MAXI(a2,a3)));
+  tp_vector a = MAXI(MAXI(a0,a1),MAXI(a2,a3));
+  a = MAXI(a,SHIFT_DOWN(a,8));
+  a = MAXI(a,SHIFT_DOWN(a,4));
+  a = MAXI(a,SHIFT_DOWN(a,2));
+  a = MAXI(a,SHIFT_DOWN(a,1));
   tp_mask m =(tp_mask) ( _mm_cvtsi128_si64(a));
   return 64-m;
 }
-#endif
 
-#ifdef FIRST_MATCH_ONLY
-#define TEST_LOOP_SHORT_FIRST(offset,mvec,end) { tp_mask first;\
-    first_bit_short(get_mask(mvec));\
-    first=forget_before(first,offset);\
-    p= s2+first;\
-    if(end && end<=p){\
-      LOOP_END(p);\
-    }\
-    LOOP_BODY(first);\
-  }
-#define TEST_LOOP_FIRST(offset,mvec0,mvec1,mvec2,mvec3,end) { tp_mask first;\
-  first=first_bit((get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32))\
-  first=forget_before(first,offset);\
-  p= s2+first;\
-  if(end && end<=p){\
-    LOOP_END(p);\
-  }\
-  LOOP_BODY(first);\
-}
 
- #define TEST_LOOP_SHORT(mvec,end) { tp_mask first;\
-    first_bit_short(get_mask(mvec));\
-    p= s2+first;\
-    if(end && end<=p){\
-      LOOP_END(p);\
-    }\
-    LOOP_BODY(first);\
-  } 
-#define TEST_LOOP(mvec0,mvec1,mvec2,mvec3,end) { tp_mask first;\
-  first=first_bit((get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32))\
-  first=forget_before(first,offset);\
-  p= s2+first;\
-  if(end && end<=p){\
-    LOOP_END(p);\
-  }\
-  LOOP_BODY(first);\
-}
 
-#else
-
-#endif
-
-#define NONZERO_VECTOR_ZERO(v)  get_mask(TEST_ZERO(v))
-#define NONZERO_VECTOR(v)       get_mask(v)
-
+#if UNROLL==4
+/*Has one dependency less than mask0|(mask1<<16)|(mask2<<32)|(mask3<<48)*/
 #define get_ZERO(x) get_mask(TEST_ZERO(x))
 #define MASK_MVECS   ((get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32))
-#define MASK_ZVECS   ((get_ZERO(zvec0)|(get_ZERO(zvec1)<<16))|((get_ZERO(zvec2)|(get_ZERO(zvec3)<<16))<<32))
-
-#define MASK_MVECS_ZERO   ((get_ZERO(mvec0)|(get_ZERO(mvec1)<<16))|((get_ZERO(mvec2)|(get_ZERO(mvec3)<<16))<<32))
-#define NONZERO_MVECS_ZERO get_mask(TEST_ZERO(MINI(MINI(mvec0,mvec1),MINI(mvec2,mvec3))))
-
-#define MVECS_FIRST  first_bit(MASK_MVECS,0)
-#define ZVECS_FIRST         first_bit(MASK_ZVECS,0)
-
-#define MVECS_FIRST_FORGET(u)  first_bit(forget_before(MASK_MVECS,u))
-#define ZVECS_FIRST_FORGET(u)  first_bit(forget_before(MASK_ZVECS,u))
-
-#define FIRST_BIT(v) first_bit(NONZERO_VECTOR(v),0)
-
-#define ZERO_CALC_FORGET(u) if(forget_before(MASK_ZVECS,u)) endp=s2+first_bit(forget_before(MASK_ZVECS,u));
-#define ZERO_CALC           if(MASK_ZVECS)                  endp=s2+first_bit(MASK_ZVECS);
-
-#define NONZERO_MVECS NONZERO_VECTOR(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)))
-#define NONZERO_ZVECS NONZERO_VECTOR(TEST_ZERO(MINI(MINI(zvec0,zvec1),MINI(zvec2,zvec3))))
+#define MASK_ZVECS   _DETECT_ZERO_BYTE((get_ZERO(sn0)  |(get_ZERO(sn1)<<16))  |((get_ZERO(sn2)  |(get_ZERO(sn3)<<16))<<32),0)
 
 
 
+#define ZVECS_FIRST  first_bit(MASK_ZVECS,0)
+
+#define NONZERO_MVECS get_mask(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)))
+#define NONZERO_ZVECS _DETECT_ZERO_BYTE(get_mask(TEST_ZERO(MINI(MINI(zvec0,zvec1),MINI(zvec2,zvec3)))),0)
+
+
+#define MASK_LOOP_FIRST(offset,endp) \
+  { tp_mask mask,zmask;\
+    mask =MASK_MVECS;\
+    zmask=MASK_ZVECS;\
+    if ( forget_before(mask|zmask,offset) || endp){\
+      mask =forget_before(mask,offset);\
+      zmask=forget_before(mask,offset);\
+      if (zmask) {\
+        p=s2+first_bit(zmask);\
+        if (!endp || endp>p) endp = p;\
+      }\
+      if(endp) goto epilog_end;\
+      goto epilog;\
+    }\
+  }
+
+#define MASK_LOOP(endp) \
+  if (NONZERO_ZVECS || endp){\
+    mask =MASK_MVECS;\
+    zmask=MASK_ZVECS;\
+    if (zmask) {\
+        p=s2+first_bit(zmask);\
+        if (!endp || endp>p) endp = p;\
+    }\
+    goto epilog_end;\
+  }\
+  if(NONZERO_MVECS){\
+    mask=MASK_MVECS;\
+    goto epilog;\
+  }
+
+#define MASK_EPILOG \
+ while(mask){ p=s2+first_bit(mask)\
+    LOOP_BODY(p);\
+    mask=forget_first_bit(mask);\
+  }\
+  goto start;
+#define MASK_EPILOG_END \
+  mask=forget_after(mask,endp-s2);\
+  while(mask){ p=s2+first_bit(mask)\
+    LOOP_BODY(p);\
+    mask=forget_first_bit(mask);\
+  }\
+  LOOP_END(endp);\
+
+#endif
