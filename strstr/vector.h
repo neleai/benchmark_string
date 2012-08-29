@@ -49,36 +49,40 @@ By defining macro WIDE_VERSION you can use same operations that work at 32-bit i
 #define UN_OP(n,e) static inline tp_vector n(tp_vector x){ return e;}
 #define BIN_OP(n,e) static inline tp_vector n(tp_vector x,tp_vector y){ return e;}
 #define MASK_OP(name,exp) static inline tp_mask name(tp_mask x,int y){ return exp; }
-#if defined( USE_AVX2)
- #ifdef WIDE_VERSION
-    #include "avx2_wide.h"
-  #else
-    #include "avx2.h"
-  #endif
-#elif defined( USE_SSE2) | defined(USE_SSE2_NO_BSF) | defined(USE_SSSE3) | defined(USE_SSE4_1) | defined(USE_AVX)
-  #ifdef WIDE_VERSION
-    #include "sse_wide.h"
-  #else
-    #include "sse.h"
-  #endif
+
+#define WIDE_VERSION_STF(x) #x
+#define WIDE_VERSION_CONCAT(a,b) WIDE_VERSION_STF(a##b)
+#ifdef WIDE_VERSION
+  #define WIDE_VERSION_HEADER(x) WIDE_VERSION_CONCAT(x,_string_wide.h)
 #else
- #ifdef WIDE_VERSION
-  #include "arit_wide.h"
- #else
-  #include "arit.h"
- #endif
+  #define WIDE_VERSION_HEADER(x) WIDE_VERSION_CONCAT(x,_string.h)
 #endif
+
+#if defined( USE_AVX2)
+  #include WIDE_VERSION_HEADER(avx)
+#elif defined( USE_SSE2) | defined(USE_SSE2_NO_BSF) | defined(USE_SSSE3) | defined(USE_SSE4_1) | defined(USE_AVX)
+  #include WIDE_VERSION_HEADER(sse)
+#elif defined( USE_ALTIVEC)
+  #include WIDE_VERSION_HEADER(altivec)
+#elif defined( USE_NEON)
+  #include WIDE_VERSION_HEADER(neon)
+#elif defined( USE_MDMX)
+  #include WIDE_VERSION_HEADER(mdmx)
+#else
+  #include WIDE_VERSION_HEADER(arit)
+#endif
+
 #undef UN_OP
 #undef BIN_OP
 #undef MASK_OP
 
-#if UNROLL==1
+#if unroll==1
 #define DO_ACTION ACTION(0)
 #define AGREGATE_VECTOR  mvec0
-#elif UNROLL==2
+#elif unroll==2
 #define DO_ACTION ACTION(0) ACTION(1)
 #define  AGREGATE_VECTOR    OR(mvec0,mvec1)
-#elif UNROLL==4
+#elif unroll==4
 #define DO_ACTION ACTION(0) ACTION(1) ACTION(2) ACTION(3)
 #define AGREGATE_VECTOR OR(OR(mvec0,mvec1),OR(mvec2,mvec3))
 #endif

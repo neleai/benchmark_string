@@ -60,19 +60,41 @@ v0=LOAD(s2);v1=LOAD(s2+1*UCHARS_IN_VECTOR);v2=LOAD(s2+2*UCHARS_IN_VECTOR);v3=LOA
 for (i=0;i<ns;i++){xo=xo^n[i]; vx=BROADCAST(xo);vc=BROADCAST(n[i]);\
 PHASE2TEST(0); PHASE2TEST(1); PHASE2TEST(2); PHASE2TEST(3);\
 }\
+if (_SPN_CSPN(0,1)){
+mvec0=TEST_EQ(mvec0,BROADCAST(0);mvec1=TEST_EQ(mvec1,BROADCAST(0);mvec2=TEST_EQ(mvec2,BROADCAST(0);mvec3=TEST_EQ(mvec3,BROADCAST(0);
+}
 }
 
 #define LOOP_BODY(p) return p - s;
 #define LOOP_END /**/
 size_t STRSPN(const uchar *_s,const uchar *_n)
 {
-  tp_vector vc,vx,v0,v1,v2,v3;
+  tp_vector vc,vx,v0,v1,v2,v3; int i;
   uchar *s=(uchar *)_s,*n=(uchar *)_n;
   size_t ns=str_shorterlen(n,n);
   if (ns==0) return strlen(s);
   if (ns==1) return strchr(s,n[0])-(char*)s;
   if (ns==2) return strspn4(s,n[0],n[1],0,0);
   if (ns==3) return strspn4(s,n[0],n[1],n[2],0);
+#ifndef WIDE_VERSION
+  if (ns>16) {
+    uchar chars[256];
+    memset(chars,0,256);
+    for(i=0;i<ns;i++)
+      chars[n[i]]=1;
+    chars[0]=_SPN_CSPN(0,1);
+    i=0;
+    while(1){
+      #define TEST \
+      if(chars[s[i]]==_SPN_CSPN(0,1)) return i;\
+      i++;
+      TEST; TEST; TEST; TEST;
+    }
+  }
+#endif
+#ifdef USE_SSE4_2
+
+#endif
 
   #include "loop.h"
 }
