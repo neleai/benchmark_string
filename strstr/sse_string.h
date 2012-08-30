@@ -93,15 +93,15 @@ static inline tp_mask first_bit(tp_mask x)
   return __builtin_ctzl(x);
 }
 #endif
-static inline char first_bit_short_ary[]= {[0]=16,[1]=0,[2]=1,[4]=2,[8]=3,[16]=4,[32]=5,[64]=6,[128]=7,[256]=8,[512]=9,[1024]=10,[2048]=11,[4096]=12,[8192]=13,[16384]=14,[32768]=15 };
+static  char first_bit_short_ary[]= {[0]=16,[1]=0,[2]=1,[4]=2,[8]=3,[16]=4,[32]=5,[64]=6,[128]=7,[256]=8,[512]=9,[1024]=10,[2048]=11,[4096]=12,[8192]=13,[16384]=14,[32768]=15 };
 static inline tp_mask first_bit_short(tp_mask x){
   return first_bit_short_ary[x&(-x)];
 }
 static inline tp_mask forget_first_bit(tp_mask x){ return x&(x-1); }
 MASK_OP(forget_before   , x&((y>=UNROLL*UCHARS_IN_VECTOR) ? 0 : ((y<0) ? x :\
-                             shift_up(   ~((tp_mask)0),y))))
+                              (~((tp_mask)0))<<y)))
 MASK_OP(forget_after    , x&((y>=UNROLL*UCHARS_IN_VECTOR) ? x : ((y<0) ? 0 :\
-                             shift_down( ~((tp_mask)0),63-y))))
+                              (~(tp_mask)0)>>(63-y))))
 
 
 BIN_OP(TEST_EQ,_mm_cmpeq_epi8( x,y))
@@ -206,7 +206,7 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
 
 #define FIRST_BIT SHORT(first_bit_short,first_bit)
 
-#define MASK_LOOP(offset,endp) \
+#define MASK_LOOP_FIRST(offset,endp) \
   mask = MASK_MVECS;\
   zmask= MASK_ZVECS;\
   if ( forget_before(mask|zmask,offset || endp)){\
@@ -229,7 +229,7 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
         p=s2+FIRST_BIT(zmask);\
         if (!endp || endp>p) endp = p;\
     }\
-    goto EPILOG_END\
+    goto EPILOG_END;\
   }\
   if(NONZERO_MVECS){\
     mask=MASK_MVECS;\
