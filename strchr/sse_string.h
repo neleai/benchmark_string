@@ -184,19 +184,21 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
 /*Has one dependency less than mask0|(mask1<<16)|(mask2<<32)|(mask3<<48)*/
 #define get_ZERO(x) get_mask(TEST_ZERO(x))
 
-#define MASK_ZVECS   _DETECT_ZERO_BYTE(SHORT(get_ZERO(sn0),\
-                                            (get_ZERO(sn0)  |(get_ZERO(sn1)<<16))  |((get_ZERO(sn2)  |(get_ZERO(sn3)<<16))<<32)),0)
-#define NONZERO_ZVECS _DETECT_ZERO_BYTE(get_mask(TEST_ZERO(MINI(MINI(sn0,sn1),MINI(sn2,sn3)))),0)
+#define MASK_ZVECS   SHORT(get_ZERO(sn0),\
+                                            (get_ZERO(sn0)  |(get_ZERO(sn1)<<16))  |((get_ZERO(sn2)  |(get_ZERO(sn3)<<16))<<32))
+#define NONZERO_ZVECS get_mask(TEST_ZERO(MINI(MINI(sn0,sn1),MINI(sn2,sn3))))
 
-#ifdef ZERO_VARIANT
-#define MASK_MVECS   (SHORT(get_ZERO(mvec0),\
+#define MASK_MVECS_ZERO      (SHORT(get_ZERO(mvec0),\
                                             (get_ZERO(mvec0)  |(get_ZERO(mvec1)<<16))  |((get_ZERO(mvec2)  |(get_ZERO(mvec3)<<16))<<32)))
-#define NONZERO_MVECS (get_mask(TEST_ZERO(MINI(MINI(mvec0,mvec1),MINI(mvec2,mvec3)))))
-#else
-#define MASK_MVECS   SHORT(get_mask(mvec0),\
+#define NONZERO_MVECS_ZERO (get_mask(TEST_ZERO(MINI(MINI(mvec0,mvec1),MINI(mvec2,mvec3)))))
+
+#define MASK_MVECS_ONES   SHORT(get_mask(mvec0),\
                           (get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32))
-#define NONZERO_MVECS get_mask(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)))
-#endif
+#define NONZERO_MVECS_ONES get_mask(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)))
+
+#define MASK_MVECS _ZERO_VARIANT(MASK_MVECS_ZERO,MASK_MVECS_ONES)
+#define NONZERO_MVECS _ZERO_VARIANT(NONZERO_MVECS_ZERO,NOZERO_MVECS_ONES)
+
 
 #define ENUM_PATTERN_LOOP \
   while(mask){ p=s2+FIRST_BIT(mask);\
@@ -211,10 +213,10 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
 
 #define MASK_LOOP_FIRST(offset,endp) \
   mask = MASK_MVECS;\
-  zmask= MASK_ZVECS;\
+  zmask= _DETECT_ZERO_BYTE(MASK_ZVECS,0);\
   if ( forget_before(mask|zmask,offset || endp)){\
-      mask =forget_before(mask,offset);\
-      zmask=forget_before(mask,offset);\
+      mask =forget_before( mask,offset);\
+      zmask=forget_before(zmask,offset);\
       if (zmask) {\
         p=s2+FIRST_BIT(zmask);\
         if (!endp || endp>p) endp = p;\
@@ -225,9 +227,9 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
       }\
   }
 #define MASK_LOOP(endp) \
-  if (NONZERO_ZVECS || endp){\
+  if (_DETECT_ZERO_BYTE(NONZERO_ZVECS,0) || endp){\
     mask =MASK_MVECS;\
-    zmask=MASK_ZVECS;\
+    zmask=_DETECT_ZERO_BYTE(MASK_ZVECS,0);\
     if (zmask) {\
         p=s2+FIRST_BIT(zmask);\
         if (!endp || endp>p) endp = p;\
@@ -240,13 +242,6 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
   }
 
 
-#define MASK_EPILOG \
-  ENUM_PATTERN_LOOP \
-  goto start;
-#define MASK_EPILOG_END \
-  mask=forget_after(mask,endp-s2);\
-  ENUM_PATTERN_LOOP \
-  LOOP_END(endp);\
 
 
 #endif

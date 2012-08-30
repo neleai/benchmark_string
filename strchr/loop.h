@@ -52,18 +52,20 @@ performance can be improved by
 #define PHASE2
 #endif
 #ifdef ZERO_VARIANT
-  #undef LOOP_TEST
-  #define LOOP_TEST LOOP_TEST_ZERO
+  #define _ZERO_VARIANT(x,y) x
+#else
+  #define _ZERO_VARIANT(x,y) y
 #endif
-
-uchar *endp=NULL;
-tp_mask mask,zmask;
-
 #ifdef DETECT_ZERO_BYTE
   #define _DETECT_ZERO_BYTE(x,y) x
 #else
   #define _DETECT_ZERO_BYTE(x,y) y
 #endif
+
+uchar *endp=NULL;
+tp_mask mask,zmask;
+
+
 #ifdef DETECT_END
 #define _DETECT_END(u) if (s_end<=s2+u*UCHARS_IN_VECTOR) endp = s_end;
 /* For users that rely on invalid pointers suppresed by zero size */
@@ -78,7 +80,8 @@ if  (s_end == s)
 #define TEST(u) \
      so = sn;\
      sn = sn##u  = LOAD(s2+u*UCHARS_IN_VECTOR);\
-     mvec##u  = LOOP_TEST(so,sn); \
+     mvec##u     = _ZERO_VARIANT(LOOP_TEST_ZERO(so,sn),\
+                                 LOOP_TEST(so,sn)); \
 
 int  i;
 tp_vector sn, __attribute__((unused)) so;
@@ -152,21 +155,26 @@ while(1)
     PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
 
     TEST_LARGE;
-    MASK_LOOP(endp);
+    if (_DETECT_ZERO_BYTE(NONZERO_ZVECS,0) || endp){
+      HANDLE_ZERO_BYTE;
+      goto epilog_end;
+    }
+    if(NONZERO_MVECS){
+      goto epilog;
+    }
+
   }
 /*gcc likes to duplicate code so we avoid this by jump.*/
 epilog:;
-MASK_EPILOG
+  ENUM_PATTERN_LOOP;
+  goto start;
 epilog_end:;
-MASK_EPILOG_END
+  ENUM_PATTERN_LOOP;
+  LOOP_END(endp);
 #undef  SHORT
 #define SHORT(x,y) x
 epilog_end_short:;
-MASK_EPILOG_END
+  ENUM_PATTERN_LOOP;
+  LOOP_END(endp);
 
 
-#undef LOOP_TEST
-#undef LOOP_BODY
-#undef ACTION
-#undef DETECT_END
-#undef _DETECT_END
