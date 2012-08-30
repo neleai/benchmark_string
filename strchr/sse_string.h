@@ -189,9 +189,9 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
 #define NONZERO_ZVECS _DETECT_ZERO_BYTE(get_mask(TEST_ZERO(MINI(MINI(sn0,sn1),MINI(sn2,sn3)))),0)
 
 #ifdef ZERO_VARIANT
-#define MASK_ZVECS   _DETECT_ZERO_BYTE(SHORT(get_ZERO(mvec0),\
-                                            (get_ZERO(mvec0)  |(get_ZERO(mvec1)<<16))  |((get_ZERO(mvec2)  |(get_ZERO(mvec3)<<16))<<32)),0)
-#define NONZERO_ZVECS _DETECT_ZERO_BYTE(get_mask(TEST_ZERO(MINI(MINI(mvec0,mvec1),MINI(mvec2,mvec3)))),0)
+#define MASK_MVECS   (SHORT(get_ZERO(mvec0),\
+                                            (get_ZERO(mvec0)  |(get_ZERO(mvec1)<<16))  |((get_ZERO(mvec2)  |(get_ZERO(mvec3)<<16))<<32)))
+#define NONZERO_MVECS (get_mask(TEST_ZERO(MINI(MINI(mvec0,mvec1),MINI(mvec2,mvec3)))))
 #else
 #define MASK_MVECS   SHORT(get_mask(mvec0),\
                           (get_mask(mvec0)|(get_mask(mvec1)<<16))|((get_mask(mvec2)|(get_mask(mvec3)<<16))<<32))

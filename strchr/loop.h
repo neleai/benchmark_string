@@ -42,13 +42,18 @@
   PHASE2_SHORT      As phase2 except only mvec0 is relevant. 
              
 performance can be improved by       
-  SHORT_START       do 
+  SHORT_START       do first 4 iteartions individualy, then proceed as before.
   PREFETCH x        prefetch address 64*x after current address if implementation supports it.
+  ZERO_VARIANT
 
 */
 
 #ifndef PHASE2
 #define PHASE2
+#endif
+#ifdef ZERO_VARIANT
+  #undef LOOP_TEST
+  #define LOOP_TEST LOOP_TEST_ZERO
 #endif
 
 uchar *endp=NULL;

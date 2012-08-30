@@ -18,8 +18,8 @@
 #define prefetch 8
 
 
-#include "vector.h"
 #define ZERO_VARIANT
+#include "vector.h"
 
 #define LOOP_END(p)
 #define LOOP_BODY(p) return (*p) ? p : NULL;
