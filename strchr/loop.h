@@ -155,14 +155,7 @@ while(1)
     PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
 
     TEST_LARGE;
-    if (_DETECT_ZERO_BYTE(NONZERO_ZVECS,0) || endp){
-      HANDLE_ZERO_BYTE;
-      goto epilog_end;
-    }
-    if(NONZERO_MVECS){
-      goto epilog;
-    }
-
+    MASK_LOOP(endp);
   }
 /*gcc likes to duplicate code so we avoid this by jump.*/
 epilog:;

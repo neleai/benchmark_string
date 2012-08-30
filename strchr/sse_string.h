@@ -201,10 +201,10 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
 
 
 #define ENUM_PATTERN_LOOP \
-  while(mask){ p=s2+FIRST_BIT(mask);\
+  while(mask) { p=s2+FIRST_BIT(mask);\
   LOOP_BODY(p)\
   mask=forget_first_bit(mask);\
-  }
+  };
 
 #define ENUM_PATTERN_BITS SHORT({ENUM_PATTERN_LOOP;} ,goto epilog;)
 #define EPILOG_END        SHORT(epilog_end_short,epilog_end)
