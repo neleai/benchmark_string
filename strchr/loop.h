@@ -50,6 +50,7 @@ performance can be improved by
 
 #ifndef PHASE2
 #define PHASE2
+#define PHASE2_SHORT
 #endif
 #ifdef ZERO_VARIANT
   #define _ZERO_VARIANT(x,y) x
@@ -127,7 +128,19 @@ sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);
   TEST_SHORT(endp);
   MASK_LOOP(endp);
   s2+=UCHARS_IN_VECTOR;
- 
+  TEST_SHORT(endp);
+  MASK_LOOP(endp);
+  s2+=UCHARS_IN_VECTOR;
+  TEST_SHORT(endp);
+  MASK_LOOP(endp);
+  s2+=UCHARS_IN_VECTOR;
+  TEST_SHORT(endp);
+  MASK_LOOP(endp);
+  s2+=UCHARS_IN_VECTOR;
+  TEST_SHORT(endp);
+  MASK_LOOP(endp);
+  s2+=UCHARS_IN_VECTOR;
+
   s2=(uchar *)(((size_t) s)&((~((size_t) UNROLL*sizeof(tp_vector)-1))))-UNROLL*UCHARS_IN_VECTOR;
   #ifdef S_START
   sn=(S_START < s2) ? LOAD(s2-sizeof(tp_vector)) : BROADCAST(0);

@@ -197,7 +197,7 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
 #define NONZERO_MVECS_ONES get_mask(OR(OR(mvec0,mvec1),OR(mvec2,mvec3)))
 
 #define MASK_MVECS _ZERO_VARIANT(MASK_MVECS_ZERO,MASK_MVECS_ONES)
-#define NONZERO_MVECS _ZERO_VARIANT(NONZERO_MVECS_ZERO,NOZERO_MVECS_ONES)
+#define NONZERO_MVECS _ZERO_VARIANT(NONZERO_MVECS_ZERO,NONZERO_MVECS_ONES)
 
 
 #define ENUM_PATTERN_LOOP \
@@ -214,7 +214,7 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
 #define MASK_LOOP_FIRST(offset,endp) \
   mask = MASK_MVECS;\
   zmask= _DETECT_ZERO_BYTE(MASK_ZVECS,0);\
-  if ( forget_before(mask|zmask,offset || endp)){\
+  if ( forget_before(mask|zmask,offset) || endp){\
       mask =forget_before( mask,offset);\
       zmask=forget_before(zmask,offset);\
       if (zmask) {\

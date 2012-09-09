@@ -17,12 +17,12 @@
 
 #define prefetch 8
 
-
-#define ZERO_VARIANT
+//#define SHORT_START
+//#define ZERO_VARIANT
 #include "vector.h"
 
 #define LOOP_END(p)
-#define LOOP_BODY(p) return (*p) ? p : NULL;
+#define LOOP_BODY(p) return (*p==c) ? p : NULL;
 #define LOOP_TEST(so,sn) OR(TEST_EQ(sn,vc),TEST_ZERO(sn));
 #define LOOP_TEST_ZERO(so,sn) MINI(XOR(sn,vc),sn);
 
