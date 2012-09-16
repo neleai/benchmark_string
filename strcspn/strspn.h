@@ -42,8 +42,11 @@ static inline size_t str_shorterlen(uchar *a,uchar *b){
 #define LOOP_END /**/
 static size_t strspn4(uchar *s,uchar c0,uchar c1,uchar c2,uchar c3){
   tp_vector v0=BROADCAST(c0),v1=BROADCAST(c1),v2=BROADCAST(c2),v3=BROADCAST(c3);
-  #define TEST_CODE(so,sn) OR(OR(TEST_EQ(sn,v0),TEST_EQ(sn,v1)),OR(TEST_EQ(sn,v2),TEST_EQ(sn,v3)))
+  #define TEST_CODE(so,sn) XOR(OR(OR(TEST_EQ(sn,v0),TEST_EQ(sn,v1)),OR(TEST_EQ(sn,v2),TEST_EQ(sn,v3)))\
+                              ,BROADCAST(_SPN_CSPN(255,0)))
   #include "loop.h" 
+}
+static size_t strspn_range(uchar *s,uchar from,uchar to){
 }
 
 /*zero variant should be faster but gcc on x64 messes register allocation.*/

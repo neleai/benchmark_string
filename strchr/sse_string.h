@@ -199,6 +199,52 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
 #define MASK_MVECS _ZERO_VARIANT(MASK_MVECS_ZERO,MASK_MVECS_ONES)
 #define NONZERO_MVECS _ZERO_VARIANT(NONZERO_MVECS_ZERO,NONZERO_MVECS_ONES)
 
+#ifdef FIRST_MATCH_ONLY
+
+#define ENUM_PATTERN_LOOP \
+  p=s2+FIRST_BIT(mask);\
+  LOOP_BODY(p)\
+  mask=forget_first_bit(mask);\
+  };
+
+#define ENUM_PATTERN_BITS SHORT(goto epilog_short ,goto epilog)
+#define EPILOG_END        SHORT(epilog_end_short,epilog_end)
+
+#define FIRST_BIT SHORT(first_bit_short,first_bit)
+
+#define MASK_LOOP_FIRST(offset,endp) \
+  mask = MASK_MVECS;\
+  zmask= _DETECT_ZERO_BYTE(MASK_ZVECS,0);\
+  if ( forget_before(mask|zmask,offset) || endp){\
+      mask =forget_before( mask,offset);\
+      zmask=forget_before(zmask,offset);\
+      if (zmask) {\
+        p=s2+FIRST_BIT(zmask);\
+        if (!endp || endp>p) endp = p;\
+      }\
+      if(endp) goto EPILOG_END;\
+      if(mask){ \
+        ENUM_PATTERN_BITS;\
+      }\
+  }
+#define MASK_LOOP(endp) \
+  if (_DETECT_ZERO_BYTE(NONZERO_ZVECS,0) || endp){\
+    mask =MASK_MVECS;\
+    zmask=_DETECT_ZERO_BYTE(MASK_ZVECS,0);\
+    if (zmask) {\
+        p=s2+FIRST_BIT(zmask);\
+        if (!endp || endp>p) endp = p;\
+    }\
+    goto EPILOG_END;\
+  }\
+  if(NONZERO_MVECS){\
+    mask=MASK_MVECS;\
+    ENUM_PATTERN_BITS;\
+  }
+
+
+
+#else
 
 #define ENUM_PATTERN_LOOP \
   while(mask) { p=s2+FIRST_BIT(mask);\
@@ -241,7 +287,13 @@ static inline tp_mask first_bit_vectors(tp_vector a0,tp_vector a1,tp_vector a2,t
     ENUM_PATTERN_BITS;\
   }
 
+#define EPILOG\
+  SHORT(epilog_short:,epilog:)\
+  goto start;\
+  SHORT(epilog_end_short:,epilog_end:)\
 
+
+#endif
 
 
 #endif
