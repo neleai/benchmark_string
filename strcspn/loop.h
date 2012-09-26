@@ -77,7 +77,7 @@ if  (DETECT_END <= s)
      mvec##u = TEST_CODE(so,sn); 
 
 
-int  i;
+int  _i;
 tp_vector vzero=BROADCAST(0);
 
 int s_offset;
@@ -198,13 +198,13 @@ PHASE2
   }
 test:; /*We need this flow otherwise gcc would duplicate this fragment.*/
 
-i=0;
+_i=0;
 while(mask)
   {
-    i=first_bit(mask,i);
-    uchar __attribute__((unused)) *p=s2+i;
+    _i=first_bit(mask,_i);
+    uchar __attribute__((unused)) *p=s2+_i;
     LOOP_BODY(p);
-    mask=forget_first_bit(mask,i);
+    mask=forget_first_bit(mask,_i);
   }
 if (endp){
   LOOP_END(endp);

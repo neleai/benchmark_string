@@ -71,7 +71,7 @@ for (i=0;i<ns;i++){xo=xo^n[i]; vx=BROADCAST(xo);vc=BROADCAST(n[i]);\
 PHASE2TEST(0); PHASE2TEST(1); PHASE2TEST(2); PHASE2TEST(3);\
 }\
 if (_SPN_CSPN(0,1)){\
-mvec0=TEST_EQ(mvec0,BROADCAST(0);mvec1=TEST_EQ(mvec1,BROADCAST(0);mvec2=TEST_EQ(mvec2,BROADCAST(0);mvec3=TEST_EQ(mvec3,BROADCAST(0);\
+mvec0=TEST_EQ(mvec0,BROADCAST(0));mvec1=TEST_EQ(mvec1,BROADCAST(0));mvec2=TEST_EQ(mvec2,BROADCAST(0));mvec3=TEST_EQ(mvec3,BROADCAST(0));\
 }\
 }
 
