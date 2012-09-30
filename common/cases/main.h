@@ -1,4 +1,4 @@
-
+#include <emmintrin.h>
 static inline int max(int x,int y){ return x>y ? x : y; }
 static inline int min(int x,int y){ return x<y ? x : y; }
 int align_offset=0;
@@ -37,6 +37,12 @@ int try_test(int ns2,int ss2,int rnd){int i,k;
       }
       for(i=0;i<ss;i+=64){ 
         _mm_clflush(haystack+i);
+      }
+  #else
+  //      for(i=ss;i>0;i-=64){
+    for(i=0;i<ss;i+=64){ 
+
+        _mm_prefetch(haystack+i ,_MM_HINT_T0);
       }
   #endif
 	FN_CALL
