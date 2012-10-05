@@ -73,13 +73,17 @@ if  (DETECT_END == s)
 int  i;
 tp_vector vzero=BROADCAST(0);
 tp_vector sn, __attribute__((unused)) so;
+
+
+
+
 int s_offset;
-uchar* s2;
-/* As wide characters must be aligned this cannot happen.
-  if (((size_t) s)%sizeof(uchar)) 
-  exit(-1); */
-s_offset=(((size_t) s)%((unroll)*sizeof(tp_vector)))/sizeof(uchar);
-s2=(uchar *)(((size_t) s)&((~((size_t) unroll*sizeof(tp_vector)-1))));
+uchar* s2=s;
+#ifdef FIRST_UNALIGNED
+  
+#endif
+s_offset=(((size_t) s2)%((unroll)*sizeof(tp_vector)))/sizeof(uchar);
+s2=(uchar *)(((size_t) s2)&((~((size_t) unroll*sizeof(tp_vector)-1))));
 /*line s2=s-s_offset; is clearer but produces slower code*/
 
 #ifdef NEEDS_PREVIOUS_VECTOR
@@ -130,6 +134,61 @@ start:
 ;
 while(1)
   {
+ s2+=unroll*UCHARS_IN_VECTOR;
+    PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
+
+#undef ACTION
+#define ACTION(x) TEST(x)
+    DO_ACTION;
+#ifdef DETECT_ZERO_BYTE
+#if unroll==1
+  zvec=zvec0;
+#elif unroll==2
+#ifdef HAS_PARALLEL_MIN
+  zvec=TEST_ZERO(MINI(sz0,sz1));
+#else
+  zvec=OR(OR(TEST_ZERO(sz0),TEST_ZERO(sz1)));
+#endif
+#elif unroll==4
+#ifdef HAS_PARALLEL_MIN
+  zvec=TEST_ZERO(MINI(sz0,MINI(sz1,MINI(sz2,sz3))));
+#else
+  zvec=OR(TEST_ZERO(sz0),OR(TEST_ZERO(sz1),
+          OR(TEST_ZERO(sz2),TEST_ZERO(sz3))));
+#endif
+#endif
+#endif
+
+    if(NONZERO_MASK(OR(AGREGATE_VECTOR,zvec))||_DETECT_END(unroll))
+      {
+#ifdef DETECT_ZERO_BYTE
+  #undef ACTION
+  #define ACTION(x) mvec##x=OR(mvec##x,TEST_ZERO(sz##x));
+  DO_ACTION;
+#endif
+
+#ifdef FIRST_BYTE_ONLY
+    i=first_bit_vectors(mvec0,mvec1,mvec2,mvec3,0);
+    uchar __attribute__((unused)) *p=s2+i;
+    if (_DETECT_END(unroll) && DETECT_END <= p){
+      p= DETECT_END-1;
+      LOOP_END(p);
+    }
+    if(__builtin_expect(_TEST_ZERO_BYTE,0))
+      {
+        LOOP_END(p)
+      }
+    LOOP_BODY(p)
+
+#endif
+
+#undef ACTION
+#define ACTION(x) mask##x=get_mask(mvec##x);
+        DO_ACTION;
+        mask=AGREGATE_MASK;
+        goto test;
+      }
+
     s2+=unroll*UCHARS_IN_VECTOR;
     PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
 
@@ -147,10 +206,10 @@ while(1)
 #endif
 #elif unroll==4
 #ifdef HAS_PARALLEL_MIN
-  zvec=TEST_ZERO(MINI(MINI(sz0,sz1),MINI(sz2,sz3)));
+  zvec=TEST_ZERO(MINI(sz0,MINI(sz1,MINI(sz2,sz3))));
 #else
-  zvec=OR(OR(TEST_ZERO(sz0),TEST_ZERO(sz1)),
-          OR(TEST_ZERO(sz2),TEST_ZERO(sz3)));
+  zvec=OR(TEST_ZERO(sz0),OR(TEST_ZERO(sz1),
+          OR(TEST_ZERO(sz2),TEST_ZERO(sz3))));
 #endif
 #endif
 #endif

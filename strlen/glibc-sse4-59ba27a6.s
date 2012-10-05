@@ -1,4 +1,4 @@
-# blue
+# black
 
  .file "test_sse2.c"
  .text

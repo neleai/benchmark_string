@@ -16,10 +16,21 @@
    <http://www.gnu.org/licenses/>.  */
 
 /* basic string search loop. To use it define macros below and include this file.
-  TEST_CODE(so,sn)  given consecutive sequence so,sn of bytes  you should produce an
-                    vector. For bytes with highest bit set to 1 a loop invokes macro
-                    LOOP_BODY(p) where p is coresponding byte in sn.
+  TEST_CODE(sn)     You are given vector sn consisting of consecutive sequence of bytes 
+                    from string s. You should return an vector. This vector determines following:
+                    For bytes with highest bit set to 1 a loop invokes macro
+                    LOOP_BODY(p) where p is position of corresponding byte.
   LOOP_BODY(p)      see above
+  
+                  If you define an macro
+  NEEDS_PREVIOUS_VECTOR 
+                    then macro TEST_CODE is supplied an additional argument:
+  TEST_CODE(so,sn)  
+                    Argument so consist of byte immidately before those of sn. 
+                    It is your responsibility to ensure that a loop can 
+                    read sizeof(tp_vector) bytes before s.
+                    Usage remains unchanged
+
   DETECT_END(p)     When byte p is reached call macro    LOOP_END(p)
   DETECT_ZERO_BYTE  When first zero byte is reached call LOOP_END(p)
   LOOP_END(p)       see above
@@ -31,7 +42,7 @@
   Note that implementation by callback is complicated by fact that you usualy need a closure to
        share arguments.
 */
-
+#define PAGE_SIZE 4096
 #ifdef DETECT_ZERO_BYTE
 #define _DETECT_ZERO_BYTE mvec= OR(mvec,TEST_ZERO(sz));
 #define _TEST_ZERO_BYTE (*p==0)
@@ -40,10 +51,10 @@
 #define _TEST_ZERO_BYTE 0
 #endif
 #ifdef DETECT_END
-#define _DETECT_END(u) (DETECT_END<=s2+u*BYTES_AT_ONCE)
+#define _DETECT_END(u) (DETECT_END<=s2+u*UCHARS_IN_VECTOR)
 if  (DETECT_END == s)
   {
-    uchar UNUSED *p=s;
+    uchar __attribute__((unused)) *p=(uchar*) s;
     LOOP_END(p);
   }
 #else
@@ -53,27 +64,45 @@ if  (DETECT_END == s)
 
 
 #define TEST(u) \
-     mvec=vzero;\
      so=sn;\
-     sn=sz##u= LOAD(s2+u*BYTES_AT_ONCE);\
+     sn=sz##u= LOAD(s2+u*UCHARS_IN_VECTOR);\
      mvec    = TEST_CODE(so,sn); \
      mvec##u = mvec;
 
 
 int  i;
 tp_vector vzero=BROADCAST(0);
-tp_vector sn,so,sz0,sz1,sz2,sz3;
+tp_vector sn, __attribute__((unused)) so;
+
+
+
+
 int s_offset;
-uchar* s2;
-sn=vzero;
-ALIGN(s,unroll);
+uchar* s2=s;
+#ifdef FIRST_UNALIGNED
+  if (((size_t) s2)%PAGE_SIZE<PAGE_SIZE-sizeof(tp_vector)){
+    sn=LOAD_UNALIGNED(s2);
+    return get_mask(sn);
+  }  
+#endif
+
+
+s_offset=(((size_t) s2)%((unroll)*sizeof(tp_vector)))/sizeof(uchar);
+s2=(uchar *)(((size_t) s2)&((~((size_t) unroll*sizeof(tp_vector)-1))));
+/*line s2=s-s_offset; is clearer but produces slower code*/
+
+#ifdef NEEDS_PREVIOUS_VECTOR
+sn=(s-s2 < sizeof(tp_vector)) ? LOAD(s2-sizeof(tp_vector)) : vzero;
+#endif
+
 tp_vector mvec,zvec=vzero;
-tp_mask mask, UNUSED zmask;
+tp_mask mask, __attribute__((unused)) zmask;
+/*We could use array of vectors and loop for actions but gcc 
+  does not unroll them and produces slow code.*/
 #undef ACTION
-#define ACTION(x) tp_vector mvec##x; tp_mask mask##x;
-DO_ACTION;
-#undef ACTION
-#define ACTION(x) TEST(x)
+#define ACTION(x)  tp_vector mvec##x,sz##x;\
+                   tp_mask mask##x;\
+                   TEST(x)
 DO_ACTION;
 
 #ifdef DETECT_ZERO_BYTE
@@ -82,18 +111,37 @@ DO_ACTION;
   DO_ACTION;
 #endif
 
+#ifdef FIRST_BYTE_ONLY
+    i=first_bit_vectors(mvec0,mvec1,mvec2,mvec3,s_offset);
+    uchar __attribute__((unused)) *p=s+i;
+    if (_DETECT_END(unroll) && DETECT_END <= p){
+      p= DETECT_END-1;
+      LOOP_END(p);
+    }
+    if (i==64) goto start;
+    if(__builtin_expect(_TEST_ZERO_BYTE,0))
+      {
+        LOOP_END(p)
+      }
+    LOOP_BODY(p)
+
+#endif
+
+
 #undef ACTION
 #define ACTION(x) mask##x=get_mask(mvec##x);
 DO_ACTION;
 mask=AGREGATE_MASK;
 mask=forget_before(mask,s_offset);
+
 if (mask||_DETECT_END(unroll)) goto test;
 start:
 ;
 while(1)
   {
-    s2+=PARA;
+ s2+=unroll*UCHARS_IN_VECTOR;
     PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
+
 #undef ACTION
 #define ACTION(x) TEST(x)
     DO_ACTION;
@@ -102,29 +150,96 @@ while(1)
   zvec=zvec0;
 #elif unroll==2
 #ifdef HAS_PARALLEL_MIN
-  zvec=TEST_ZERO(MINI(MINI(sz0,sz1)));
+  zvec=TEST_ZERO(MINI(sz0,sz1));
 #else
   zvec=OR(OR(TEST_ZERO(sz0),TEST_ZERO(sz1)));
 #endif
 #elif unroll==4
 #ifdef HAS_PARALLEL_MIN
-  zvec=TEST_ZERO(MINI(MINI(sz0,sz1),MINI(sz2,sz3)));
+  zvec=TEST_ZERO(MINI(sz0,MINI(sz1,MINI(sz2,sz3))));
 #else
-  zvec=OR(OR(TEST_ZERO(sz0),TEST_ZERO(sz1)),
-          OR(TEST_ZERO(sz2),TEST_ZERO(sz3)));
+  zvec=OR(TEST_ZERO(sz0),OR(TEST_ZERO(sz1),
+          OR(TEST_ZERO(sz2),TEST_ZERO(sz3))));
 #endif
 #endif
 #endif
+
     if(NONZERO_MASK(OR(AGREGATE_VECTOR,zvec))||_DETECT_END(unroll))
       {
-        /* on x64 or is destructive operation
-           in case of strlen it is faster to recalculate
-           mvec0,mvec2 than move them to separate registers.*/
-
 #ifdef DETECT_ZERO_BYTE
   #undef ACTION
   #define ACTION(x) mvec##x=OR(mvec##x,TEST_ZERO(sz##x));
   DO_ACTION;
+#endif
+
+#ifdef FIRST_BYTE_ONLY
+    i=first_bit_vectors(mvec0,mvec1,mvec2,mvec3,0);
+    uchar __attribute__((unused)) *p=s2+i;
+    if (_DETECT_END(unroll) && DETECT_END <= p){
+      p= DETECT_END-1;
+      LOOP_END(p);
+    }
+    if(__builtin_expect(_TEST_ZERO_BYTE,0))
+      {
+        LOOP_END(p)
+      }
+    LOOP_BODY(p)
+
+#endif
+
+#undef ACTION
+#define ACTION(x) mask##x=get_mask(mvec##x);
+        DO_ACTION;
+        mask=AGREGATE_MASK;
+        goto test;
+      }
+
+    s2+=unroll*UCHARS_IN_VECTOR;
+    PREFETCH(s2+prefetch*CACHE_LINE_SIZE);
+
+#undef ACTION
+#define ACTION(x) TEST(x)
+    DO_ACTION;
+#ifdef DETECT_ZERO_BYTE
+#if unroll==1
+  zvec=zvec0;
+#elif unroll==2
+#ifdef HAS_PARALLEL_MIN
+  zvec=TEST_ZERO(MINI(sz0,sz1));
+#else
+  zvec=OR(OR(TEST_ZERO(sz0),TEST_ZERO(sz1)));
+#endif
+#elif unroll==4
+#ifdef HAS_PARALLEL_MIN
+  zvec=TEST_ZERO(MINI(sz0,MINI(sz1,MINI(sz2,sz3))));
+#else
+  zvec=OR(TEST_ZERO(sz0),OR(TEST_ZERO(sz1),
+          OR(TEST_ZERO(sz2),TEST_ZERO(sz3))));
+#endif
+#endif
+#endif
+
+    if(NONZERO_MASK(OR(AGREGATE_VECTOR,zvec))||_DETECT_END(unroll))
+      {
+#ifdef DETECT_ZERO_BYTE
+  #undef ACTION
+  #define ACTION(x) mvec##x=OR(mvec##x,TEST_ZERO(sz##x));
+  DO_ACTION;
+#endif
+
+#ifdef FIRST_BYTE_ONLY
+    i=first_bit_vectors(mvec0,mvec1,mvec2,mvec3,0);
+    uchar __attribute__((unused)) *p=s2+i;
+    if (_DETECT_END(unroll) && DETECT_END <= p){
+      p= DETECT_END-1;
+      LOOP_END(p);
+    }
+    if(__builtin_expect(_TEST_ZERO_BYTE,0))
+      {
+        LOOP_END(p)
+      }
+    LOOP_BODY(p)
+
 #endif
 
 #undef ACTION
@@ -134,18 +249,15 @@ while(1)
         goto test;
       }
   }
-test:; /*we need this flow otherwise gcc would duplicate this fragment.*/
+test:; /*We need this flow otherwise gcc would duplicate this fragment.*/
 int end=0;
 #ifdef CAN_SKIP
 /* detect zero byte so it cannot be skipped.*/
 #ifdef DETECT_ZERO_BYTE
-#define ZTEST(u) \
-     mask##u=get_mask(TEST_ZERO(sz##u));
 #undef ACTION
-#define ACTION(x) ZTEST(x)
+#define ACTION(x)  mask##x=get_mask(TEST_ZERO(sz##x));
 DO_ACTION;
 zmask=AGREGATE_MASK;
-if (s>s2)
   zmask=forget_before(zmask,s_offset);
 
 if(zmask) end = first_bit(zmask,0)+1;
@@ -155,7 +267,7 @@ if(skip_to>s2)
 #endif
 if (_DETECT_END(unroll)) /*we need to handle case when end is at start of next page here*/
   {
-    end = min(DETECT_END-s2-1,end ? (end-1) : 64)+1;
+    end = min(DETECT_END-s2-1,end ? (end-1) : unroll*UCHARS_IN_VECTOR)+1;
   }
 if (end)
   {
@@ -165,7 +277,7 @@ i=0;
 while(mask)
   {
     i=first_bit(mask,i);
-    uchar UNUSED *p=s2+i;
+    uchar __attribute__((unused)) *p=s2+i;
     if(__builtin_expect(_TEST_ZERO_BYTE,0))
       {
         LOOP_END(p)
@@ -179,7 +291,7 @@ while(mask)
   }
 if(end)
   {
-    uchar UNUSED *p=DETECT_END;
+    uchar __attribute__((unused)) *p=(uchar *) DETECT_END;
     LOOP_END(p);
   }
 

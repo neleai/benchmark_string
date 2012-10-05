@@ -24,6 +24,7 @@
 #define DETECT_ZERO_BYTE
 #define TEST_CODE(so,sn) vzero
 #define LOOP_BODY(p) return p-s;
+#define FIRST_UNALIGNED
 
 #ifdef AS_STRNLEN
 #define DETECT_END ((s+ss>=s) ? s+ss : ((uchar*)((long)-1)))

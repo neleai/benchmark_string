@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <sched.h>
 #include <string.h>
+extern int resolution;
 int cpu_bind(const unsigned short cpu)
 {
   cpu_set_t mask;
@@ -107,11 +108,11 @@ void fini_tester(){
   plot_r  =fopen("data/plot_r.dat","w");
   plot_rng=fopen("data/plot_rng.dat","w");
   plot_sd =fopen("data/plot_sd.dat","w");
-  int i=0,i2,k; double flen,mean,variance;int m,j;
+  int i=0,i2,k; double flen,mean,variance;int m; float j;
   for(m=1;m<1000000000;m*=10){
-    for(j=2;j<20;j++){
-      flen=m*j/2.0;
-      for(i2=i;i2<data_no && data[i2].size < m*(j+1)/2;i2++);
+    for(j=resolution;j<10*resolution;j++){
+      flen=m*j/(0.0+resolution);
+      for(i2=i;i2<data_no && data[i2].size < m*(j+1)/resolution;i2++);
       if (i2-i>20) {
         qsort(data+i,i2-i,sizeof(data_s),(__compar_fn_t)less_time);
         mean=0; variance=0;

@@ -47,9 +47,10 @@ int try_test(int ns2,int ss2,int rnd){int i,k;
 	FN_CALL
 
 }
+int resolution;
 int aligns[200], align_min[200][64], align_min_no[200][64];
 #define ALIGN_TO(x) align_offset=(x)+(64)*(rand_r(&r_seed)%(align_to/64))
-int main(int argc,char **argv){ int i,j,k,l;int crun;int resolution;
+int main(int argc,char **argv){ int i,j,k,l;int crun;
   garg=argv;
   r_seed=42;
 	char *align_type=argv[1];
