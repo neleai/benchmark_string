@@ -217,10 +217,9 @@ xor %rax, %rax
         movq    %rdx, %rcx
         negq    %rcx
         andq    %rdx, %rcx
-        leaq  first_byte_idx(%rip), %rdx
+        leaq  5+first_byte_idx(%rip), %rdx
         movzbl  (%rdx,%rcx), %edx
   add %rdx, %rax
-  add $16, %rax
   ret
   .p2align 4
 .exit32:
@@ -228,10 +227,9 @@ xor %rax, %rax
         movq    %rdx, %rcx
         negq    %rcx
         andq    %rdx, %rcx
-        leaq  first_byte_idx(%rip), %rdx
+        leaq  10+first_byte_idx(%rip), %rdx
         movzbl  (%rdx,%rcx), %edx
   add %rdx, %rax
-  add $32, %rax
   ret
   .p2align 4
 .exit48:
@@ -239,7 +237,7 @@ xor %rax, %rax
         movq    %rdx, %rcx
         negq    %rcx
         andq    %rdx, %rcx
-        leaq  first_byte_idx(%rip), %rdx
+        leaq  23+first_byte_idx(%rip), %rdx
         movzbl  (%rdx,%rcx), %edx
   add %rdx, %rax
   add $48, %rax
