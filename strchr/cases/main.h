@@ -1,4 +1,4 @@
-
+#include <emmintrin.h>
 static inline int max(int x,int y){ return x>y ? x : y; }
 static inline int min(int x,int y){ return x<y ? x : y; }
 int align_offset=0;
@@ -38,13 +38,19 @@ int try_test(int ns2,int ss2,int rnd){int i,k;
       for(i=0;i<ss;i+=64){ 
         _mm_clflush(haystack+i);
       }
+  #else
+    // We have dirty data on caches, prefetch for clean state.
+    for(i=0;i<ss;i+=64){
+        _mm_prefetch(haystack+i ,_MM_HINT_T0);
+      }
   #endif
 	FN_CALL
 
 }
+int resolution;
 int aligns[200], align_min[200][64], align_min_no[200][64];
 #define ALIGN_TO(x) align_offset=(x)+(64)*(rand_r(&r_seed)%(align_to/64))
-int main(int argc,char **argv){ int i,j,k,l;int crun;int resolution;
+int main(int argc,char **argv){ int i,j,k,l;int crun;
   garg=argv;
   r_seed=42;
 	char *align_type=argv[1];

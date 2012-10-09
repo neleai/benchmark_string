@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <sched.h>
 #include <string.h>
+extern int resolution;
 int cpu_bind(const unsigned short cpu)
 {
   cpu_set_t mask;
@@ -66,13 +67,9 @@ inline void bench_start(){
 
 
   ts_start=rdtsc();
-  //for(i=0;i<16;i++) clock_rand=3*clock_rand+5;
-
   if (!ts_start) ts_start=1;
 }
-inline void _bench_end(){ int i;
-  //for(i=0;i<16;i++) clock_rand=3*clock_rand+5;
-
+inline void _bench_end(){
   if (!ts_start) err("bench_end without bench_start");
   uint64_t ts_end=rdtsc();
   data[data_no].time=ts_end-ts_start-ts_avg;
@@ -88,7 +85,7 @@ void init_tester(){
    clock_getres(CLOCK_MONOTONIC, &res);
 #endif
   FILE *ts=fopen("data/ts_avg.dat","r");  fscanf(ts,"%lli",&ts_avg);  
-  data=malloc(100000000*sizeof(data_s));
+  data=malloc(1000000*sizeof(data_s));
 
   data_no=0;
 }
@@ -111,11 +108,11 @@ void fini_tester(){
   plot_r  =fopen("data/plot_r.dat","w");
   plot_rng=fopen("data/plot_rng.dat","w");
   plot_sd =fopen("data/plot_sd.dat","w");
-  int i=0,i2,k; double flen,mean,variance;int m,j;
+  int i=0,i2,k; double flen,mean,variance;int m; float j;
   for(m=1;m<1000000000;m*=10){
-    for(j=2;j<20;j++){
-      flen=m*j/2.0;
-      for(i2=i;i2<data_no && data[i2].size < m*(j+1)/2;i2++);
+    for(j=resolution;j<10*resolution;j++){
+      flen=m*j/(0.0+resolution);
+      for(i2=i;i2<data_no && data[i2].size < m*(j+1)/resolution;i2++);
       if (i2-i>20) {
         qsort(data+i,i2-i,sizeof(data_s),(__compar_fn_t)less_time);
         mean=0; variance=0;

@@ -85,7 +85,7 @@ void init_tester(){
    clock_getres(CLOCK_MONOTONIC, &res);
 #endif
   FILE *ts=fopen("data/ts_avg.dat","r");  fscanf(ts,"%lli",&ts_avg);  
-  data=malloc(100000000*sizeof(data_s));
+  data=malloc(10000000*sizeof(data_s));
 
   data_no=0;
 }
