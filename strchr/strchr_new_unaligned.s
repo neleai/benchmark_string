@@ -7,8 +7,9 @@
 strchr2:
 .LFB547:
 	.cfi_startproc
-	movd	%esi, %xmm1
 	movq	%rdi, %rax
+  andq $255, %rsi
+	movd	%esi, %xmm1
 	punpcklbw	%xmm1, %xmm1
 	punpcklwd	%xmm1, %xmm1
 	pxor	%xmm9, %xmm9
@@ -53,14 +54,14 @@ strchr2:
   testq %rdx,%rdx	
   je .L9
   movq %rdi , %rax
+.L2: 
 	bsfq	%rdx, %rdx
 	addq	%rdx, %rax
-  addq  $64 , %rax
 	movzbl	(%rax), %edx
 	cmpl	%esi, %edx
-	movl	$0, %edx
-	cmovne	%rdx, %rax
-	ret
+  jne .end
+  xorq  %rax, %rax
+  .end: ret
  
   .next:
   andq	$-64, %rax
@@ -100,15 +101,8 @@ strchr2:
 	salq	%cl, %r8
 	andq	%r8, %rdx
 	je	.L9
-.L2:
-	bsfq	%rdx, %rdx
-	addq	%rdx, %rax
-	movzbl	(%rax), %edx
-	cmpl	%esi, %edx
-	movl	$0, %edx
-	cmovne	%rdx, %rax
-	ret
-		.p2align 4,,10
+  jmp .L2
+	.p2align 4,,10
 	.p2align 3
 .L9:
  	addq	$64, %rax

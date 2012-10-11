@@ -44,6 +44,12 @@ int try_test(int ns2,int ss2,int rnd){int i,k;
         _mm_prefetch(haystack+i ,_MM_HINT_T0);
       }
   #endif
+  #ifdef NO_ICACHE
+    forget_icache(rand_r(&r_seed)%512);
+    forget_icache(rand_r(&r_seed)%512);
+    forget_icache(rand_r(&r_seed)%512);
+    forget_icache(rand_r(&r_seed)%512);
+  #endif
 	FN_CALL
 
 }

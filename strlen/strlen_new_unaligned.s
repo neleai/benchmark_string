@@ -19,7 +19,36 @@ strlen2:
 .LFB552:
 	.cfi_startproc
 	movq	%rdi, %rax
-	pxor	%xmm5, %xmm5
+  movq  %rdi, %rcx
+  andq $4095, %rcx
+  pxor  %xmm5, %xmm5
+  cmpq $4031, %rcx
+  ja .next  
+  movdqu   (%rax), %xmm3
+  movdqu 16(%rax), %xmm2
+	pcmpeqb %xmm5, %xmm3
+  movdqu 32(%rax), %xmm1
+	pcmpeqb %xmm5, %xmm2
+	pmovmskb	%xmm3, %r8d
+  movdqu 48(%rax), %xmm0
+	pmovmskb	%xmm2, %edx
+	pcmpeqb %xmm5, %xmm1
+	pcmpeqb %xmm5, %xmm0
+	pmovmskb	%xmm1, %esi
+	andq	$-64, %rax
+  pmovmskb	%xmm0, %ecx
+	salq	$16, %rdx
+	salq	$16, %rcx
+	orq	%r8, %rdx
+	orq	%rsi, %rcx
+	salq	$32, %rcx
+	orq	%rcx, %rdx
+  test %rdx, %rdx
+	je	.L16
+	bsfq	%rdx, %rax
+	ret
+
+  .next:
   andq	$-64, %rax
 	pxor %xmm3,%xmm3
 	pxor %xmm2,%xmm2
@@ -27,7 +56,6 @@ strlen2:
 	pxor %xmm1,%xmm1
 	pcmpeqb 16(%rax), %xmm2
 	pmovmskb	%xmm3, %r8d
-	pxor %xmm0,%xmm0
 	pcmpeqb 32(%rax), %xmm1
 	pmovmskb	%xmm2, %edx
 	pcmpeqb 48(%rax), %xmm0

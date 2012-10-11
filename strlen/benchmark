@@ -1,4 +1,5 @@
-try random  $N 5
-try random_nocache  $N 5
+try random           $N 5
+try random_no_cache  $N 5
+try random_no_icache $N 5
 
 

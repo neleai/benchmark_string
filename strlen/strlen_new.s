@@ -80,7 +80,7 @@ strlen2:
 	.p2align 4,,10
 	.p2align 3
 .L16:
-	prefetcht0	576(%rax)
+	#prefetcht0	576(%rax)
 	movdqa	64(%rax), %xmm0
 	pminub	80(%rax), %xmm0
 	pminub	96(%rax), %xmm0
@@ -90,7 +90,7 @@ strlen2:
 	testl	%edx, %edx
 	jne	.L19
 	subq	$-128, %rax
-	prefetcht0	512(%rax)
+	#prefetcht0	512(%rax)
 	movdqa	  (%rax), %xmm0
 	pminub	16(%rax), %xmm0
 	pminub	32(%rax), %xmm0

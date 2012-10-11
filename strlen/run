@@ -11,7 +11,7 @@ for I in *.[cs] ; do
   ln -s -f tmp/lib$I.so libtest.so #To compile test cases below.
 done
 for I in cases/*.c; do
-  gcc  $I -o cases/`basename $I .c` -L. -ltest -lm -g
+  gcc  $I -o cases/`basename $I .c` cases/forget_icache.s -L. -ltest -lm -g
 done
 mv libfoo.so.6 libc.so.6
 mv libfoo.so libc.so
