@@ -9,10 +9,14 @@ strchr2:
 	.cfi_startproc
 	movd	%esi, %xmm1
 	movq	%rdi, %rax
+	pxor	%xmm9, %xmm9
+#ifdef HAS_SSSE3
+  pshufb %xmm9,%xmm1
+#else
 	punpcklbw	%xmm1, %xmm1
 	punpcklwd	%xmm1, %xmm1
-	pxor	%xmm9, %xmm9
 	pshufd	$0, %xmm1, %xmm1
+#endif
   pxor  %xmm5, %xmm5
     andq	$-64, %rax
 	movdqa	(%rax), %xmm0

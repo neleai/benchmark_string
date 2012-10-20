@@ -57,6 +57,7 @@ strlen2:
 	pcmpeqb 16(%rax), %xmm2
 	pmovmskb	%xmm3, %r8d
 	pcmpeqb 32(%rax), %xmm1
+  pxor %xmm0, %xmm0
 	pmovmskb	%xmm2, %edx
 	pcmpeqb 48(%rax), %xmm0
 	pmovmskb	%xmm1, %esi

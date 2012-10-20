@@ -11,6 +11,7 @@ void strrev(char *s,int cnt){int i; char tmp;
 		s[cnt-1-i]=tmp;
 	}
 }
+int foos[100000];
 int try_test(int ns2,int ss2,int rnd){int i,k;
 	ns=ns2;
 	ss=ss2;
@@ -18,9 +19,8 @@ int try_test(int ns2,int ss2,int rnd){int i,k;
 	needle=needle2+align_to-(((long)needle2)%align_to)+align_offset;
 	haystack=haystack2+align_to-(((long)needle2)%align_to)+align_offset;
 	gen();
-
-	needle[ns]=0;
-	haystack[ss]=0;
+  	needle[ns]=0;
+	  haystack[ss]=0;
 	if (ns<=ss)
 		for(k=0;k<ns;k++) haystack[ss-ns+k]=needle[k];
 
@@ -32,23 +32,25 @@ int try_test(int ns2,int ss2,int rnd){int i,k;
 		}
 	}
   #ifdef NOCACHE
-      for(i=0;i<ns;i+=64){ 
+      for(i=-64;i<ns;i+=64){ 
         _mm_clflush(needle+i);
       }
-      for(i=0;i<ss;i+=64){ 
+      for(i=-64;i<ss;i+=64){
         _mm_clflush(haystack+i);
       }
   #else
     // We have dirty data on caches, prefetch for clean state.
+    for(i=0;i<1024;i++) foos[64*i]++;
+
     for(i=0;i<ss;i+=64){
         _mm_prefetch(haystack+i ,_MM_HINT_T0);
       }
   #endif
   #ifdef NO_ICACHE
-    forget_icache(rand_r(&r_seed)%512);
-    forget_icache(rand_r(&r_seed)%512);
-    forget_icache(rand_r(&r_seed)%512);
-    forget_icache(rand_r(&r_seed)%512);
+    forget_icache(rand_r(&r_seed)%2048);
+    forget_icache(rand_r(&r_seed)%2048);
+    forget_icache(rand_r(&r_seed)%2048);
+    forget_icache(rand_r(&r_seed)%2048);
   #endif
 	FN_CALL
 
