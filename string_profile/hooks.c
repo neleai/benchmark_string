@@ -52,9 +52,10 @@ size_t strnlen3(char *x,size_t no){
 #define START_MEASURE(fn) prof.fn.start=rdtsc();
 #define COMMON_MEASURE(fn)\
 	uint64_t ts=rdtsc();\
-	if (ts!=prof.fn.last && ts-prof.fn.last<2000000000 && ts-prof.fn.start<2000000){\
-	prof.fn.delay[ 63-__builtin_clzl(ts-prof.fn.last) ]++;\
-  size_t r2=r;\
+	if (ts-prof.fn.last<2000000000 && ts-prof.fn.start<2000000){\
+	prof.fn.delay[ 63-__builtin_clzl(prof.fn.start-prof.fn.last) ]++;\
+  size_t r2= (b_##fn & B_BYTEWISE_SIZE) ? r\
+    :((size_t)x+r)/16-((size_t)x)/16+1;\
   if(r2>=1000) r2=999;\
   prof.fn.cnt[2][r2/30]++;\
 	prof.fn.time[2][r2/30]+=ts-prof.fn.start;\
@@ -64,11 +65,21 @@ size_t strnlen3(char *x,size_t no){
 	if(r2>=10) r2=9;\
   prof.fn.cnt[0][r2]++;\
 	prof.fn.time[0][r2]+=ts-prof.fn.start;\
-  prof.fn.aligns[((uint64_t)x)%64]++;\
+  prof.fn.aligns[(b_## fn & B_REL_ALIGN) ? (x-y)%64 : ((uint64_t) x)%64]++;\
 	prof.fn.success++;\
 	}\
-	prof.fn.last=ts;
+	prof.fn.last=ts;\
+  if (b_##fn & B_NEEDLE){\
+  size_t r2=strlen(y);\
+  if(r2>=1000) r2=999;\
+  prof.fn.needle[2][r2/30]++;\
+  if(r2>=100) r2=99;\
+  prof.fn.needle[1][r2/3]++;\
+  if(r2>=10) r2=9;\
+  prof.fn.needle[0][r2]++;\
+  }
 
+char *y;
 /*size_t strnlen(char *x,size_t no){
 	START_MEASURE(strlen);
 	size_t r=strnlen3(x,no);
@@ -281,26 +292,12 @@ size_t strspn2(char *x,char *y,int accept){
 size_t strspn(char *x,char *y){ return strspn2(x,y,0);}
 size_t strcspn(char *x,char *y){ return strspn2(x,y,1);}
 char *strpbrk(char *x,char *y){ char *z=x+strcspn(x,y); return *z ? z : NULL;}
-char *strstr2(char *s,char *y,int cas){ 
+char *strstr2(char *s,char *y,int cas){
+  size_t i,r; 
 	START_MEASURE(strstr);
 	char *x=s;
-	size_t r,i;
-	{
-	size_t r2=strlen(y);
-	int mag=0;
-  if(r2>=1000) prof.strstr.needle[2][8]++;
-  else{  
-    while (r2>=10){
-      mag++; r2/=10;
-    }
-		prof.strstr.needle[mag][r2]++;
-	}
-	}
 	while(*s){
-		if (cas)
-		for(i=0;y[i]&& tolower(s[i])==tolower(y[i]); i++);
-		else		
-		for(i=0;y[i]&& s[i]==y[i]; i++);
+		for(i=0;y[i]&& (cas ? (tolower(s[i])==tolower(y[i])) : (s[i]==y[i])); i++);
 		if(!y[i]){
 			r=s-x;
 			COMMON_MEASURE(strstr);

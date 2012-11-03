@@ -12,4 +12,8 @@ all:
 	@echo " to programs you want to measure."
 	@echo "When done run ${PWD}/report."
 	@echo "You can zero counters by running make again."
-	
+	@echo "simplest way to generate report is by make rep"
+rep:
+	gcc report.c -o report -g
+	./report > results/x
+	cd results; sh x > result.html	
