@@ -102,7 +102,7 @@ int main(){ int i,j;
 		{			REPORT(strdup);		}
 
 
-
+  printf("echo '<pre>'\n cat /proc/cpuinfo \n echo '</pre>'");
 
 		munmap(sm,sizeof(disk_layout));
   }
