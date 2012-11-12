@@ -37,11 +37,7 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
 		munmap(sm,sizeof(disk_layout));
   }
 }
-/*size_t strlen3(char *x){
-	char *y=x;
-	while (*y) y++;
-	return y-x;
-}*/
+
 size_t strnlen3(char *x,size_t no){
 	char foo[16];
   char *y=x;
@@ -80,13 +76,13 @@ size_t strnlen3(char *x,size_t no){
   }
 
 char *y;
-/*size_t strnlen(char *x,size_t no){
+size_t strnlen(char *x,size_t no){
 	START_MEASURE(strlen);
 	size_t r=strnlen3(x,no);
   COMMON_MEASURE(strlen);
 	if (r==no) {prof.strlen.success--; prof.strlen.fail++;}
   return r;
-}*/
+}
 size_t strlen(char *x){ 
 	START_MEASURE(strlen);
 	size_t r=strlen3(x);
@@ -245,6 +241,58 @@ int memcmp(char *x,char *y,size_t n){
 	if (x[r]>y[r]) return 1;
 	return 0;
 }
+void *
+bsearch (const void *key, const void *base, size_t nmemb, size_t size,
+   int (*compar) (const void *, const void *))
+{
+  char * x = base;
+  size_t r = size*nmemb;
+  START_MEASURE(bsearch);
+  size_t l, u, idx;
+  const void *p;
+  int comparison;
+
+  l = 0;
+  u = nmemb;
+  while (l < u)
+    {
+      idx = (l + u) / 2;
+      p = (void *) (((const char *) base) + (idx * size));
+      comparison = (*compar) (key, p);
+      if (comparison < 0)
+  u = idx;
+      else if (comparison > 0)
+  l = idx + 1;
+      else{
+  COMMON_MEASURE(bsearch);
+  return (void *) p;
+  }
+    }
+  prof.bsearch.success--;
+  prof.bsearch.fail++;
+  COMMON_MEASURE(bsearch);
+  return NULL;
+}
+
+inline void * 
+lsearch (const void *key, const void *s, size_t size, size_t psize,
+   int (*cmp) (const void *, const void *)){
+  char * x = s;
+  size_t r = size*psize;
+  START_MEASURE(lsearch);
+  void *end; 
+  for(end = s+size*psize; s!=end; s+=psize){
+    if (!cmp(key,s)){ 
+     COMMON_MEASURE(lsearch);
+     return s;
+    }
+  }
+  COMMON_MEASURE(lsearch);
+  prof.lsearch.success--;
+  prof.lsearch.fail++;
+  return NULL;
+}
+
 
 
 

@@ -100,6 +100,9 @@ int main(){ int i,j;
 		{			REPORT(strspn);		}
 		{			REPORT(strstr);		}
 		{			REPORT(strdup);		}
+		{			REPORT(bsearch);		}
+		{			REPORT(lsearch);		}
+
 
 
   printf("echo '<pre>'\n cat /proc/cpuinfo \n echo '</pre>'");

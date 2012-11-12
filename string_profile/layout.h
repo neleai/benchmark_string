@@ -10,7 +10,7 @@
 
 
 typedef struct {
-	prof_str strlen,strchr,strcmp,strstr,memchr,strcpy,memcpy,strcat,strspn,strcasecmp,strdup,strrchr;
+	prof_str strlen,strchr,strcmp,strstr,memchr,strcpy,memcpy,strcat,strspn,strcasecmp,strdup,strrchr,bsearch,lsearch;
 
 } disk_layout;
 
@@ -30,4 +30,5 @@ uint64_t b_strlen=0,
         b_strcmp=B_REL_ALIGN | B_SHOW_ALIGN ,
         b_strcasecmp=B_REL_ALIGN | B_SHOW_ALIGN ,
         b_strdup=0,
-        b_strrchr=0;
+        b_strrchr=0,
+        b_bsearch=0,b_lsearch=0;

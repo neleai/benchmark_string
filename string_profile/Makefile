@@ -1,7 +1,7 @@
 all:
 	gcc hooks.c strlen.s -shared -fPIC -g -o libc_profile.so
 	gcc report.c -o report -g
-	dd if=/dev/zero of=/tmp/libc_profile count=100 2> /dev/null
+	dd if=/dev/zero of=/tmp/libc_profile count=200 2> /dev/null
 	chmod a+rw /tmp/libc_profile
 
 	@DIR=`pwd`
