@@ -30,6 +30,7 @@ char *binary_name(){int i;
   return x;
 }
 
+
 disk_layout prof;
 __attribute__((destructor)) static void save_cnt(){ int i,j;
   char *fname = "/tmp/libc_profile";
@@ -70,6 +71,9 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
 		munmap(sm,sizeof(disk_layout));
   }
 }
+
+#define FAILED(fn)    prof.fn.success--;\
+    prof.fn.fail++;
 
 size_t strnlen3(char *x,size_t no){
 	char foo[16];
@@ -113,7 +117,7 @@ size_t strnlen(char *x,size_t no){
 	START_MEASURE(strlen);
 	size_t r=strnlen3(x,no);
   COMMON_MEASURE(strlen);
-	if (r==no) {prof.strlen.success--; prof.strlen.fail++;}
+	if (r==no) {FAILED(strlen)}
   return r;
 }
 size_t strlen(char *x){ 
@@ -137,8 +141,7 @@ char * strrchr(char *x,int c){
 	if (y){
 		return y;
 	} else {
-		prof.strchr.success--;
-		prof.strchr.fail++;
+    FAILED(strrchr)
 		return y;
 	}
 }
@@ -157,8 +160,7 @@ char * memrchr(char *x,int c,int n){
 	if (y){
 		return y;
 	} else {
-		prof.strchr.success--;
-		prof.strchr.fail++;
+    FAILED(strchr);
 		return y;
 	}
 }
@@ -175,8 +177,7 @@ char * strchr2(char *x,int c,int nul){
 	if (*y==((char)c)){
 		return y;
 	} else {
-		prof.strchr.success--;
-		prof.strchr.fail++;
+    FAILED(strchr);
 		return nul ? y : NULL;
 	}
 }
@@ -193,9 +194,7 @@ char * memchr(char *x,int c,size_t n){
 	if (y-x!=n){
 		return y;
 	} else {
-
-		prof.memchr.success--;
-		prof.memchr.fail++;
+    FAILED(memchr);
 		return NULL;
 	}
 }
@@ -301,8 +300,7 @@ bsearch (const void *key, const void *base, size_t nmemb, size_t size,
   return (void *) p;
   }
     }
-  prof.bsearch.success--;
-  prof.bsearch.fail++;
+  FAILED(bsearch)
   COMMON_MEASURE(bsearch);
   return NULL;
 }
@@ -321,8 +319,7 @@ lsearch (const void *key, const void *s, size_t size, size_t psize,
     }
   }
   COMMON_MEASURE(lsearch);
-  prof.lsearch.success--;
-  prof.lsearch.fail++;
+  FAILED(lsearch)
   return NULL;
 }
 
@@ -388,8 +385,7 @@ char *strstr2(char *s,char *y,int cas){
 			}
 	r=s-x;
 	COMMON_MEASURE(strstr);
-	prof.strstr.success--;
-	prof.strstr.fail++;
+  FAILED(strstr)
 	return NULL;	
 }
 
@@ -401,6 +397,121 @@ char *memset(char *x,int c,size_t no){
   return x;
 }
 char *bzero(char *x,size_t no){return memset(x,0,no);}
+
+
+#include <stdint.h>
+#include <ctype.h>
+
+/* states: S_N: normal, S_I: comparing integral part, S_F: comparing
+           fractionnal parts, S_Z: idem but with leading Zeroes only */
+#define  S_N    0x0
+#define  S_I    0x3
+#define  S_F    0x6
+#define  S_Z    0x9
+
+/* result_type: CMP: return diff; LEN: compare using len_diff/diff */
+#define  CMP    2
+#define  LEN    3
+
+
+/* Compare S1 and S2 as strings holding indices/version numbers,
+   returning less than, equal to or greater than zero if S1 is less than,
+   equal to or greater than S2 (for more info, see the texinfo doc).
+*/
+
+int
+strverscmp (s1, s2)
+     const unsigned char *s1;
+     const unsigned char *s2;
+{
+  char *x=s1,*y=s2;
+  size_t r;
+  START_MEASURE(strverscmp)
+  const unsigned char *p1 = (const unsigned char *) s1;
+  const unsigned char *p2 = (const unsigned char *) s2;
+
+  /* Symbol(s)    0       [1-9]   others
+     Transition   (10) 0  (01) d  (00) x   */
+  static const uint8_t next_state[] =
+  {
+      /* state    x    d    0  */
+      /* S_N */  S_N, S_I, S_Z,
+      /* S_I */  S_N, S_I, S_I,
+      /* S_F */  S_N, S_F, S_F,
+      /* S_Z */  S_N, S_F, S_Z
+  };
+
+  static const int8_t result_type[] =
+  {
+      /* state   x/x  x/d  x/0  d/x  d/d  d/0  0/x  0/d  0/0  */
+
+      /* S_N */  CMP, CMP, CMP, CMP, LEN, CMP, CMP, CMP, CMP,
+      /* S_I */  CMP, -1,  -1,  +1,  LEN, LEN, +1,  LEN, LEN,
+      /* S_F */  CMP, CMP, CMP, CMP, CMP, CMP, CMP, CMP, CMP,
+      /* S_Z */  CMP, +1,  +1,  -1,  CMP, CMP, -1,  CMP, CMP
+  };
+
+  if (p1 == p2){
+    r=p1-s1;
+    COMMON_MEASURE(strverscmp);
+    
+    return 0;
+  }
+
+  unsigned char c1 = *p1++;
+  unsigned char c2 = *p2++;
+  /* Hint: '0' is a digit too.  */
+  int state = S_N + ((c1 == '0') + (isdigit (c1) != 0));
+
+  int diff;
+  while ((diff = c1 - c2) == 0)
+    {
+      if (c1 == '\0'){
+    r=p1-s1;
+
+  COMMON_MEASURE(strverscmp); 
+	return diff;
+  }
+      state = next_state[state];
+      c1 = *p1++;
+      c2 = *p2++;
+      state += (c1 == '0') + (isdigit (c1) != 0);
+    }
+
+  state = result_type[state * 3 + (((c2 == '0') + (isdigit (c2) != 0)))];
+
+  switch (state)
+  {
+    case CMP:
+    r=p1-s1;
+{
+  COMMON_MEASURE(strverscmp); }
+      return diff;
+
+    case LEN:
+      while (isdigit (*p1++))
+	if (!isdigit (*p2++)){
+   r=p1-s1;
+{
+  COMMON_MEASURE(strverscmp);}
+
+	  return 1;
+}
+  r=p1-s1;
+{
+  COMMON_MEASURE(strverscmp);
+}
+      return isdigit (*p2) ? -1 : diff;
+
+    default:
+  r=p1-s1;
+{
+  COMMON_MEASURE(strverscmp);
+}
+      return state;
+  }
+}
+
 
 char *strstr(char *x,char *y){return strstr2(x,y,0);}
 char *strcasestr(char *x,char *y){return strstr2(x,y,1);}

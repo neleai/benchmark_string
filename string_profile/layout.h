@@ -43,8 +43,11 @@ uint64_t b_strlen=0,
         b_strspn=B_NEEDLE,
         b_strcmp=B_REL_ALIGN | B_SHOW_ALIGN ,
         b_strcasecmp=B_REL_ALIGN | B_SHOW_ALIGN ,
+        b_strverscmp=B_REL_ALIGN | B_SHOW_ALIGN ,
+
         b_strdup=0,
         b_strrchr=0,
-        b_bsearch=0,b_lsearch=0;
+        b_bsearch=0,b_lsearch=0,
+        b_memset=0;
 
 #define TOP_FUNCTIONS 10
