@@ -48,6 +48,8 @@ uint64_t b_strlen=0,
         b_strdup=0,
         b_strrchr=0,
         b_bsearch=0,b_lsearch=0,
-        b_memset=0;
+        b_memset=0,
+        b_strtol=0,
+        b_malloc=0;
 
 #define TOP_FUNCTIONS 10

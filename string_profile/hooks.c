@@ -3,9 +3,10 @@
 #include <stdint.h>
 #include <sys/file.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/mman.h>
-
+char *memcpy(char *dest, const char *src, size_t n);
 #include "layout.h"
 
 static __inline__ uint64_t rdtsc(void)
@@ -54,14 +55,14 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
       if(!strncmp(bname,lay2[i].fn.name,48)){\
         calls+=lay2[i].fn.calls;\
         for(i++;i<TOP_FUNCTIONS;i++)\
-          memcpy(&(lay2[i-1].fn), &(lay2[i].fn),64);\
+          memcpy((char*)&(lay2[i-1].fn), (char*)&(lay2[i].fn),64);\
         lay2[TOP_FUNCTIONS-1].fn.calls=0;\
       }\
     }\
     for (i=0;i<TOP_FUNCTIONS;i++){\
       if(calls>lay2[i].fn.calls){\
         for(j=TOP_FUNCTIONS-1;j>=i;j--)\
-          memcpy(&(lay2[j+1].fn), &(lay2[j].fn),64);\
+          memcpy((char*)&(lay2[j+1].fn), (char*)&(lay2[j].fn),64);\
           lay2[i].fn.calls=calls;\
           memcpy(lay2[i].fn.name,bname,48);\
         i=TOP_FUNCTIONS;\
@@ -511,7 +512,29 @@ strverscmp (s1, s2)
       return state;
   }
 }
+long strtol(const char *x, char **endptr, int base){
+  START_MEASURE(strtol);
+  char *end;
+  long res=strtoll(x,&end,base);
+  size_t r=end-x;
+  COMMON_MEASURE(strtol);
+  return res;
+}
+/*
+void *calloc(size_t el,size_t si){
+  size_t r=el*si;
+  char *x=__libc_calloc(el,si);
+  return x;
+}
+*/
+void *malloc(size_t r){
 
+  START_MEASURE(malloc);
+  char *x=calloc(r,1);
+
+  COMMON_MEASURE(malloc);
+  return x;
+}
 
 char *strstr(char *x,char *y){return strstr2(x,y,0);}
 char *strcasestr(char *x,char *y){return strstr2(x,y,1);}
