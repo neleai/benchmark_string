@@ -24,14 +24,18 @@ static __inline__ uint64_t rdtsc(void)
 int main(){ int i,j;
   char *fname = "/tmp/libc_profile";
   FILE *fi = fopen(fname,"r+");
-	void *sm= mmap(NULL,sizeof(disk_layout),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);
+
+	prof_str * smp;
+	void *sm= mmap(NULL,sizeof(disk_layout)+TOP_FUNCTIONS*sizeof(disk_layout2),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);
   if (sm){
+
+    disk_layout2 *lay2=sm+sizeof(disk_layout);
 		disk_layout *lay=sm;
 #define GNUPLOT_SET "echo ' reset\n set terminal png\n set xlabel \"blocks\"\n set ylabel \"number of calls\""
-		
-		#define REPORT(fn) \
+		uint64_t calls;
+		#define FN(fn) \
 		printf("\necho '<h1>" #fn "</h1>'\n");\
-		prof_str *smp = &(lay->fn);\
+    smp = &(lay->fn);\
 		printf("echo '<br>number of calls<br>'\n");\
 		printf("echo '");\
 		for(j=3;j<30;j++) printf("%f %11d\n",j/3.0,smp->cnt[0][j/3]);\
@@ -85,24 +89,12 @@ int main(){ int i,j;
 		printf("\">" #fn "_delay\n");\
 		printf("echo '<br>delays between calls<br> <img src=" #fn "_delay.png></img><br>'\n");\
 		printf("" GNUPLOT_SET "\n set xlabel \"log(cycles)\" \n  plot \"" #fn "_delay\" with lines'| gnuplot > " #fn "_delay.png\n");\
-			printf("echo '<br> success: %11d\n fail:     %11d\n <br>'",smp->success,smp->fail);
-
-
-		{			REPORT(strlen);		}
-		{			REPORT(strchr);		}
-		{			REPORT(strcmp);		}
-		{			REPORT(strcasecmp);		}
-	  {			REPORT(memchr);		}
-		{			REPORT(strcat);		}
-		{			REPORT(strcpy);		}
-		{			REPORT(memcpy);		}
-		{			REPORT(strrchr);		}
-		{			REPORT(strspn);		}
-		{			REPORT(strstr);		}
-		{			REPORT(strdup);		}
-		{			REPORT(bsearch);		}
-		{			REPORT(lsearch);		}
-
+			printf("echo '<br> success: %11d\n fail:     %11d\n <br>'",smp->success,smp->fail);\
+    calls=lay->fn.success+lay->fn.fail+1;\
+    printf("echo 'most frequently used:<br><table>'\n");\
+    for(i=0;i<TOP_FUNCTIONS;i++){ printf("echo '<tr><td> %i%%:</td><td> %s </td></tr>'\n",100*lay2[i].fn.calls/calls,lay2[i].fn.name);}\
+    printf("echo '</table>\n'");
+  #include "functions.h"
 
 
   printf("echo '<pre>'\n cat /proc/cpuinfo \n echo '</pre>'");

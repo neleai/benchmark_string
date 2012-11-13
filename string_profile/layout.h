@@ -7,12 +7,26 @@
  uint64_t success,fail;
  uint64_t start,last;
 } prof_str;
-
+typedef struct {
+  uint64_t calls;
+  char name[48];
+} binary_names;
 
 typedef struct {
-	prof_str strlen,strchr,strcmp,strstr,memchr,strcpy,memcpy,strcat,strspn,strcasecmp,strdup,strrchr,bsearch,lsearch;
+	prof_str 
+  #define FN(f) f ,
+#include "functions.h"
+placeholder;
 
 } disk_layout;
+typedef struct {
+	binary_names 
+  #define FN(f) f ,
+#include "functions.h"
+placeholder;
+
+} disk_layout2;
+
 
 #define B_NEEDLE 1
 #define B_REL_ALIGN 2
@@ -32,3 +46,5 @@ uint64_t b_strlen=0,
         b_strdup=0,
         b_strrchr=0,
         b_bsearch=0,b_lsearch=0;
+
+#define TOP_FUNCTIONS 10

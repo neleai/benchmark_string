@@ -20,20 +20,53 @@ static __inline__ uint64_t rdtsc(void)
   return (uint64_t)hi << 32 | lo;
 }
 
+char *binary_name(){int i;
+  char *x=malloc(48);
+  sprintf(x,"/proc/%i/cmdline",getpid());
+  FILE *f=fopen(x,"r");
+  for(i=0;i<48;i++)x[i]=0;
+  fgets(x,48,f);
+  x[47]=0;
+  return x;
+}
 
 disk_layout prof;
 __attribute__((destructor)) static void save_cnt(){ int i,j;
   char *fname = "/tmp/libc_profile";
   FILE *fi = fopen(fname,"r+");
-	void *sm= mmap(NULL,sizeof(disk_layout),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);
+	void *sm= mmap(NULL,sizeof(disk_layout)+TOP_FUNCTIONS*sizeof(disk_layout2),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);
   if (sm){
-		disk_layout *lay=sm;
+		disk_layout  *lay=sm;
+    disk_layout2 *lay2=sm+sizeof(disk_layout);
 		int i;
 		uint64_t *  ptr= (uint64_t*)lay;
 		uint64_t * mptr= (uint64_t*)&prof;
 
 		for(i=0;i<sizeof(disk_layout)/sizeof(uint64_t);i++)	
 			ptr[i]+=mptr[i];
+  char *bname;
+  size_t calls;
+  #define FN(fn) \
+    bname=binary_name();\
+    calls=prof.fn.success+prof.fn.fail;\
+    for(i=0;i<TOP_FUNCTIONS;i++){\
+      if(!strncmp(bname,lay2[i].fn.name,48)){\
+        calls+=lay2[i].fn.calls;\
+        for(i++;i<TOP_FUNCTIONS;i++)\
+          memcpy(&(lay2[i-1].fn), &(lay2[i].fn),64);\
+        lay2[TOP_FUNCTIONS-1].fn.calls=0;\
+      }\
+    }\
+    for (i=0;i<TOP_FUNCTIONS;i++){\
+      if(calls>lay2[i].fn.calls){\
+        for(j=TOP_FUNCTIONS-1;j>=i;j--)\
+          memcpy(&(lay2[j+1].fn), &(lay2[j].fn),64);\
+          lay2[i].fn.calls=calls;\
+          memcpy(lay2[i].fn.name,bname,48);\
+        i=TOP_FUNCTIONS;\
+      }\
+    }
+#include "functions.h"
 		munmap(sm,sizeof(disk_layout));
   }
 }
@@ -359,5 +392,15 @@ char *strstr2(char *s,char *y,int cas){
 	prof.strstr.fail++;
 	return NULL;	
 }
+
+char *memset(char *x,int c,size_t no){
+  size_t r=no;size_t i;
+  START_MEASURE(memset);
+  for(i=0;i<no;i++) x[i]=c;
+  COMMON_MEASURE(memset);
+  return x;
+}
+char *bzero(char *x,size_t no){return memset(x,0,no);}
+
 char *strstr(char *x,char *y){return strstr2(x,y,0);}
 char *strcasestr(char *x,char *y){return strstr2(x,y,1);}
