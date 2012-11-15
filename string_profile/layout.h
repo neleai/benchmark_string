@@ -1,4 +1,5 @@
  typedef struct {
+  uint64_t less16;
  uint64_t cnt[3][34];
  uint64_t time[3][34];
  uint64_t needle[3][34];

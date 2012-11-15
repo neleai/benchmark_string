@@ -46,27 +46,28 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
 
 		for(i=0;i<sizeof(disk_layout)/sizeof(uint64_t);i++)	
 			ptr[i]+=mptr[i];
-  char *bname;
+  char *bname;int present,min_ub;
   size_t calls;
+  #undef FN 
   #define FN(fn) \
     bname=binary_name();\
     calls=prof.fn.success+prof.fn.fail;\
+    present=0;\
     for(i=0;i<TOP_FUNCTIONS;i++){\
       if(!strncmp(bname,lay2[i].fn.name,48)){\
-        calls+=lay2[i].fn.calls;\
-        for(i++;i<TOP_FUNCTIONS;i++)\
-          memcpy((char*)&(lay2[i-1].fn), (char*)&(lay2[i].fn),64);\
-        lay2[TOP_FUNCTIONS-1].fn.calls=0;\
+        lay2[i].fn.calls+=calls;\
+        present=1;\
       }\
     }\
+    min_ub=0;\
     for (i=0;i<TOP_FUNCTIONS;i++){\
-      if(calls>lay2[i].fn.calls){\
-        for(j=TOP_FUNCTIONS-1;j>=i;j--)\
-          memcpy((char*)&(lay2[j+1].fn), (char*)&(lay2[j].fn),64);\
-          lay2[i].fn.calls=calls;\
-          memcpy(lay2[i].fn.name,bname,48);\
-        i=TOP_FUNCTIONS;\
+      if(lay2[min_ub].fn.calls>lay2[i].fn.calls){\
+        min_ub=i;\
       }\
+    }\
+    if(!present && calls> lay2[min_ub].fn.calls){\
+          memcpy(lay2[min_ub].fn.name,bname,48);\
+          lay2[min_ub].fn.calls=calls;\
     }
 #include "functions.h"
 		munmap(sm,sizeof(disk_layout));
@@ -88,6 +89,7 @@ size_t strnlen3(char *x,size_t no){
 	uint64_t ts=rdtsc();\
 	if (ts-prof.fn.last<2000000000 && ts-prof.fn.start<2000000){\
 	prof.fn.delay[ 63-__builtin_clzl(prof.fn.start-prof.fn.last) ]++;\
+  if (r<=16) prof.fn.less16++;\
   size_t r2= (b_##fn & B_BYTEWISE_SIZE) ? r\
     :((size_t)x+r)/16-((size_t)x)/16+1;\
   if(r2>=1000) r2=999;\
@@ -270,9 +272,10 @@ int memcmp(char *x,char *y,size_t n){
 	}
 	COMMON_MEASURE(strcmp);
 	if ( r == n) return 0;
+  if ( x[r] == y[r]) return 0;
+  FAILED(strcmp);
 	if (x[r]<y[r]) return -1;
 	if (x[r]>y[r]) return 1;
-	return 0;
 }
 void *
 bsearch (const void *key, const void *base, size_t nmemb, size_t size,
@@ -335,9 +338,11 @@ int strncmp(char *x,char *y,size_t n){
 	}
 	COMMON_MEASURE(strcmp);
 	if ( r == n) return 0;
+ 	if (x[r] == y[r]) return 0;
+
+   FAILED(strcmp);
 	if (x[r]<y[r]) return -1;
 	if (x[r]>y[r]) return 1;
-	return 0;
 }
 int strcmp(char *x,char *y){return strncmp(x,y,SIZE_MAX);}
 char * strndup(char *x,size_t n){
@@ -425,7 +430,7 @@ strverscmp (s1, s2)
      const unsigned char *s1;
      const unsigned char *s2;
 {
-  char *x=s1,*y=s2;
+  char *x=(char*)s1,*y=(char*)s2;
   size_t r;
   START_MEASURE(strverscmp)
   const unsigned char *p1 = (const unsigned char *) s1;

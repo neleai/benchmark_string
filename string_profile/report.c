@@ -46,7 +46,8 @@ int main(){ int i,j;
     char *buf;
 #define GNUPLOT_SET "echo ' reset\n set terminal png\n set xlabel \"blocks\"\n set ylabel \"number of calls\""
 		uint64_t calls;
-		#define FN(fn) \
+		#undef FN
+    #define FN(fn) \
     buf=results[result_no].text=malloc(10000);\
     calls=lay->fn.success+lay->fn.fail+1;\
     results[result_no].calls=calls;\
@@ -64,7 +65,8 @@ int main(){ int i,j;
 		for(j=0;j<34;j++) buf+=sprintf(buf,"%i %11d\n",30*j,smp->cnt[2][j]);\
 		buf+=sprintf(buf,"'> " #fn "_100\n " GNUPLOT_SET "\n plot \"" #fn "_100\" with lines'| gnuplot > " #fn "_100.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_100.png></img>'\n");\
-    buf+=sprintf(buf,"echo '<br> Calls in first 4 blocks: %f%% <br>'\n",100*(smp->cnt[0][1]+smp->cnt[0][2]+smp->cnt[0][3]+smp->cnt[0][4]+0.0)/(smp->success+smp->fail));\
+    buf+=sprintf(buf,"echo '<br> Calls using at most 16 bytes: %.2f%% <br>'\n",100*(smp->less16+0.0)/calls);\
+    buf+=sprintf(buf,"echo '<br> Calls in first 4 blocks: %.2f%% <br>'\n",100*(smp->cnt[0][1]+smp->cnt[0][2]+smp->cnt[0][3]+smp->cnt[0][4]+0.0)/calls);\
 		buf+=sprintf(buf,"echo '<br>average time<br>'\n");\
 		buf+=sprintf(buf,"echo '");\
 		for(j=3;j<27;j++) buf+=sprintf(buf,"%f %11d\n",j/3.0,smp->time[0][j/3]/(smp->cnt[0][j/3]+1));\
@@ -97,7 +99,7 @@ int main(){ int i,j;
 		buf+=sprintf(buf,"\">" #fn "_alignment\n");\
 		buf+=sprintf(buf,"" GNUPLOT_SET "\n set xtics 8\n set xlabel \"alignment\"\n plot \"" #fn "_alignment\" with lines'| gnuplot > " #fn "_alignment.png\n");\
 		buf+=sprintf(buf,"echo '<br>alignment <br> <img src=" #fn "_alignment.png></img><br>'\n");\
-    buf+=sprintf(buf,"echo '<br> Calls aligned to 16 bytes: %f%% <br>'",100*(smp->aligns[0]+smp->aligns[16]+smp->aligns[32]+smp->aligns[48]+0.0)/(smp->success+smp->fail));\
+    buf+=sprintf(buf,"echo '<br> Calls aligned to 16 bytes: %.2f%% <br>'",100*(smp->aligns[0]+smp->aligns[16]+smp->aligns[32]+smp->aligns[48]+0.0)/calls);\
     }\
 		buf+=sprintf(buf,"\necho \"");\
 		for(i=0;i<32;i++) {\
@@ -106,12 +108,12 @@ int main(){ int i,j;
 		buf+=sprintf(buf,"\">" #fn "_delay\n");\
 		buf+=sprintf(buf,"echo '<br>delays between calls<br> <img src=" #fn "_delay.png></img><br>'\n");\
 		buf+=sprintf(buf,"" GNUPLOT_SET "\n set xlabel \"log(cycles)\" \n  plot \"" #fn "_delay\" with lines'| gnuplot > " #fn "_delay.png\n");\
-			buf+=sprintf(buf,"echo '<br> success: %11d\n fail:     %11d\n <br>'",smp->success,smp->fail);\
-    buf+=sprintf(buf,"echo 'most frequently used:<br><table>'\n");\
+			buf+=sprintf(buf,"echo '<br> calls: %11d\n success probability: %.2f%% <br>'\n",calls,(100*smp->success+0.0)/calls);\
+    buf+=sprintf(buf,"echo 'most frequently used in: <br><table>'\n");\
     for(i=0;i<TOP_FUNCTIONS;i++){ buf+=sprintf(buf,"echo '<tr><td> %i%%:</td><td> %s </td></tr>'\n",(100*lay2[i].fn.calls+calls/2)/calls,lay2[i].fn.name);}\
     buf+=sprintf(buf,"echo '</table>\n'");
   #include "functions.h"
-  qsort(results,result_no,sizeof(result_s),resultcmp);
+  qsort(results,result_no,sizeof(result_s),(__compar_fn_t) resultcmp);
   for(i=0;i<result_no;i++) printf("%s\n",results[i].text);
   printf("echo '<pre>'\n cat /proc/cpuinfo \n echo '</pre>'");
 
