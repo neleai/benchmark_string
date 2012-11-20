@@ -203,6 +203,17 @@ char * memchr(char *x,int c,size_t n){
 }
 char * rawmemchr(char *x,int c){return memchr(x,c,SIZE_MAX);}
 
+char * strncpy(char *x,const char *y ,size_t n){
+	START_MEASURE(strcpy);
+	size_t i;
+
+	for (i = 0 ; i!=n && y[i] != '\0' ; i++)
+		x[i] = y[i];
+  if (i!=n) x[i]=0;
+	int r=i;
+	COMMON_MEASURE(strcpy);
+	return x;
+}
 char*
 strcpy2(char *x, const char *y,int end){
 	START_MEASURE(strcpy);
@@ -517,11 +528,13 @@ strverscmp (s1, s2)
       return state;
   }
 }
+
 long strtol(const char *x, char **endptr, int base){
   START_MEASURE(strtol);
   char *end;
   long res=strtoll(x,&end,base);
   size_t r=end-x;
+  if(endptr) *endptr=end;
   COMMON_MEASURE(strtol);
   return res;
 }

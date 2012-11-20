@@ -1,0 +1,6 @@
+strlen strnlen
+strchr memchr strchrnul
+strrcchr memrchr
+strcmp memcmp strcasecmp
+strverscmp
+memcpy strcpy
