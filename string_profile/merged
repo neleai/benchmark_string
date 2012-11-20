@@ -1,6 +1,13 @@
 strlen strnlen
-strchr memchr strchrnul
+strchr  strchrnul
+memchr rawmemchr
 strrcchr memrchr
-strcmp memcmp strcasecmp
+strcpy stpcpy strncpy
+memcpy memccpy
+strcat strncat
+strcmp memcmp 
 strverscmp
-memcpy strcpy
+strcasecmp
+strtol
+malloc
+strstr strcasestr

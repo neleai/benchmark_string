@@ -1,0 +1,28 @@
+FN=strchr
+echo "void *${FN}_functions[] = {"
+
+cd strchr
+for I in *; do
+J=` basename $I .c `
+echo "$J, "
+done
+echo "NULL};"
+echo "char *${FN}_names[] = {"
+
+for I in *; do
+J=` basename $I .c `
+echo "\"$J\", "
+done
+echo "NULL};"
+
+echo "char *${FN}_colors[] = {"
+for I in *; do
+COL=`head -n1 $I | cut --delimiter=" " -f2`
+echo "\"$COL\", "
+done
+echo "NULL};"
+
+
+
+
+echo "int ${FN}_no =" `echo * | wc -w` ";"
