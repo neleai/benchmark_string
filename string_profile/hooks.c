@@ -77,7 +77,7 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
 #define FAILED(fn)    prof.fn.success--;\
     prof.fn.fail++;
 
-size_t strnlen3(char *x,size_t no){
+size_t strnlen3(const char *x,size_t no){
 	char foo[16];
   char *y=x;
   while (y-x!=no && *y) y++;
@@ -538,13 +538,12 @@ long strtol(const char *x, char **endptr, int base){
   COMMON_MEASURE(strtol);
   return res;
 }
-/*
-void *calloc(size_t el,size_t si){
+
+/*void *calloc(size_t el,size_t si){
   size_t r=el*si;
   char *x=__libc_calloc(el,si);
   return x;
-}
-*/
+}*/
 void *malloc(size_t r){
 
   START_MEASURE(malloc);
@@ -552,6 +551,59 @@ void *malloc(size_t r){
 
   COMMON_MEASURE(malloc);
   return x;
+}
+void 
+qsort (void *_x, size_t n, size_t s, __compar_fn_t cmp)
+{
+  char *x=_x;
+  size_t r=n;
+  START_MEASURE(qsort);
+  qsort_r (x, n, s,  cmp, NULL);
+  COMMON_MEASURE(qsort);
+}
+
+/*long random(){
+  char *x;size_t r;
+  START_MEASURE(rand);
+ long ret= __random();
+  COMMON_MEASURE(rand);
+  return ret;
+}*/
+int rand(){char *x;size_t r;
+  START_MEASURE(rand);
+  int ret= random();
+  COMMON_MEASURE(rand);
+  return ret;
+}
+int random_r(struct random_data *__restrict st,int32_t *ret){
+  char *x;size_t r;
+  START_MEASURE(rand);
+   __random_r(st,ret);
+  COMMON_MEASURE(rand);
+}
+int rand_r(unsigned int *seed){
+  char *x;size_t r;
+  START_MEASURE(rand);
+  unsigned int next = *seed;
+  int result;
+
+  next *= 1103515245;
+  next += 12345;
+  result = (unsigned int) (next / 65536) % 2048;
+
+  next *= 1103515245;
+  next += 12345;
+  result <<= 10;
+  result ^= (unsigned int) (next / 65536) % 1024;
+
+  next *= 1103515245;
+  next += 12345;
+  result <<= 10;
+  result ^= (unsigned int) (next / 65536) % 1024;
+
+  *seed = next;
+  COMMON_MEASURE(rand);
+  return result;
 }
 
 char *strstr(char *x,char *y){return strstr2(x,y,0);}
