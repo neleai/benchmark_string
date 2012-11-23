@@ -31,6 +31,11 @@ int resultcmp(result_s *a,result_s *b){
   if(a->calls>b->calls) return -1;
   return 0;
 }
+int  binary_namescmp(binary_names *a,binary_names *b){
+  if(a->calls<b->calls) return 1;
+  if(a->calls>b->calls) return -1;
+  return 0;
+}
 
 
 int main(){ int i,j;
@@ -38,7 +43,7 @@ int main(){ int i,j;
   FILE *fi = fopen(fname,"r+");
   result_s results[100]; int result_no=0;
 	prof_str * smp;
-	void *sm= mmap(NULL,sizeof(disk_layout)+TOP_FUNCTIONS*sizeof(disk_layout2),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);
+	void *sm= mmap(NULL,sizeof(disk_layout)+sizeof(disk_layout2),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);
   if (sm){
 
     disk_layout2 *lay2=sm+sizeof(disk_layout);
@@ -110,7 +115,8 @@ int main(){ int i,j;
 		buf+=sprintf(buf,"" GNUPLOT_SET "\n set xlabel \"log(cycles)\" \n  plot \"" #fn "_delay\" with lines'| gnuplot > " #fn "_delay.png\n");\
 			buf+=sprintf(buf,"echo '<br> calls: %11d\n success probability: %.2f%% <br>'\n",calls,(100*smp->success+0.0)/calls);\
     buf+=sprintf(buf,"echo 'most frequently used in: <br><table>'\n");\
-    for(i=0;i<TOP_FUNCTIONS;i++){ buf+=sprintf(buf,"echo '<tr><td> %i%%:</td><td> %s </td></tr>'\n",(100*lay2[i].fn.calls+calls/2)/calls,lay2[i].fn.name);}\
+    qsort((void*) lay2->fn,TOP_FUNCTIONS,sizeof(binary_names),(__compar_fn_t) binary_namescmp);\
+    for(i=0;i<TOP_FUNCTIONS;i++){ buf+=sprintf(buf,"echo '<tr><td> %i%%:</td><td> %s </td></tr>'\n",(100*lay2->fn[i].calls+calls/2)/calls,lay2->fn[i].name);}\
     buf+=sprintf(buf,"echo '</table>\n'");
   #include "functions.h"
   qsort(results,result_no,sizeof(result_s),(__compar_fn_t) resultcmp);

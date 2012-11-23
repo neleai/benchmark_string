@@ -36,7 +36,7 @@ disk_layout prof;
 __attribute__((destructor)) static void save_cnt(){ int i,j;
   char *fname = "/tmp/libc_profile";
   FILE *fi = fopen(fname,"r+");
-	void *sm= mmap(NULL,sizeof(disk_layout)+TOP_FUNCTIONS*sizeof(disk_layout2),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);
+	void *sm= mmap(NULL,sizeof(disk_layout)+sizeof(disk_layout2),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);
   if (sm){
 		disk_layout  *lay=sm;
     disk_layout2 *lay2=sm+sizeof(disk_layout);
@@ -54,20 +54,20 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
     calls=prof.fn.success+prof.fn.fail;\
     present=0;\
     for(i=0;i<TOP_FUNCTIONS;i++){\
-      if(!strncmp(bname,lay2[i].fn.name,48)){\
-        lay2[i].fn.calls+=calls;\
+      if(!strncmp(bname,lay2->fn[i].name,48)){\
+        lay2->fn[i].calls+=calls;\
         present=1;\
       }\
     }\
     min_ub=0;\
     for (i=0;i<TOP_FUNCTIONS;i++){\
-      if(lay2[min_ub].fn.calls>lay2[i].fn.calls){\
+      if(lay2->fn[min_ub].calls>lay2->fn[i].calls){\
         min_ub=i;\
       }\
     }\
-    if(!present && calls> lay2[min_ub].fn.calls){\
-          memcpy(lay2[min_ub].fn.name,bname,48);\
-          lay2[min_ub].fn.calls=calls;\
+    if(!present && calls> lay2->fn[min_ub].calls){\
+          memcpy(lay2->fn[min_ub].name,bname,48);\
+          lay2->fn[min_ub].calls=calls;\
     }
 #include "functions.h"
 		munmap(sm,sizeof(disk_layout));

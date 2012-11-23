@@ -1,3 +1,6 @@
+
+#define TOP_FUNCTIONS 10
+
  typedef struct {
   uint64_t less16;
  uint64_t cnt[3][34];
@@ -22,7 +25,7 @@ placeholder;
 } disk_layout;
 typedef struct {
 	binary_names 
-  #define FN(f) f ,
+  #define FN(f) f[TOP_FUNCTIONS] ,
 #include "functions.h"
 placeholder;
 
@@ -53,4 +56,3 @@ uint64_t b_strlen=0,
         b_strtol=0,
         b_malloc=0;
 
-#define TOP_FUNCTIONS 10
