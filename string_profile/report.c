@@ -39,8 +39,7 @@ int  binary_namescmp(binary_names *a,binary_names *b){
 
 
 int main(){ int i,j;
-  char *fname = "/tmp/libc_profile";
-  FILE *fi = fopen(fname,"r+");
+  FILE *fi = fopen(FNAME,"r+");
   result_s results[100]; int result_no=0;
 	prof_str * smp;
 	void *sm= mmap(NULL,sizeof(disk_layout)+sizeof(disk_layout2),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);

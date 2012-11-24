@@ -1,3 +1,4 @@
+#define FNAME "/home/wizard/libc_profile"
 
 #define TOP_FUNCTIONS 10
 
@@ -57,5 +58,6 @@ uint64_t b_strlen=0,
         b_strtol=0,
         b_malloc=0,
         b_qsort=B_BYTEWISE_SIZE,
-        b_rand=B_DELAY_ONLY;
+        b_rand=B_DELAY_ONLY,
+        b_sin=B_DELAY_ONLY;
 

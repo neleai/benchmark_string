@@ -1,3 +1,4 @@
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -34,8 +35,7 @@ char *binary_name(){int i;
 
 disk_layout prof;
 __attribute__((destructor)) static void save_cnt(){ int i,j;
-  char *fname = "/tmp/libc_profile";
-  FILE *fi = fopen(fname,"r+");
+  FILE *fi = fopen(FNAME,"r+");
 	void *sm= mmap(NULL,sizeof(disk_layout)+sizeof(disk_layout2),PROT_READ|PROT_WRITE,MAP_SHARED,fileno(fi),0);
   if (sm){
 		disk_layout  *lay=sm;
@@ -262,7 +262,6 @@ strncat(char *x, const char *y, size_t n)
 	return x;
 }
 char * strcat(char *x,char *y){return strncat(x,y,SIZE_MAX);}
-
 int strcasecmp(char *x,char *y){
 	START_MEASURE(strcasecmp);
 	size_t r=0;
@@ -270,24 +269,23 @@ int strcasecmp(char *x,char *y){
 		while( x[r] && tolower(x[r])==tolower(y[r])) r++;
 	}
 	COMMON_MEASURE(strcasecmp);
-	if (x[r]<y[r]) return -1;
-	if (x[r]>y[r]) return 1;
+	if (tolower(x[r])<tolower(y[r])) return -1;
+	if (tolower(x[r])>tolower(y[r])) return 1;
 	return 0;
 }
 
-int memcmp(char *x,char *y,size_t n){
-	START_MEASURE(strcmp);
-	size_t r=0;
-	if (x!=y){
-		while(r!=n && x[r]==y[r]) r++;
-	}
+int memcmp(unsigned char *x,unsigned char *y,size_t n){
+	size_t i=0,r,ret2;
+
+  START_MEASURE(strcmp);
+	while(i!=n && x[i]==y[i]) i++;
+  r=i;
 	COMMON_MEASURE(strcmp);
-	if ( r == n) return 0;
-  if ( x[r] == y[r]) return 0;
-  FAILED(strcmp);
-	if (x[r]<y[r]) return -1;
-	if (x[r]>y[r]) return 1;
+  ret2=((int)x[i])-((int)y[i]);
+	if ( i == n) ret2=0;
+  return ret2;
 }
+
 void *
 bsearch (const void *key, const void *base, size_t nmemb, size_t size,
    int (*compar) (const void *, const void *))
@@ -337,8 +335,6 @@ lsearch (const void *key, const void *s, size_t size, size_t psize,
   FAILED(lsearch)
   return NULL;
 }
-
-
 
 
 int strncmp(char *x,char *y,size_t n){
@@ -405,6 +401,8 @@ char *strstr2(char *s,char *y,int cas){
   FAILED(strstr)
 	return NULL;	
 }
+char *strstr(char *x,char *y){return strstr2(x,y,0);}
+char *strcasestr(char *x,char *y){return strstr2(x,y,1);}
 
 char *memset(char *x,int c,size_t no){
   size_t r=no;size_t i;
@@ -414,7 +412,6 @@ char *memset(char *x,int c,size_t no){
   return x;
 }
 char *bzero(char *x,size_t no){return memset(x,0,no);}
-
 
 #include <stdint.h>
 #include <ctype.h>
@@ -539,11 +536,7 @@ long strtol(const char *x, char **endptr, int base){
   return res;
 }
 
-/*void *calloc(size_t el,size_t si){
-  size_t r=el*si;
-  char *x=__libc_calloc(el,si);
-  return x;
-}*/
+
 void *malloc(size_t r){
 
   START_MEASURE(malloc);
@@ -562,49 +555,30 @@ qsort (void *_x, size_t n, size_t s, __compar_fn_t cmp)
   COMMON_MEASURE(qsort);
 }
 
-/*long random(){
-  char *x;size_t r;
-  START_MEASURE(rand);
- long ret= __random();
-  COMMON_MEASURE(rand);
-  return ret;
-}*/
-int rand(){char *x;size_t r;
-  START_MEASURE(rand);
-  int ret= random();
-  COMMON_MEASURE(rand);
-  return ret;
-}
-int random_r(struct random_data *__restrict st,int32_t *ret){
-  char *x;size_t r;
-  START_MEASURE(rand);
-   __random_r(st,ret);
-  COMMON_MEASURE(rand);
-}
-int rand_r(unsigned int *seed){
-  char *x;size_t r;
-  START_MEASURE(rand);
-  unsigned int next = *seed;
-  int result;
-
-  next *= 1103515245;
-  next += 12345;
-  result = (unsigned int) (next / 65536) % 2048;
-
-  next *= 1103515245;
-  next += 12345;
-  result <<= 10;
-  result ^= (unsigned int) (next / 65536) % 1024;
-
-  next *= 1103515245;
-  next += 12345;
-  result <<= 10;
-  result ^= (unsigned int) (next / 65536) % 1024;
-
-  *seed = next;
-  COMMON_MEASURE(rand);
-  return result;
+#define REDIR(alias,tp,name,args,carg,lib) \
+tp name args{ void *handle = dlopen(lib,RTLD_NOW);\
+  tp (*func) args;\
+  func= dlsym(handle, #name );\
+  START_MEASURE(alias);\
+  tp ret= func carg;\
+  COMMON_MEASURE(alias);\
+  return ret;\
 }
 
-char *strstr(char *x,char *y){return strstr2(x,y,0);}
-char *strcasestr(char *x,char *y){return strstr2(x,y,1);}
+char *x=NULL;
+size_t r=0;
+
+
+REDIR(rand,int,rand,(),(),"libc.so.6")
+REDIR(rand,long,random,(),(),"libc.so.6")
+REDIR(rand,int,rand_r,(unsigned int *seed),(seed),"libc.so.6")
+REDIR(rand,int,random_r,(struct random_data *__restrict st,int32_t *ret),(st,ret),"libc.so.6")
+REDIR(sin,double,sin,(double arg),(arg),"libm.so")
+REDIR(sin,double,cos,(double arg),(arg),"libm.so")
+REDIR(sin,float,sinf,(float arg),(arg),"libm.so")
+REDIR(sin,float,cosf,(float arg),(arg),"libm.so")
+REDIR(sin,long double,sinl,(long double arg),(arg),"libm.so")
+REDIR(sin,long double,cosl,(long double arg),(arg),"libm.so")
+
+
+
