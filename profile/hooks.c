@@ -582,4 +582,29 @@ REDIR(rand,int,rand_r,(unsigned int *seed),(seed),libc_handle)
 
 //REDIR(rand,int,random_r,(struct random_data *__restrict st,int32_t *ret),(st,ret),"libc.so.6")
 
+
+double sin2(double arg){
+  double (*func) (double);
+  func= dlsym(libm_handle,"sin" );
+  START_MEASURE(sin2);
+  double ret= func(arg);
+  COMMON_MEASURE(sin2);
+  return ret;
+}
+
+double sin3(double arg){
+  long double (*func) (long double);
+  func= dlsym(libm_handle,"sinl" );
+  START_MEASURE(sin3);
+  double ret= func(arg);
+  COMMON_MEASURE(sin3);
+  return ret;
+}
+
+int sin_seed=42;
+double sin(double arg){
+  int var=rand_r(&sin_seed);
+  return (var%2) ? sin2(arg) : sin3(arg); 
+}
+
 #include "mathfn.h"
