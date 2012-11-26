@@ -13,7 +13,10 @@ all:
 	@echo "When done run ${PWD}/report."
 	@echo "You can zero counters by running make again."
 	@echo "simplest way to generate report is by make rep"
+	@echo "This generates html page ${PWD}/results/result.html"
 rep:
 	gcc report.c -o report -g
+	-mkdir  results
+	cp -r doc results
 	./report > results/x
 	cd results; sh x > result.html	

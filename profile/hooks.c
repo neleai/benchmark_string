@@ -92,6 +92,7 @@ size_t strnlen3(const char *x,size_t no){
   if (r<=16) prof.fn.less16++;\
   size_t r2= (b_##fn & B_BYTEWISE_SIZE) ? r\
     :((size_t)x+r)/16-((size_t)x)/16+1;\
+  if(prof.fn.success+prof.fn.fail>10){\
   if(r2>=1000) r2=999;\
   prof.fn.cnt[2][r2/30]++;\
 	prof.fn.time[2][r2/30]+=ts-prof.fn.start;\
@@ -101,9 +102,10 @@ size_t strnlen3(const char *x,size_t no){
 	if(r2>=10) r2=9;\
   prof.fn.cnt[0][r2]++;\
 	prof.fn.time[0][r2]+=ts-prof.fn.start;\
+	}\
   prof.fn.aligns[(b_## fn & B_REL_ALIGN) ? (x-y)%64 : ((uint64_t) x)%64]++;\
 	prof.fn.success++;\
-	}\
+  }\
 	prof.fn.last=ts;\
   if (b_##fn & B_NEEDLE){\
   size_t r2=strlen(y);\
@@ -555,8 +557,8 @@ qsort (void *_x, size_t n, size_t s, __compar_fn_t cmp)
   COMMON_MEASURE(qsort);
 }
 
-#define REDIR(alias,tp,name,args,carg,lib) \
-tp name args{ void *handle = dlopen(lib,RTLD_NOW);\
+#define REDIR(alias,tp,name,args,carg,handle) \
+tp name args{ \
   tp (*func) args;\
   func= dlsym(handle, #name );\
   START_MEASURE(alias);\
@@ -567,18 +569,17 @@ tp name args{ void *handle = dlopen(lib,RTLD_NOW);\
 
 char *x=NULL;
 size_t r=0;
+static void* libc_handle,*libm_handle;
+__attribute__((constructor)) static void load_dl(){
+  libc_handle=dlopen("libc.so.6",RTLD_NOW);
+  libm_handle=dlopen("libm.so",RTLD_NOW);
 
+}
 
-REDIR(rand,int,rand,(),(),"libc.so.6")
-REDIR(rand,long,random,(),(),"libc.so.6")
-REDIR(rand,int,rand_r,(unsigned int *seed),(seed),"libc.so.6")
-REDIR(rand,int,random_r,(struct random_data *__restrict st,int32_t *ret),(st,ret),"libc.so.6")
-REDIR(sin,double,sin,(double arg),(arg),"libm.so")
-REDIR(sin,double,cos,(double arg),(arg),"libm.so")
-REDIR(sin,float,sinf,(float arg),(arg),"libm.so")
-REDIR(sin,float,cosf,(float arg),(arg),"libm.so")
-REDIR(sin,long double,sinl,(long double arg),(arg),"libm.so")
-REDIR(sin,long double,cosl,(long double arg),(arg),"libm.so")
+REDIR(rand,int,rand,(),(),libc_handle)
+REDIR(rand,long,random,(),(),libc_handle)
+REDIR(rand,int,rand_r,(unsigned int *seed),(seed),libc_handle)
 
+//REDIR(rand,int,random_r,(struct random_data *__restrict st,int32_t *ret),(st,ret),"libc.so.6")
 
-
+#include "mathfn.h"

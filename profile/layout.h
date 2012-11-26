@@ -56,8 +56,13 @@ uint64_t b_strlen=0,
         b_bsearch=0,b_lsearch=0,
         b_memset=0,
         b_strtol=0,
-        b_malloc=0,
+        b_malloc=B_BYTEWISE_SIZE,
         b_qsort=B_BYTEWISE_SIZE,
         b_rand=B_DELAY_ONLY,
-        b_sin=B_DELAY_ONLY;
+        b_asin=B_DELAY_ONLY,
+        b_sin=B_DELAY_ONLY,
+        b_erf=B_DELAY_ONLY,
+        b_pow=B_DELAY_ONLY,
+        b_bessel=B_DELAY_ONLY,
+        b_sinh=B_DELAY_ONLY;
 
