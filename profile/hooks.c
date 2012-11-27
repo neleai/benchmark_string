@@ -94,12 +94,9 @@ size_t strnlen3(const char *x,size_t no){
     :((size_t)x+r)/16-((size_t)x)/16+1;\
   if(prof.fn.success+prof.fn.fail>10){\
   if(r2>=1000) r2=999;\
-  prof.fn.cnt[2][r2/30]++;\
-	prof.fn.time[2][r2/30]+=ts-prof.fn.start;\
+  prof.fn.cnt[1][r2/10]++;\
+	prof.fn.time[1][r2/10]+=ts-prof.fn.start;\
 	if(r2>=100) r2=99;\
-  prof.fn.cnt[1][r2/3]++;\
-	prof.fn.time[1][r2/3]+=ts-prof.fn.start;\
-	if(r2>=10) r2=9;\
   prof.fn.cnt[0][r2]++;\
 	prof.fn.time[0][r2]+=ts-prof.fn.start;\
 	}\
@@ -110,10 +107,8 @@ size_t strnlen3(const char *x,size_t no){
   if (b_##fn & B_NEEDLE){\
   size_t r2=strlen(y);\
   if(r2>=1000) r2=999;\
-  prof.fn.needle[2][r2/30]++;\
+  prof.fn.needle[1][r2/10]++;\
   if(r2>=100) r2=99;\
-  prof.fn.needle[1][r2/3]++;\
-  if(r2>=10) r2=9;\
   prof.fn.needle[0][r2]++;\
   }
 
@@ -547,13 +542,14 @@ void *malloc(size_t r){
   COMMON_MEASURE(malloc);
   return x;
 }
+/*
 void *realloc(void *p,size_t s){
   void *n=malloc(s);
   if (!p) return n;
   if (!n) return NULL;
   memcpy(n,p,s);
   return n;
-}
+}*/
 
 void 
 qsort (void *_x, size_t n, size_t s, __compar_fn_t cmp)

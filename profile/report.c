@@ -54,7 +54,7 @@ int main(){ int i,j;
 		uint64_t calls;
 		#undef FN
     #define FN(fn) \
-    buf=results[result_no].text=malloc(10000);\
+    buf=results[result_no].text=malloc(50000);\
     calls=lay->fn.success+lay->fn.fail+1;\
     results[result_no].calls=calls;\
   	result_no++;\
@@ -65,10 +65,10 @@ int main(){ int i,j;
 		for(j=3;j<30;j++) buf+=sprintf(buf,"%f %11d\n",j/3.0,smp->cnt[0][j/3]);\
 		buf+=sprintf(buf,"'> " #fn "_1\n " GNUPLOT_SET "\n plot \"" #fn "_1\" with lines, 0 notitle'| gnuplot > " #fn "_1.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_1.png></img>'\n echo '");\
-		for(j=0;j<34;j++) buf+=sprintf(buf,"%i %11d\n",3*j,smp->cnt[1][j]);\
+		for(j=0;j<100;j++) buf+=sprintf(buf,"%i %11d\n",j,smp->cnt[0][j]);\
 		buf+=sprintf(buf,"'> " #fn "_10\n " GNUPLOT_SET "\n plot \"" #fn "_10\" with lines, 0 notitle'| gnuplot > " #fn "_10.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_10.png></img>'\n echo '");\
-		for(j=0;j<34;j++) buf+=sprintf(buf,"%i %11d\n",30*j,smp->cnt[2][j]);\
+		for(j=0;j<100;j++) buf+=sprintf(buf,"%i %11d\n",10*j,smp->cnt[1][j]);\
 		buf+=sprintf(buf,"'> " #fn "_100\n " GNUPLOT_SET "\n plot \"" #fn "_100\" with lines, 0 notitle'| gnuplot > " #fn "_100.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_100.png></img>'\n");\
     buf+=sprintf(buf,"echo '<br> Calls using at most 16 bytes: %.2f%% <br>'\n",100*(smp->less16+0.0)/calls);\
@@ -78,10 +78,10 @@ int main(){ int i,j;
 		for(j=3;j<27;j++) buf+=sprintf(buf,"%f %11d\n",j/3.0,smp->time[0][j/3]/(smp->cnt[0][j/3]+1));\
 		buf+=sprintf(buf,"'> " #fn "_1t\n " GNUPLOT_SET "\n set ylabel \"cycles\" \n plot \"" #fn "_1t\" with lines, 0 notitle'| gnuplot > " #fn "_1t.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_1t.png></img>'\n echo '");\
-		for(j=0;j<30;j++) buf+=sprintf(buf,"%i %11d\n",j*3,smp->time[1][j]/(smp->cnt[1][j]+1));\
+		for(j=0;j<100;j++) buf+=sprintf(buf,"%i %11d\n",j,smp->time[0][j]/(smp->cnt[0][j]+1));\
 		buf+=sprintf(buf,"'> " #fn "_10t\n " GNUPLOT_SET "\n set ylabel \"cycles\" \n plot \"" #fn "_10t\" with lines, 0 notitle'| gnuplot > " #fn "_10t.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_10t.png></img>'\n echo '");\
-		for(j=0;j<30;j++) buf+=sprintf(buf,"%i %11d\n",30*j,smp->time[2][j]/(smp->cnt[2][j]+1));\
+		for(j=0;j<100;j++) buf+=sprintf(buf,"%i %11d\n",10*j,smp->time[1][j]/(smp->cnt[1][j]+1));\
 		buf+=sprintf(buf,"'> " #fn "_100t\n " GNUPLOT_SET "\n set ylabel \"cycles\" \n plot \"" #fn "_100t\" with lines, 0 notitle'| gnuplot > " #fn "_100t.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_100t.png></img>'\n");\
     if(b_##fn & B_NEEDLE) { \
@@ -90,10 +90,10 @@ int main(){ int i,j;
 		for(j=0;j<27;j++) buf+=sprintf(buf,"%f %11d\n",j/3.0,smp->needle[0][j]);\
 		buf+=sprintf(buf,"'> " #fn "_1n\n " GNUPLOT_SET "\n set ylabel \"bytes\" \n plot \"" #fn "_1n\" with lines, 0 notitle'| gnuplot > " #fn "_1n.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_1n.png></img>'\n echo '");\
-		for(j=0;j<30;j++) buf+=sprintf(buf,"%i %11d\n",j*3,smp->needle[1][j]);\
+		for(j=0;j<100;j++) buf+=sprintf(buf,"%i %11d\n",j,smp->needle[0][j]);\
 		buf+=sprintf(buf,"'> " #fn "_10n\n " GNUPLOT_SET "\n set ylabel \"bytes\" \n plot \"" #fn "_10n\" with lines, 0 notitle'| gnuplot > " #fn "_10n.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_10n.png></img>'\n echo '");\
-		for(j=0;j<30;j++) buf+=sprintf(buf,"%i %11d\n",30*j,smp->needle[2][j]);\
+		for(j=0;j<100;j++) buf+=sprintf(buf,"%i %11d\n",10*j,smp->needle[1][j]);\
 		buf+=sprintf(buf,"'> " #fn "_100n\n " GNUPLOT_SET "\n set ylabel \"bytes\" \n plot \"" #fn "_100n\" with lines, 0 notitle'| gnuplot > " #fn "_100n.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_100n.png></img>'\n");\
     }\
