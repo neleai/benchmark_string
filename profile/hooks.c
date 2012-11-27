@@ -547,6 +547,14 @@ void *malloc(size_t r){
   COMMON_MEASURE(malloc);
   return x;
 }
+void *realloc(void *p,size_t s){
+  void *n=malloc(s);
+  if (!p) return n;
+  if (!n) return NULL;
+  memcpy(n,p,s);
+  return n;
+}
+
 void 
 qsort (void *_x, size_t n, size_t s, __compar_fn_t cmp)
 {
