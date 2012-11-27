@@ -115,6 +115,10 @@ int main(){ int i,j;
 		buf+=sprintf(buf,"echo '<br>delays between calls<br> <img src=" #fn "_delay.png></img><br>'\n");\
 		buf+=sprintf(buf,"" GNUPLOT_SET "\n set xlabel \"log2(cycles)\" \n  plot \"" #fn "_delay\" with lines, 0 notitle'| gnuplot > " #fn "_delay.png\n");\
 			buf+=sprintf(buf,"echo '<br> calls: %11d\n success probability: %.2f%% <br>'\n",calls,(100*smp->success+0.0)/calls);\
+     buf+=sprintf(buf,"echo ' User event 0: %.3f%% <br>'\n",(100*smp->extra[0]+0.0)/calls);\
+      buf+=sprintf(buf,"echo ' User event 1: %.3f%% <br>'\n",(100*smp->extra[1]+0.0)/calls);\
+      buf+=sprintf(buf,"echo ' User event 2: %.3f%% <br>'\n",(100*smp->extra[2]+0.0)/calls);\
+      buf+=sprintf(buf,"echo ' User event 3: %.3f%% <br>'\n",(100*smp->extra[3]+0.0)/calls);\
     buf+=sprintf(buf,"echo 'most frequently used in: <br><table>'\n");\
     qsort((void*) lay2->fn,TOP_FUNCTIONS,sizeof(binary_names),(__compar_fn_t) binary_namescmp);\
     for(i=0;i<TOP_FUNCTIONS;i++){ buf+=sprintf(buf,"echo '<tr><td> %i%%:</td><td> %s </td></tr>'\n",(100*lay2->fn[i].calls+calls/2)/calls,lay2->fn[i].name);}\

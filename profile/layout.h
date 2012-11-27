@@ -11,6 +11,7 @@
  uint64_t aligns[64];
  uint64_t success,fail;
  uint64_t start,last;
+  uint64_t extra[4];
 } prof_str;
 typedef struct {
   uint64_t calls;

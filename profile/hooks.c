@@ -9,6 +9,9 @@
 #include <sys/mman.h>
 char *memcpy(char *dest, const char *src, size_t n);
 #include "layout.h"
+#include <pthread.h>
+pthread_t main_tid;
+static void* libc_handle,*libm_handle;
 
 static __inline__ uint64_t rdtsc(void)
 {
@@ -30,6 +33,12 @@ char *binary_name(){int i;
   fgets(x,48,f);
   x[47]=0;
   return x;
+}
+
+__attribute__((constructor)) static void load_dl(){
+  libc_handle=dlopen("libc.so.6",RTLD_NOW);
+  libm_handle=dlopen("libm.so",RTLD_NOW);
+  main_tid=pthread_self();
 }
 
 
@@ -533,21 +542,32 @@ long strtol(const char *x, char **endptr, int base){
   return res;
 }
 
+/*void *calloc(size_t el,size_t s){ char *x=NULL;
+  char *ret;
+  size_t r=el*s,i;
+  START_MEASURE(malloc);
+  malloc(r);
+  for(i=0;i<r;i++) ret[i]=0;
+  COMMON_MEASURE(malloc);
+  return ret;
+}*/
 
 void *malloc(size_t r){
-
   START_MEASURE(malloc);
   char *x=calloc(r,1);
-
+  r=(r+7)/8;
   COMMON_MEASURE(malloc);
+  if (!pthread_equal(main_tid,pthread_self())) prof.malloc.extra[0]++; 
   return x;
 }
 /*
 void *realloc(void *p,size_t s){
-  void *n=malloc(s);
+  if (!s) {free(p);return NULL;} 
+ void *n=malloc(s);
   if (!p) return n;
   if (!n) return NULL;
   memcpy(n,p,s);
+  free(p);
   return n;
 }*/
 
@@ -573,12 +593,6 @@ tp name args{ \
 
 char *x=NULL;
 size_t r=0;
-static void* libc_handle,*libm_handle;
-__attribute__((constructor)) static void load_dl(){
-  libc_handle=dlopen("libc.so.6",RTLD_NOW);
-  libm_handle=dlopen("libm.so",RTLD_NOW);
-
-}
 
 REDIR(rand,int,rand,(),(),libc_handle)
 REDIR(rand,long,random,(),(),libc_handle)
