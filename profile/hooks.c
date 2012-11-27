@@ -10,8 +10,17 @@
 char *memcpy(char *dest, const char *src, size_t n);
 #include "layout.h"
 #include <pthread.h>
+#include <malloc.h>
 pthread_t main_tid;
 static void* libc_handle,*libm_handle;
+
+char *x=NULL;
+size_t r=0;
+void *(*__malloc_hook2)(size_t);
+void (*__free_hook2)(void*);
+void *(__malloc2)(size_t);
+void (__free2)(void*);
+
 
 static __inline__ uint64_t rdtsc(void)
 {
@@ -39,6 +48,10 @@ __attribute__((constructor)) static void load_dl(){
   libc_handle=dlopen("libc.so.6",RTLD_NOW);
   libm_handle=dlopen("libm.so",RTLD_NOW);
   main_tid=pthread_self();
+  __malloc_hook2=__malloc_hook;
+  __malloc_hook=__malloc2;
+  __free_hook2=__free_hook;
+  __free_hook=__free2;
 }
 
 
@@ -129,7 +142,8 @@ size_t strnlen(char *x,size_t no){
 	if (r==no) {FAILED(strlen)}
   return r;
 }
-size_t strlen(char *x){ 
+size_t strlen(char *x){
+   
 	START_MEASURE(strlen);
 	size_t r=strlen3(x);
   COMMON_MEASURE(strlen);
@@ -195,6 +209,7 @@ char *strchr(   char *x,int c){return strchr2(x,c,0);}
 char *strchrnul(char *x,int c){return strchr2(x,c,1);}
 
 char * memchr(char *x,int c,size_t n){
+
 	START_MEASURE(memchr);
   char *y=x;
   while (y-x!=n && *y!=((char)c)) y++;
@@ -552,13 +567,24 @@ long strtol(const char *x, char **endptr, int base){
   return ret;
 }*/
 
-void *malloc(size_t r){
+void *__malloc2(size_t r){
   START_MEASURE(malloc);
-  char *x=calloc(r,1);
+  __malloc_hook=__malloc_hook2;
+  char *x=malloc(r);
+  __malloc_hook=__malloc2;
   r=(r+7)/8;
   COMMON_MEASURE(malloc);
   if (!pthread_equal(main_tid,pthread_self())) prof.malloc.extra[0]++; 
   return x;
+}
+
+void __free2(void *p){
+  START_MEASURE(free);
+  __free_hook=__free_hook2;
+  free(p);
+  __free_hook=__free2;
+  if (!pthread_equal(main_tid,pthread_self())) prof.free.extra[0]++; 
+  COMMON_MEASURE(free);
 }
 /*
 void *realloc(void *p,size_t s){
@@ -591,8 +617,6 @@ tp name args{ \
   return ret;\
 }
 
-char *x=NULL;
-size_t r=0;
 
 REDIR(rand,int,rand,(),(),libc_handle)
 REDIR(rand,long,random,(),(),libc_handle)
