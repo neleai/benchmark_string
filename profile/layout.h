@@ -68,5 +68,6 @@ uint64_t b_strlen=0,
         b_erf=B_DELAY_ONLY,
         b_pow=B_DELAY_ONLY,
         b_bessel=B_DELAY_ONLY,
-        b_sinh=B_DELAY_ONLY;
+        b_sinh=B_DELAY_ONLY,
+        b_malloc_lifetime=B_BYTEWISE_SIZE;
 

@@ -20,6 +20,8 @@ void *(*__malloc_hook2)(size_t);
 void (*__free_hook2)(void*);
 void *(__malloc2)(size_t);
 void (__free2)(void*);
+void *(*__realloc_hook2)(void*, size_t);
+void *(__realloc2)(void* ,size_t);
 
 
 static __inline__ uint64_t rdtsc(void)
@@ -44,12 +46,23 @@ char *binary_name(){int i;
   return x;
 }
 
+typedef struct { 
+  void *addr; 
+  uint64_t start;
+  uint64_t size;
+  pthread_t thread;
+} malltime;
+malltime *mall_hash;
 __attribute__((constructor)) static void load_dl(){
   libc_handle=dlopen("libc.so.6",RTLD_NOW);
   libm_handle=dlopen("libm.so",RTLD_NOW);
   main_tid=pthread_self();
+  mall_hash=calloc((1<<20)+64,sizeof(malltime));
   __malloc_hook2=__malloc_hook;
   __malloc_hook=__malloc2;
+  __realloc_hook2=__realloc_hook;
+  __realloc_hook=__realloc2;
+
   __free_hook2=__free_hook;
   __free_hook=__free2;
 }
@@ -108,24 +121,22 @@ size_t strnlen3(const char *x,size_t no){
 
 #define START_MEASURE(fn) prof.fn.start=rdtsc();
 #define COMMON_MEASURE(fn)\
-	uint64_t ts=rdtsc();\
-	if (ts-prof.fn.last<2000000000 && ts-prof.fn.start<2000000){\
-	prof.fn.delay[ 63-__builtin_clzl(prof.fn.start-prof.fn.last) ]++;\
+  if(prof.fn.start!=prof.fn.last && (prof.fn.start-prof.fn.last)<(1<<31))\
+  	prof.fn.delay[ 63-__builtin_clzl(prof.fn.start-prof.fn.last) ]++;\
+  prof.fn.last=rdtsc();\
+  prof.fn.aligns[(b_## fn & B_REL_ALIGN) ? (x-y)%64 : ((uint64_t) x)%64]++;\
+	prof.fn.success++;\
   if (r<=16) prof.fn.less16++;\
   size_t r2= (b_##fn & B_BYTEWISE_SIZE) ? r\
     :((size_t)x+r)/16-((size_t)x)/16+1;\
-  if(prof.fn.success+prof.fn.fail>10){\
-  if(r2>=1000) r2=999;\
-  prof.fn.cnt[1][r2/10]++;\
-	prof.fn.time[1][r2/10]+=ts-prof.fn.start;\
-	if(r2>=100) r2=99;\
-  prof.fn.cnt[0][r2]++;\
-	prof.fn.time[0][r2]+=ts-prof.fn.start;\
-	}\
-  prof.fn.aligns[(b_## fn & B_REL_ALIGN) ? (x-y)%64 : ((uint64_t) x)%64]++;\
-	prof.fn.success++;\
+	if (prof.fn.last-prof.fn.start<2000000){\
+    if(r2>=1000) r2=999;\
+    prof.fn.cnt[1][r2/10]++;\
+  	prof.fn.time[1][r2/10]+=prof.fn.last-prof.fn.start;\
+	  if(r2>=100) r2=99;\
+    prof.fn.cnt[0][r2]++;\
+	  prof.fn.time[0][r2]+=prof.fn.last-prof.fn.start;\
   }\
-	prof.fn.last=ts;\
   if (b_##fn & B_NEEDLE){\
   size_t r2=strlen(y);\
   if(r2>=1000) r2=999;\
@@ -567,35 +578,76 @@ long strtol(const char *x, char **endptr, int base){
   return ret;
 }*/
 
-void *__malloc2(size_t r){
+void *__malloc2(size_t r){int i;
   START_MEASURE(malloc);
   __malloc_hook=__malloc_hook2;
   char *x=malloc(r);
   __malloc_hook=__malloc2;
   r=(r+7)/8;
   COMMON_MEASURE(malloc);
-  if (!pthread_equal(main_tid,pthread_self())) prof.malloc.extra[0]++; 
+  pthread_t tid = pthread_self();
+  int hash= ((12373*((long)x)/32)%(1<<20));
+  for(i=0;i<8;i++) if ( mall_hash[hash].addr) hash++;
+  if (!mall_hash[hash].addr){
+    mall_hash[hash].addr=x;
+    mall_hash[hash].size=r;
+    mall_hash[hash].start=prof.malloc.last;
+    mall_hash[hash].thread=tid;
+  }
+  if (!pthread_equal(main_tid,tid)) prof.malloc.extra[0]++; 
   return x;
 }
 
-void __free2(void *p){
+void __free2(void *p){int i;
   START_MEASURE(free);
   __free_hook=__free_hook2;
   free(p);
   __free_hook=__free2;
-  if (!pthread_equal(main_tid,pthread_self())) prof.free.extra[0]++; 
   COMMON_MEASURE(free);
+  if (!p) return;
+  pthread_t tid = pthread_self();
+  if (!pthread_equal(main_tid,tid)) prof.free.extra[0]++; 
+  int hash= ((12373*((long)p)/32)%(1<<20));
+  for(i=0;i<8;i++) if ( mall_hash[hash].addr!=p) hash++;
+  if(mall_hash[hash].addr==p){
+    mall_hash[hash].addr=0;
+    size_t r = mall_hash[hash].size;
+    prof.malloc_lifetime.start = mall_hash[hash].start;
+    COMMON_MEASURE(malloc_lifetime);
+    if (!pthread_equal(tid,mall_hash[hash].thread)) prof.malloc_lifetime.extra[0]++; 
+  }
 }
-/*
-void *realloc(void *p,size_t s){
-  if (!s) {free(p);return NULL;} 
- void *n=malloc(s);
-  if (!p) return n;
-  if (!n) return NULL;
-  memcpy(n,p,s);
-  free(p);
-  return n;
-}*/
+
+void *__realloc2(void *p,size_t s){int i;
+  pthread_t tid = pthread_self();
+  if (p){
+    int hash= ((12373*((long)p)/32)%(1<<20));
+    for(i=0;i<8;i++) if ( mall_hash[hash].addr!=p) hash++;
+    if(mall_hash[hash].addr==p){
+      mall_hash[hash].addr=0;
+      size_t r = mall_hash[hash].size;
+      prof.malloc_lifetime.start = mall_hash[hash].start;
+      COMMON_MEASURE(malloc_lifetime);
+      if (!pthread_equal(tid,mall_hash[hash].thread)) prof.malloc_lifetime.extra[0]++; 
+    }
+  }
+
+  START_MEASURE(malloc);
+  __realloc_hook=__realloc_hook2;
+  char *x= realloc(p,s);
+  __realloc_hook=__realloc2;
+  COMMON_MEASURE(malloc);  
+  r=(s+7)/8;
+  int hash= ((12373*((long)x)/32)%(1<<20));
+  for(i=0;i<8;i++) if ( mall_hash[hash].addr) hash++;
+  if (!mall_hash[hash].addr){
+    mall_hash[hash].addr=x;
+    mall_hash[hash].size=r;
+    mall_hash[hash].start=prof.malloc.last;
+    mall_hash[hash].thread=tid;
+  }
+  return x;
+}
 
 void 
 qsort (void *_x, size_t n, size_t s, __compar_fn_t cmp)
