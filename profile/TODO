@@ -3,3 +3,5 @@ compare different implementations
 strchr etc most frequent characters( slash -filenames)
 
 substract benchmark overhead from time
+
+use backtrace function to compute number of call sites

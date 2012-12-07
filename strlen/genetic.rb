@@ -79,7 +79,7 @@ data << s.split[1].to_f}
 		datum << data
 	}
 	puts datum.inspect
-	#use competitive ratio as fitness function
+	# use competitive ratio as fitness function
 	19.times{|i| 
 		mi=[]
 		pop.times{|j| mi << datum[j][i] }
@@ -95,5 +95,4 @@ data << s.split[1].to_f}
 	srt.sort.each{|v,a| frep.puts "#{v} #{a.inspect}"}
 	frep.close
 }
-#STDIN.flush
 end

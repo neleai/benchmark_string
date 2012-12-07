@@ -87,7 +87,7 @@ int main(){ int i,j;
     if(b_##fn & B_NEEDLE) { \
 	 	buf+=sprintf(buf,"echo '<br>needle size<br>'\n");\
 		buf+=sprintf(buf,"echo '");\
-		for(j=0;j<27;j++) buf+=sprintf(buf,"%f %11d\n",j/3.0,smp->needle[0][j]);\
+		for(j=0;j<27;j++) buf+=sprintf(buf,"%f %11d\n",j/3.0,smp->needle[0][j/3]);\
 		buf+=sprintf(buf,"'> " #fn "_1n\n " GNUPLOT_SET "\n set ylabel \"bytes\" \n plot \"" #fn "_1n\" with lines, 0 notitle'| gnuplot > " #fn "_1n.png\n");\
 		buf+=sprintf(buf,"echo '<img src=" #fn "_1n.png></img>'\n echo '");\
 		for(j=0;j<100;j++) buf+=sprintf(buf,"%i %11d\n",j,smp->needle[0][j]);\
@@ -119,7 +119,8 @@ int main(){ int i,j;
       buf+=sprintf(buf,"echo ' User event 1: %.3f%% <br>'\n",(100*smp->extra[1]+0.0)/calls);\
       buf+=sprintf(buf,"echo ' User event 2: %.3f%% <br>'\n",(100*smp->extra[2]+0.0)/calls);\
       buf+=sprintf(buf,"echo ' User event 3: %.3f%% <br>'\n",(100*smp->extra[3]+0.0)/calls);\
-    buf+=sprintf(buf,"echo 'most frequently used in: <br><table>'\n");\
+      buf+=sprintf(buf,"echo ' Calls per call site: %i <br>'\n",calls/(smp->call_sites+1));\
+    buf+=sprintf(buf,"echo 'most frequently used in: <br><table border=\'1\'>'\n");\
     qsort((void*) lay2->fn,TOP_FUNCTIONS,sizeof(binary_names),(__compar_fn_t) binary_namescmp);\
     for(i=0;i<TOP_FUNCTIONS;i++){ buf+=sprintf(buf,"echo '<tr><td> %i%%:</td><td> %s </td></tr>'\n",(100*lay2->fn[i].calls+calls/2)/calls,lay2->fn[i].name);}\
     buf+=sprintf(buf,"echo '</table>\n'");

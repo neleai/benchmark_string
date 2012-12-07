@@ -9,13 +9,15 @@
 #include <sys/mman.h>
 char *memcpy(char *dest, const char *src, size_t n);
 #include "layout.h"
+
 #include <pthread.h>
-#include <malloc.h>
 pthread_t main_tid;
 static void* libc_handle,*libm_handle;
 
+
 char *x=NULL;
 size_t r=0;
+#include <malloc.h>
 void *(*__malloc_hook2)(size_t);
 void (*__free_hook2)(void*);
 void *(__malloc2)(size_t);
@@ -23,18 +25,7 @@ void (__free2)(void*);
 void *(*__realloc_hook2)(void*, size_t);
 void *(__realloc2)(void* ,size_t);
 
-
-static __inline__ uint64_t rdtsc(void)
-{
-  uint32_t lo, hi;
-/*  __asm__ __volatile__ (
-    "        xorl %%eax,%%eax \n"
-    "        cpuid"      // serialize
-    ::: "%rax", "%rbx", "%rcx", "%rdx");*/
-  /* We cannot use "=A", since this would use %rax on x86_64 and return only the lower 32bits of the TSC */
-  __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-  return (uint64_t)hi << 32 | lo;
-}
+#include "sysdep.h"
 
 char *binary_name(){int i;
   char *x=malloc(48);
@@ -143,6 +134,18 @@ size_t strnlen3(const char *x,size_t no){
   prof.fn.needle[1][r2/10]++;\
   if(r2>=100) r2=99;\
   prof.fn.needle[0][r2]++;\
+  }\
+  {\
+  int i;\
+  int found=0;\
+  void *bt=backtrace2();\
+  for (i=0;i<prof.fn.call_sites;i++){\
+    if(bt==call_sites.fn[i]) found=1;\
+  }\
+  if(!found && prof.fn.call_sites<100){\
+    call_sites.fn[prof.fn.call_sites]=bt;\
+    prof.fn.call_sites++;\
+  }\
   }
 
 char *y;

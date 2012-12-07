@@ -12,11 +12,20 @@
  uint64_t success,fail;
  uint64_t start,last;
   uint64_t extra[4];
+  uint64_t call_sites;
 } prof_str;
 typedef struct {
   uint64_t calls;
   char name[48];
 } binary_names;
+
+typedef struct {
+  void 
+  #define FN(f) *f[100],
+  #include "functions.h"
+*placeholder;
+} call_sites_s;
+call_sites_s call_sites;
 
 typedef struct {
 	prof_str 
