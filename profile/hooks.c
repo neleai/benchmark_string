@@ -16,7 +16,7 @@ static void* libc_handle,*libm_handle;
 
 
 char *x=NULL;
-size_t r=0;
+size_t r=0,ns=0;
 #include <malloc.h>
 void *(*__malloc_hook2)(size_t);
 void (*__free_hook2)(void*);
@@ -129,11 +129,10 @@ size_t strnlen3(const char *x,size_t no){
 	  prof.fn.time[0][r2]+=prof.fn.last-prof.fn.start;\
   }\
   if (b_##fn & B_NEEDLE){\
-  size_t r2=strlen(y);\
-  if(r2>=1000) r2=999;\
-  prof.fn.needle[1][r2/10]++;\
-  if(r2>=100) r2=99;\
-  prof.fn.needle[0][r2]++;\
+  if(ns>=1000) ns=999;\
+  prof.fn.needle[1][ns/10]++;\
+  if(ns>=100) ns=99;\
+  prof.fn.needle[0][ns]++;\
   }\
   {\
   int i;\
@@ -285,6 +284,7 @@ char *memccpy(char *x,char *y,int c,size_t n){
 	char*
 strncat(char *x, const char *y, size_t n)
 {
+  size_t ns=strlen(y);
 	START_MEASURE(strcat);
 	size_t dest_len = strlen(x);
 	size_t i;
@@ -399,6 +399,7 @@ char * strndup(char *x,size_t n){
 char *strdup(char *x){return strndup(x,SIZE_MAX);}
 
 size_t strspn2(char *x,char *y,int accept){
+  size_t ns=strlen(y);
 	START_MEASURE(strspn);
 	size_t r=0;
 	while(1){
@@ -420,6 +421,7 @@ size_t strcspn(char *x,char *y){ return strspn2(x,y,1);}
 char *strpbrk(char *x,char *y){ char *z=x+strcspn(x,y); return *z ? z : NULL;}
 char *strstr2(char *s,char *y,int cas){
   size_t i,r; 
+  size_t ns=strlen(y);
 	START_MEASURE(strstr);
 	char *x=s;
 	while(*s){
@@ -657,6 +659,7 @@ qsort (void *_x, size_t n, size_t s, __compar_fn_t cmp)
 {
   char *x=_x;
   size_t r=n;
+  size_t ns=s;
   START_MEASURE(qsort);
   qsort_r (x, n, s,  cmp, NULL);
   COMMON_MEASURE(qsort);

@@ -56,7 +56,7 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
     #define GNUPLOT_SET "echo ' reset\n set terminal png\n set xlabel \"%s\"\n set ylabel \"number of calls\""
     #define PRINT_LOOP1(exp,file)  \
                           SPRINTF("echo '");\
-                          for(j=0;j<100;j++) SPRINTF("%f %11lld\n",j/10.0,exp); \
+                          for(j=5;j<100;j++) SPRINTF("%f %11lld\n",(j-5)/10.0,exp); \
                           SPRINTF("'> %s\n" GNUPLOT_SET "\n plot \"%s\" with lines, 0 notitle'| gnuplot > %s.png\n",file,flags & B_BYTEWISE_SIZE ? "bytes" : "blocks",file,file); \
                           SPRINTF("echo '<img src=%s.png></img>'\n" ,file);
     #define PRINT_LOOP10(exp,file) \
