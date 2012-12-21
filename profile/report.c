@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdint.h>
 #include <sys/file.h>
 #include <unistd.h>
@@ -8,18 +9,8 @@
 #include <stdint.h>
 #include "layout.h"
 
-static __inline__ uint64_t rdtsc(void)
-{
-  uint32_t lo, hi;
-/*  __asm__ __volatile__ (
-    "        xorl %%eax,%%eax \n"
-    "        cpuid"      // serialize
-    ::: "%rax", "%rbx", "%rcx", "%rdx");*/
-  /* We cannot use "=A", since this would use %rax on x86_64 and return only the lower 32bits of the TSC */
-  __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
-  return (uint64_t)hi << 32 | lo;
-}
-
+#include "utils.h"
+#include "variants.h"
 
 typedef struct {
   uint64_t calls;
@@ -45,7 +36,7 @@ char *strcat2(char *a,char *b){
 }
 
 result_s results[100]; int result_no;
-void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i, j;
+void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i, j, choice;
     #define SPRINTF(...) buf+=sprintf(buf,__VA_ARGS__)
     char    *buf   = malloc(50000);
 		uint64_t calls = smp->success+smp->fail+1;
@@ -54,43 +45,39 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
     result_no++; 
  
     #define GNUPLOT_SET "echo ' reset\n set terminal png\n set xlabel \"%s\"\n set ylabel \"number of calls\""
-    #define PRINT_LOOP1(exp,file)  \
+    #define PRINT_LOOP(exp,file,start,idx)  \
+                          for(choice=0;choice<strlen_no;choice++){\
                           SPRINTF("echo '");\
-                          for(j=5;j<100;j++) SPRINTF("%f %11lld\n",(j-5)/10.0,exp); \
-                          SPRINTF("'> %s\n" GNUPLOT_SET "\n plot \"%s\" with lines, 0 notitle'| gnuplot > %s.png\n",file,flags & B_BYTEWISE_SIZE ? "bytes" : "blocks",file,file); \
-                          SPRINTF("echo '<img src=%s.png></img>'\n" ,file);
-    #define PRINT_LOOP10(exp,file) \
-                          SPRINTF("echo '");\
-                          for(j=0;j<100;j++) SPRINTF("%f %11lld\n",1.0*j,exp); \
-                          SPRINTF("'> %s\n" GNUPLOT_SET "\n plot \"%s\" with lines, 0 notitle'| gnuplot > %s.png\n",file,flags & B_BYTEWISE_SIZE ? "bytes" : "blocks",file,file); \
-                          SPRINTF("echo '<img src=%s.png></img>'\n" ,file);
-    #define PRINT_LOOP100(exp,file) \
-                          SPRINTF("echo '");\
-                          for(j=0;j<100;j++) SPRINTF("%f %11lld\n",10.0*j,exp); \
-                          SPRINTF("'> %s\n" GNUPLOT_SET "\n plot \"%s\" with lines, 0 notitle'| gnuplot > %s.png\n",file,flags & B_BYTEWISE_SIZE ? "bytes" : "blocks",file,file); \
+                          for(j=start;j<100;j++) SPRINTF("%f %f\n",idx,exp); \
+                          SPRINTF("'> %s_%i\n",file,choice);\
+                          }\
+                          SPRINTF( GNUPLOT_SET "\n plot",flags & B_BYTEWISE_SIZE ? "bytes" : "blocks");\
+                          for(choice=0;choice<strlen_no;choice++){\
+                            SPRINTF(" \"%s_%i\" with lines linecolor rgb \"%s\" title \"%s\",",file,choice,strlen_color[choice],strlen_names[choice]);\
+                          }\
+                          SPRINTF(" 0 notitle'| gnuplot > %s.png\n",file);\
                           SPRINTF("echo '<img src=%s.png></img>'\n" ,file);
     
 
     SPRINTF("\necho '<h1> %s </h1>'\n",fname);
     SPRINTF("echo '<br>number of calls<br>'\n");
-    PRINT_LOOP1(  smp->cnt[0][j/10],strcat2(fname,"_1"));
-    PRINT_LOOP10( smp->cnt[0][j]   ,strcat2(fname,"_10"));
-    PRINT_LOOP100(smp->cnt[1][j]   ,strcat2(fname,"_100"));
+    PRINT_LOOP((float)smp->cnt[choice][0][j/10],strcat2(fname,"_1"  ),5,(j-5)/10.0);
+    PRINT_LOOP((float)smp->cnt[choice][0][j]   ,strcat2(fname,"_10" ),0,j*1.0);
+    PRINT_LOOP((float)smp->cnt[choice][1][j]   ,strcat2(fname,"_100"),0,j*10.0);
 
     SPRINTF("echo '<br> Calls using at most 16 bytes: %.2f%% <br>'\n",100*(smp->less16+0.0)/calls);
-    SPRINTF("echo '<br> Calls in first 4 blocks: %.2f%% <br>'\n",100*(smp->cnt[0][1]+smp->cnt[0][2]+smp->cnt[0][3]+smp->cnt[0][4]+0.0)/calls);
+
+
+		SPRINTF("echo '<br>Estimated time spent<br>'\n");
+    PRINT_LOOP((smp->cnt[choice][0][j/10]<50 ? 0.0 : smp->time[choice][0][j/10]/(smp->cnt[choice][0][j/10]+0.1)*(smp->cnt[0][0][j/10]+smp->cnt[1][0][j/10]+smp->cnt[2][0][j/10]+smp->cnt[3][0][j/10])),strcat2(fname,"_1s"  ),5,(j-5)/10.0);
+    PRINT_LOOP((smp->cnt[choice][0][j]<50 ? 0.0 : smp->time[choice][0][j]/(smp->cnt[choice][0][j]+0.1)*(smp->cnt[0][0][j]+smp->cnt[1][0][j]+smp->cnt[2][0][j]+smp->cnt[3][0][j])),strcat2(fname,"_10s"  ),0,j*1.0);
+    PRINT_LOOP((smp->cnt[choice][1][j]<50 ? 0.0 : smp->time[choice][1][j]/(smp->cnt[choice][1][j]+0.1)*(smp->cnt[0][1][j]+smp->cnt[1][1][j]+smp->cnt[2][1][j]+smp->cnt[3][0][j])),strcat2(fname,"_100s"  ),0,j*10.0);
+
 
 		SPRINTF("echo '<br>average time<br>'\n");
-    PRINT_LOOP1(  smp->time[0][j/10]/(smp->cnt[0][j/10]+1),strcat2(fname,"_1t"));
-    PRINT_LOOP10( smp->time[0][j]/(smp->cnt[0][j]+1),strcat2(fname,"_10t"));
-    PRINT_LOOP100(smp->time[1][j]/(smp->cnt[1][j]+1),strcat2(fname,"_100t"));
-
-    if (flags & B_NEEDLE) {
-       SPRINTF("echo '<br>needle size<br>'\n");
-       PRINT_LOOP1(  smp->needle[0][j/10],strcat2(fname,"_1n"));
-       PRINT_LOOP10( smp->needle[0][j]   ,strcat2(fname,"_10n"));
-       PRINT_LOOP100(smp->needle[1][j]   ,strcat2(fname,"_100n"));
-    }
+    PRINT_LOOP((smp->cnt[choice][0][j/10]<50 ? 0.0 : smp->time[choice][0][j/10]/(smp->cnt[choice][0][j/10]+0.1)),strcat2(fname,"_1t"  ),5,(j-5)/10.0);
+    PRINT_LOOP((smp->cnt[choice][0][j]<50 ? 0.0 : smp->time[choice][0][j]/(smp->cnt[choice][0][j]+0.1)),strcat2(fname,"_10t"          ),0,j*1.0);
+    PRINT_LOOP((smp->cnt[choice][1][j]<50 ? 0.0 : smp->time[choice][1][j]/(smp->cnt[choice][1][j]+0.1)),strcat2(fname,"_100t"         ),0,j*10.0);
 
     if (flags & B_SHOW_ALIGN){
       SPRINTF("\necho \"");

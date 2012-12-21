@@ -8,6 +8,16 @@ register void *ebp __asm__ ("ebp");
   return ptr[1];
 }
 
+char *binary_name(){int i;
+  char *x=malloc(48);
+  sprintf(x,"/proc/%i/cmdline",getpid());
+  FILE *f=fopen(x,"r");
+  for(i=0;i<48;i++)x[i]=0;
+  fgets(x,48,f);
+  x[47]=0;
+  return x;
+}
+
 
 static __inline__ uint64_t rdtsc(void)
 {

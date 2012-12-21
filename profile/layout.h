@@ -4,8 +4,8 @@
 
  typedef struct {
   uint64_t less16;
- uint64_t cnt[2][100];
- uint64_t time[2][100];
+ uint64_t cnt[1][2][100];
+ uint64_t time[1][2][100];
  uint64_t needle[2][100];
 	uint64_t delay[64];
  uint64_t aligns[64];
@@ -63,12 +63,13 @@ uint64_t b_strlen=0,
 
         b_strdup=0,
         b_strrchr=0,
-        b_bsearch=0,b_lsearch=0,
         b_memset=0,
         b_strtol=B_BYTEWISE_SIZE,
         b_malloc=B_BYTEWISE_SIZE,
         b_free=B_DELAY_ONLY,
-        b_qsort=B_BYTEWISE_SIZE | B_NEEDLE,
+        b_bsearch=B_BYTEWISE_SIZE | B_NEEDLE,
+        b_lsearch=B_BYTEWISE_SIZE | B_NEEDLE,
+        b_qsort  =B_BYTEWISE_SIZE | B_NEEDLE,
         b_rand=B_DELAY_ONLY,
         b_asin=B_DELAY_ONLY,
         b_sin=B_DELAY_ONLY,

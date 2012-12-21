@@ -14,6 +14,7 @@ char *memcpy(char *dest, const char *src, size_t n);
 pthread_t main_tid;
 static void* libc_handle,*libm_handle;
 
+#define choice 0
 
 char *x=NULL;
 size_t r=0,ns=0;
@@ -25,17 +26,7 @@ void (__free2)(void*);
 void *(*__realloc_hook2)(void*, size_t);
 void *(__realloc2)(void* ,size_t);
 
-#include "sysdep.h"
-
-char *binary_name(){int i;
-  char *x=malloc(48);
-  sprintf(x,"/proc/%i/cmdline",getpid());
-  FILE *f=fopen(x,"r");
-  for(i=0;i<48;i++)x[i]=0;
-  fgets(x,48,f);
-  x[47]=0;
-  return x;
-}
+#include "utils.h"
 
 typedef struct { 
   void *addr; 
@@ -122,11 +113,11 @@ size_t strnlen3(const char *x,size_t no){
     :((size_t)x+r)/16-((size_t)x)/16+1;\
 	if (prof.fn.last-prof.fn.start<2000000){\
     if(r2>=1000) r2=999;\
-    prof.fn.cnt[1][r2/10]++;\
-  	prof.fn.time[1][r2/10]+=prof.fn.last-prof.fn.start;\
+    prof.fn.cnt[choice][1][r2/10]++;\
+  	prof.fn.time[choice][1][r2/10]+=prof.fn.last-prof.fn.start;\
 	  if(r2>=100) r2=99;\
-    prof.fn.cnt[0][r2]++;\
-	  prof.fn.time[0][r2]+=prof.fn.last-prof.fn.start;\
+    prof.fn.cnt[choice][0][r2]++;\
+	  prof.fn.time[choice][0][r2]+=prof.fn.last-prof.fn.start;\
   }\
   if (b_##fn & B_NEEDLE){\
   if(ns>=1000) ns=999;\
