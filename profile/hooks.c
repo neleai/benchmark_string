@@ -658,8 +658,9 @@ qsort (void *_x, size_t n, size_t s, __compar_fn_t cmp)
 
 #define REDIR(alias,tp,name,args,carg,handle) \
 tp name args{ \
-  tp (*func) args;\
-  func= dlsym(handle, #name );\
+  static tp (*func) args;\
+  if(!func)\ 
+    func= dlsym(handle, #name );\
   START_MEASURE(alias);\
   tp ret= func carg;\
   COMMON_MEASURE(alias);\
