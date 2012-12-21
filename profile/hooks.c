@@ -94,12 +94,6 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
 #define FAILED(fn)    prof.fn.success--;\
     prof.fn.fail++;
 
-size_t strnlen3(const char *x,size_t no){
-	char foo[16];
-  char *y=x;
-  while (y-x!=no && *y) y++;
-  return y-x;
-}
 
 #define START_MEASURE(fn) prof.fn.start=rdtsc();
 #define COMMON_MEASURE(fn)\
