@@ -100,6 +100,8 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
   if(prof.fn.start!=prof.fn.last && (prof.fn.start-prof.fn.last)<(1<<31))\
   	prof.fn.delay[ 63-__builtin_clzl(prof.fn.start-prof.fn.last) ]++;\
   prof.fn.last=rdtsc();\
+  if(prof.fn.start!=prof.fn.last)\
+    prof.fn.time_dist[ 63-__builtin_clzl(prof.fn.last-prof.fn.start) ]++;\
   prof.fn.aligns[(b_## fn & B_REL_ALIGN) ? (x-y)%64 : ((uint64_t) x)%64]++;\
 	prof.fn.success++;\
   if (r<=16) prof.fn.less16++;\

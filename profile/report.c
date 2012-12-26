@@ -89,6 +89,16 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
       SPRINTF("echo '<br> %s <br> <img src=%s_alignment.png></img><br>'\n", flags & B_REL_ALIGN ? "Relative alignment" : "Alingment" ,fname);
       SPRINTF("echo '<br> Calls aligned to 16 bytes: %.2f%% <br>'",100*(smp->aligns[0]+smp->aligns[16]+smp->aligns[32]+smp->aligns[48]+0.0)/calls);
     }
+
+		SPRINTF("\necho \"");
+		for(i=0;i<32;i++) {
+	 		SPRINTF("%i %11lld\n",i,smp->time_dist[i]);
+		}
+		SPRINTF("\">%s_time_dist\n",fname);
+		SPRINTF("echo '<br> Time spent<br> <img src=%s_time_dist.png></img><br>'\n",fname);
+		SPRINTF("" GNUPLOT_SET "\n plot \"%s_time_dist\" with lines, 0 notitle'| gnuplot > %s_time_dist.png\n","log2(cycles)",fname,fname);
+
+
 		SPRINTF("\necho \"");
 		for(i=0;i<32;i++) {
 	 		SPRINTF("%i %11lld\n",i,smp->delay[i]);
@@ -96,6 +106,9 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
 		SPRINTF("\">%s_delay\n",fname);
 		SPRINTF("echo '<br> Delays between calls<br> <img src=%s_delay.png></img><br>'\n",fname);
 		SPRINTF("" GNUPLOT_SET "\n plot \"%s_delay\" with lines, 0 notitle'| gnuplot > %s_delay.png\n","log2(cycles)",fname,fname);
+
+
+
 		SPRINTF("echo '<br> Total calls: %11lld\n Success probability: %.2f%% <br>'\n",calls,(100*smp->success+0.0)/calls);
     if(smp->extra[0])
     SPRINTF("echo ' User event 0: %.3f%% <br>'\n",(100*smp->extra[0]+0.0)/calls);

@@ -7,6 +7,7 @@
  uint64_t cnt[1][2][100];
  uint64_t time[1][2][100];
  uint64_t needle[2][100];
+	uint64_t time_dist[64];
 	uint64_t delay[64];
  uint64_t aligns[64];
  uint64_t success,fail;
