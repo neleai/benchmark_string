@@ -80,7 +80,7 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
     PRINT_LOOP((smp->cnt[choice][1][j]<50 ? 0.0 : smp->time[choice][1][j]/(smp->cnt[choice][1][j]+0.1)),strcat2(fname,"_100t"         ),0,j*10.0);
 
     if (flags & B_NEEDLE){
-      SPRINTF("echo '<br>number of calls<br>'\n");
+      SPRINTF("echo '<br> Needle sizes<br>'\n");
       PRINT_LOOP((float)smp->needle[0][j/10],strcat2(fname,"_1n"  ),5,(j-5)/10.0);
       PRINT_LOOP((float)smp->needle[0][j]   ,strcat2(fname,"_10n" ),0,j*1.0);
       PRINT_LOOP((float)smp->needle[1][j]   ,strcat2(fname,"_100n"),0,j*10.0);
