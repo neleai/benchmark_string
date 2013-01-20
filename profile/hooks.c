@@ -314,6 +314,7 @@ bsearch (const void *key, const void *base, size_t nmemb, size_t size,
 {
   char * x = base;
   size_t r = size*nmemb;
+  size_t ns= size;
   START_MEASURE(bsearch);
   size_t l, u, idx;
   const void *p;
@@ -345,6 +346,7 @@ lsearch (const void *key, const void *s, size_t size, size_t psize,
    int (*cmp) (const void *, const void *)){
   char * x = s;
   size_t r = size*psize;
+  size_t ns= size;
   START_MEASURE(lsearch);
   void *end; 
   for(end = s+size*psize; s!=end; s+=psize){
