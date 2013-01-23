@@ -400,6 +400,7 @@ size_t strspn2(char *x,char *y,int accept){
 	}
 		if (!x[r] || found==accept){
 			COMMON_MEASURE(strspn);
+      if (!x[r]){ FAILED(strspn); }
 			return r;
 		}
 		r++;
