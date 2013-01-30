@@ -160,6 +160,8 @@ char * strrchr(char *x,int c){
 	}
 	size_t r=y-x;
 	COMMON_MEASURE(strrchr);
+   if (c=='/')
+    prof.strrchr.extra[0]++;
 	y=ret;
 	if (y){
 		return y;
@@ -179,6 +181,8 @@ char * memrchr(char *x,int c,int n){
 	}
 	size_t r=y-x;
 	COMMON_MEASURE(strrchr);
+  if (c=='/')
+    prof.strrchr.extra[0]++;
 	y=ret;
 	if (y){
 		return y;
@@ -197,6 +201,8 @@ char * strchr2(char *x,int c,int nul){
   while (*y && *y!=((char)c)) y++;
 	size_t r=y-x;
 	COMMON_MEASURE(strchr);
+  if (c=='/')
+    prof.strchr.extra[0]++;
 	if (*y==((char)c)){
 		return y;
 	} else {
@@ -215,6 +221,9 @@ char * memchr(char *x,int c,size_t n){
   while (y-x!=n && *y!=((char)c)) y++;
 	size_t r=y-x;
 	COMMON_MEASURE(memchr);
+  if (c=='/')
+    prof.memchr.extra[0]++;
+
 	if (y-x!=n){
 		return y;
 	} else {
@@ -230,7 +239,7 @@ char * strncpy(char *x,const char *y ,size_t n){
 
 	for (i = 0 ; i!=n && y[i] != '\0' ; i++)
 		x[i] = y[i];
-  if (i!=n) x[i]=0;
+  while (i!=n) x[i++]=0;
 	int r=i;
 	COMMON_MEASURE(strcpy);
 	return x;
@@ -673,6 +682,31 @@ REDIR(rand,int,rand_r,(unsigned int *seed),(seed),libc_handle)
 
 //REDIR(rand,int,random_r,(struct random_data *__restrict st,int32_t *ret),(st,ret),"libc.so.6")
 
+int regexec(const void *preg, const char *string, size_t nmatch,
+                   void * pmatch, int eflags){
+
+  int (*func)(const void *preg, const char *string, size_t nmatch,
+                   void * pmatch, int eflags);
+  func=dlsym(libc_handle,"regexec");
+  size_t r=strlen(string);
+  START_MEASURE(regexec);
+  int ret=func(preg,string,nmatch,pmatch,eflags);
+  COMMON_MEASURE(regexec);
+  if (ret){ FAILED(regexec);}
+  return ret;
+}
+
+int fnmatch(const char *pattern, const char *string, int flags){
+  int (*func)(const char *pattern, const char *string, int flags);
+  size_t r = strlen(string);
+  size_t ns= strlen(pattern);
+  func=dlsym(libc_handle,"fnmatch");
+  START_MEASURE(fnmatch);
+  int ret=func(pattern,string,flags);
+  COMMON_MEASURE(fnmatch);
+  if (ret){ FAILED(fnmatch);}
+  return ret;
+}
 
 double sin2(double arg){
   double (*func) (double);
