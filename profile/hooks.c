@@ -105,8 +105,16 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
   prof.fn.aligns[(b_## fn & B_REL_ALIGN) ? (x-y)%64 : ((uint64_t) x)%64]++;\
 	prof.fn.success++;\
   if (r<=16) prof.fn.less16++;\
-  size_t r2= (b_##fn & B_BYTEWISE_SIZE) ? r\
-    :((size_t)x+r)/16-((size_t)x)/16+1;\
+  size_t  r2=r;\
+	if (prof.fn.last-prof.fn.start<2000000){\
+    if(r2>=1000) r2=999;\
+    prof.fn.byte_cnt[choice][1][r2/10]++;\
+  	prof.fn.byte_time[choice][1][r2/10]+=prof.fn.last-prof.fn.start;\
+	  if(r2>=100) r2=99;\
+    prof.fn.byte_cnt[choice][0][r2]++;\
+	  prof.fn.byte_time[choice][0][r2]+=prof.fn.last-prof.fn.start;\
+  }\
+ r2=((size_t)x+r)/16-((size_t)x)/16+1;\
 	if (prof.fn.last-prof.fn.start<2000000){\
     if(r2>=1000) r2=999;\
     prof.fn.cnt[choice][1][r2/10]++;\
@@ -234,14 +242,14 @@ char * memchr(char *x,int c,size_t n){
 char * rawmemchr(char *x,int c){return memchr(x,c,SIZE_MAX);}
 
 char * strncpy(char *x,const char *y ,size_t n){
-	START_MEASURE(strcpy);
+	START_MEASURE(strncpy);
 	size_t i;
 
 	for (i = 0 ; i!=n && y[i] != '\0' ; i++)
 		x[i] = y[i];
   while (i!=n) x[i++]=0;
 	int r=i;
-	COMMON_MEASURE(strcpy);
+	COMMON_MEASURE(strncpy);
 	return x;
 }
 char*
@@ -292,7 +300,9 @@ strncat(char *x, const char *y, size_t n)
 	COMMON_MEASURE(strcat);
 	return x;
 }
-char * strcat(char *x,char *y){return strncat(x,y,SIZE_MAX);}
+char * strcat(char *x,char *y){
+  strncat(x,y,SIZE_MAX);
+}
 int strcasecmp(char *x,char *y){
 	START_MEASURE(strcasecmp);
 	size_t r=0;
@@ -312,6 +322,7 @@ int memcmp(unsigned char *x,unsigned char *y,size_t n){
 	while(i!=n && x[i]==y[i]) i++;
   r=i;
 	COMMON_MEASURE(strcmp);
+  if (x==y) prof.strcmp.extra[0]++;
   ret2=((int)x[i])-((int)y[i]);
 	if ( i == n) ret2=0;
   return ret2;
@@ -377,6 +388,7 @@ int strncmp(char *x,char *y,size_t n){
 		while(r!=n && x[r] && x[r]==y[r]) r++;
 	}
 	COMMON_MEASURE(strcmp);
+  if (x==y) prof.strcmp.extra[0]++;
 	if ( r == n) return 0;
  	if (x[r] == y[r]) return 0;
 
@@ -587,7 +599,6 @@ void *__malloc2(size_t r){int i;
   __malloc_hook=__malloc_hook2;
   char *x=malloc(r);
   __malloc_hook=__malloc2;
-  r=(r+7)/8;
   COMMON_MEASURE(malloc);
   pthread_t tid = pthread_self();
   int hash= ((12373*((long)x)/32)%(1<<20));

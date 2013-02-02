@@ -45,13 +45,13 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
     result_no++; 
  
     #define GNUPLOT_SET "echo ' reset\n set terminal png\n set xlabel \"%s\"\n set ylabel \"number of calls\""
-    #define PRINT_LOOP(exp,file,start,idx)  \
+    #define PRINT_LOOP(exp,file,start,idx,byte)  \
                           for(choice=0;choice<strlen_no;choice++){\
                           SPRINTF("echo '");\
                           for(j=start;j<100;j++) SPRINTF("%f %f\n",idx,exp); \
                           SPRINTF("'> %s_%i\n",file,choice);\
                           }\
-                          SPRINTF( GNUPLOT_SET "\n plot",flags & B_BYTEWISE_SIZE ? "bytes" : "blocks");\
+                          SPRINTF( GNUPLOT_SET "\n plot",byte);\
                           for(choice=0;choice<strlen_no;choice++){\
                             SPRINTF(" \"%s_%i\" with lines linecolor rgb \"%s\" title \"%s\",",file,choice,strlen_color[choice],strlen_names[choice]);\
                           }\
@@ -60,10 +60,17 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
     
 
     SPRINTF("\necho '<h1> %s </h1>'\n",fname);
-    SPRINTF("echo '<br>number of calls<br>'\n");
-    PRINT_LOOP((float)smp->cnt[choice][0][j/10],strcat2(fname,"_1"  ),5,(j-5)/10.0);
-    PRINT_LOOP((float)smp->cnt[choice][0][j]   ,strcat2(fname,"_10" ),0,j*1.0);
-    PRINT_LOOP((float)smp->cnt[choice][1][j]   ,strcat2(fname,"_100"),0,j*10.0);
+    SPRINTF("\necho '<br>number of calls - byte distribution<br>'\n");
+    PRINT_LOOP((float)smp->byte_cnt[choice][0][j/10],strcat2(fname,"_1b"  ),5,(j-5)/10.0,"bytes");
+    PRINT_LOOP((float)smp->byte_cnt[choice][0][j]   ,strcat2(fname,"_10b" ),0,j*1.0,"bytes");
+    PRINT_LOOP((float)smp->byte_cnt[choice][1][j]   ,strcat2(fname,"_100b"),0,j*10.0,"bytes");
+
+    SPRINTF("echo '<br>block distribution<br>'\n");
+    PRINT_LOOP((float)smp->cnt[choice][0][j/10],strcat2(fname,"_1"  ),5,(j-5)/10.0,"blocks");
+    PRINT_LOOP((float)smp->cnt[choice][0][j]   ,strcat2(fname,"_10" ),0,j*1.0,"blocks");
+    PRINT_LOOP((float)smp->cnt[choice][1][j]   ,strcat2(fname,"_100"),0,j*10.0,"blocks");
+
+
 
     SPRINTF("echo '<br> Calls using at most 16 bytes: %.2f%% <br>'\n",100*(smp->less16+0.0)/calls);
 
@@ -74,21 +81,21 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
     PRINT_LOOP((smp->cnt[choice][1][j]<50 ? 0.0 : smp->time[choice][1][j]/(smp->cnt[choice][1][j]+0.1)*(smp->cnt[0][1][j]+smp->cnt[1][1][j]+smp->cnt[2][1][j]+smp->cnt[3][0][j])),strcat2(fname,"_100s"  ),0,j*10.0);
 #else
 		SPRINTF("echo '<br>Time spent<br>'\n");
-    PRINT_LOOP((float)smp->time[choice][0][j/10],strcat2(fname,"_1s"  ),5,(j-5)/10.0);
-    PRINT_LOOP((float)smp->time[choice][0][j]   ,strcat2(fname,"_10s" ),0,j*1.0);
-    PRINT_LOOP((float)smp->time[choice][1][j]   ,strcat2(fname,"_100s"),0,j*10.0);
+    PRINT_LOOP((float)smp->time[choice][0][j/10],strcat2(fname,"_1s"  ),5,(j-5)/10.0,"blocks");
+    PRINT_LOOP((float)smp->time[choice][0][j]   ,strcat2(fname,"_10s" ),0,j*1.0,"blocks");
+    PRINT_LOOP((float)smp->time[choice][1][j]   ,strcat2(fname,"_100s"),0,j*10.0,"blocks");
 #endif
 
 		SPRINTF("echo '<br>average time<br>'\n");
-    PRINT_LOOP((smp->cnt[choice][0][j/10]<50 ? 0.0 : smp->time[choice][0][j/10]/(smp->cnt[choice][0][j/10]+0.1)),strcat2(fname,"_1t"  ),5,(j-5)/10.0);
-    PRINT_LOOP((smp->cnt[choice][0][j]<50 ? 0.0 : smp->time[choice][0][j]/(smp->cnt[choice][0][j]+0.1)),strcat2(fname,"_10t"          ),0,j*1.0);
-    PRINT_LOOP((smp->cnt[choice][1][j]<50 ? 0.0 : smp->time[choice][1][j]/(smp->cnt[choice][1][j]+0.1)),strcat2(fname,"_100t"         ),0,j*10.0);
+    PRINT_LOOP((smp->cnt[choice][0][j/10]<50 ? 0.0 : smp->time[choice][0][j/10]/(smp->cnt[choice][0][j/10]+0.1)),strcat2(fname,"_1t"  ),5,(j-5)/10.0,"blocks");
+    PRINT_LOOP((smp->cnt[choice][0][j]<50 ? 0.0 : smp->time[choice][0][j]/(smp->cnt[choice][0][j]+0.1)),strcat2(fname,"_10t"          ),0,j*1.0,"blocks");
+    PRINT_LOOP((smp->cnt[choice][1][j]<50 ? 0.0 : smp->time[choice][1][j]/(smp->cnt[choice][1][j]+0.1)),strcat2(fname,"_100t"         ),0,j*10.0,"blocks");
 
     if (flags & B_NEEDLE){
       SPRINTF("echo '<br> Needle sizes<br>'\n");
-      PRINT_LOOP((float)smp->needle[0][j/10],strcat2(fname,"_1n"  ),5,(j-5)/10.0);
-      PRINT_LOOP((float)smp->needle[0][j]   ,strcat2(fname,"_10n" ),0,j*1.0);
-      PRINT_LOOP((float)smp->needle[1][j]   ,strcat2(fname,"_100n"),0,j*10.0);
+      PRINT_LOOP((float)smp->needle[0][j/10],strcat2(fname,"_1n"  ),5,(j-5)/10.0,"blocks");
+      PRINT_LOOP((float)smp->needle[0][j]   ,strcat2(fname,"_10n" ),0,j*1.0,"blocks");
+      PRINT_LOOP((float)smp->needle[1][j]   ,strcat2(fname,"_100n"),0,j*10.0,"blocks");
     }
 
     if (flags & B_SHOW_ALIGN){

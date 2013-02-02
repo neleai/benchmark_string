@@ -6,6 +6,9 @@
   uint64_t less16;
  uint64_t cnt[1][2][100];
  uint64_t time[1][2][100];
+ uint64_t byte_cnt[1][2][100];
+ uint64_t byte_time[1][2][100];
+
  uint64_t needle[2][100];
 	uint64_t time_dist[64];
 	uint64_t delay[64];
@@ -56,6 +59,7 @@ uint64_t b_strlen=0,
         b_memchr=0,
         b_strspn=B_NEEDLE | B_BYTEWISE_SIZE,
         b_strcat=B_NEEDLE,
+        b_strncpy=B_REL_ALIGN | B_SHOW_ALIGN | B_BYTEWISE_SIZE,
         b_strcpy=B_REL_ALIGN | B_SHOW_ALIGN | B_BYTEWISE_SIZE,
         b_memcpy=B_REL_ALIGN | B_SHOW_ALIGN,
         b_strcmp=B_REL_ALIGN | B_SHOW_ALIGN ,
