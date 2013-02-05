@@ -1,117 +1,98 @@
-# blue
-	.file	"test_sse2.c"
-	.text
-	.p2align 4,,15
-	.globl	reversed
-	.type	reversed, @function
+# red
+# 1 "variant/gen_new.h"
+# 1 "<built-in>"
+# 1 "<command-line>"
+# 1 "variant/gen_new.h"
+# 17 "variant/gen_new.h"
+# 1 "variant/strlen-new.S" 1
+# 19 "variant/strlen-new.S"
+# 1 "variant/sysdep.h" 1
+# 20 "variant/strlen-new.S" 2
+# 33 "variant/strlen-new.S"
+.text
+.text ;.globl strlen_new; .type strlen_new, @function;strlen_new:; .cfi_startproc
+# 68 "variant/strlen-new.S"
+ pxor %xmm8, %xmm8
+ pxor %xmm9, %xmm9
+ pxor %xmm10, %xmm10
+ pxor %xmm11, %xmm11
+ movq %rdi, %rax
+ movq %rdi, %rcx
+ andq $4095, %rcx
+ cmpq $4032, %rcx
+
+ ja .Lnext
+# 101 "variant/strlen-new.S"
+ andq $-16, %rax
+ pcmpeqb (%rax), %xmm8; pcmpeqb 16(%rax), %xmm9; pcmpeqb 32(%rax), %xmm10; pcmpeqb 48(%rax), %xmm11; pmovmskb %xmm8, %esi; pmovmskb %xmm9, %edx; pmovmskb %xmm10, %r8d; pmovmskb %xmm11, %ecx; salq $16, %rdx; salq $16, %rcx; orq %rsi, %rdx; orq %r8, %rcx; salq $32, %rcx; orq %rcx, %rdx;; movq %rdi, %rcx; xorq %rax, %rcx; andq $-64, %rax;; sarq %cl, %rdx; test %rdx, %rdx; je .Lloop; bsfq %rdx, %rax; ret
+
+.Lnext:
+ andq $-64, %rax
+ pcmpeqb (%rax), %xmm8; pcmpeqb 16(%rax), %xmm9; pcmpeqb 32(%rax), %xmm10; pcmpeqb 48(%rax), %xmm11; pmovmskb %xmm8, %esi; pmovmskb %xmm9, %edx; pmovmskb %xmm10, %r8d; pmovmskb %xmm11, %ecx; salq $16, %rdx; salq $16, %rcx; orq %rsi, %rdx; orq %r8, %rcx; salq $32, %rcx; orq %rcx, %rdx;; movq %rdi, %rcx; xorq %rax, %rcx; andq $-64, %rax;; sarq %cl, %rdx; test %rdx, %rdx; je .Lloop_init; bsfq %rdx, %rax; ret
+# 119 "variant/strlen-new.S"
+.Lloop_init:
+ pxor %xmm9, %xmm9
+ pxor %xmm10, %xmm10
+ pxor %xmm11, %xmm11
+# 163 "variant/strlen-new.S"
+.Lloop:
+
+ movdqa 64(%rax), %xmm8
+ pminub 80(%rax), %xmm8
+ pminub 96(%rax), %xmm8
+ pminub 112(%rax), %xmm8
+ pcmpeqb %xmm11, %xmm8
+ pmovmskb %xmm8, %edx
+ testl %edx, %edx
+ jne .Lexit64
+
+ subq $-128, %rax
+
+ movdqa (%rax), %xmm8
+ pminub 16(%rax), %xmm8
+ pminub 32(%rax), %xmm8
+ pminub 48(%rax), %xmm8
+ pcmpeqb %xmm11, %xmm8
+ pmovmskb %xmm8, %edx
+ testl %edx, %edx
+ jne .Lexit0
+ jmp .Lloop
+
+.Lexit64:
+ addq $64, %rax
+.Lexit0:
+ pxor %xmm8, %xmm8
+ pcmpeqb (%rax), %xmm8; pcmpeqb 16(%rax), %xmm9; pcmpeqb 32(%rax), %xmm10; pcmpeqb 48(%rax), %xmm11; pmovmskb %xmm8, %esi; pmovmskb %xmm9, %edx; pmovmskb %xmm10, %r8d; pmovmskb %xmm11, %ecx; salq $16, %rdx; salq $16, %rcx; orq %rsi, %rdx; orq %r8, %rcx; salq $32, %rcx; orq %rcx, %rdx;
+
+ bsfq %rdx, %rdx
+ addq %rdx, %rax
+ subq %rdi, %rax
+ ret
+
+
+
+.cfi_endproc ; .size strlen_new, .-strlen_new
+
+.globl reversed
+ .type reversed, @function
 reversed:
-.LFB0:
-	.cfi_startproc
-	xorl	%eax, %eax
-	ret
-	.cfi_endproc
-.LFE0:
-	.size	reversed, .-reversed
-	.p2align 4,,15
-	.globl	strlen2
-	.type	strlen2, @function
-strlen2:
-.LFB552:
-	.cfi_startproc
-	movq	%rdi, %rax
-	pxor	%xmm5, %xmm5
-  andq	$-64, %rax
-	pxor %xmm3,%xmm3
-	pxor %xmm2,%xmm2
-	pcmpeqb (%rax), %xmm3
-	pxor %xmm1,%xmm1
-	pcmpeqb 16(%rax), %xmm2
-	pmovmskb	%xmm3, %r8d
-	pxor %xmm0,%xmm0
-	pcmpeqb 32(%rax), %xmm1
-	pmovmskb	%xmm2, %edx
-	pcmpeqb 48(%rax), %xmm0
-	pmovmskb	%xmm1, %esi
-	pmovmskb	%xmm0, %ecx
-	salq	$16, %rdx
-	salq	$16, %rcx
-	orq	%r8, %rdx
-	orq	%rsi, %rcx
-	movq	$-1, %rsi
-	salq	$32, %rcx
-	orq	%rcx, %rdx
-	movl	%edi, %ecx
-	andl	$63, %ecx
-	salq	%cl, %rsi
-	andq	%rsi, %rdx
-	je	.L16
-	bsfq	%rdx, %rdx
-	addq	%rdx, %rax
-	subq	%rdi, %rax
-	ret
-
-	.p2align 4,,10
-	.p2align 3
-.L19:
-	addq	$64, %rax
-.L17:
-	pxor %xmm3,%xmm3
-	pcmpeqb (%rax),%xmm5
-	pxor %xmm2,%xmm2
-	pcmpeqb 16(%rax),%xmm3
-	pxor %xmm1,%xmm1
-	pmovmskb	%xmm5, %r8d
-	pcmpeqb 32(%rax),%xmm3
-	pmovmskb	%xmm3, %ecx
-	pcmpeqb 48(%rax),%xmm3
-	pmovmskb	%xmm1, %edx
-	salq	$16, %rcx
-	pmovmskb	%xmm2, %esi
-	salq	$16, %rdx
-	orq	%rsi, %rdx
-	orq	%r8, %rcx
-	salq	$32, %rdx
-	orq	%rcx, %rdx
-	bsfq	%rdx, %rdx
-	addq	%rdx, %rax
-	subq	%rdi, %rax
-	ret
-
-	.p2align 4,,10
-	.p2align 3
-.L16:
-	#prefetcht0	576(%rax)
-	movdqa	64(%rax), %xmm0
-	pminub	80(%rax), %xmm0
-	pminub	96(%rax), %xmm0
-	pminub 112(%rax), %xmm0
-	pcmpeqb	%xmm5, %xmm0
-	pmovmskb	%xmm0, %edx
-	testl	%edx, %edx
-	jne	.L19
-	subq	$-128, %rax
-	#prefetcht0	512(%rax)
-	movdqa	  (%rax), %xmm0
-	pminub	16(%rax), %xmm0
-	pminub	32(%rax), %xmm0
-	pminub  48(%rax), %xmm0
-	pcmpeqb	%xmm5, %xmm0
-	pmovmskb	%xmm0, %edx
-	testl	%edx, %edx
-	je	.L16
-	jmp	.L17
-	.cfi_endproc
-.LFE552:
-	.size	strlen2, .-strlen2
-	.p2align 4,,15
-	.globl	strstr2
-	.type	strstr2, @function
+.LFB551:
+ .cfi_startproc
+ xorl %eax, %eax
+ ret
+ .cfi_endproc
+.LFE551:
+ .size reversed, .-reversed
+ .p2align 4,,15
+.globl strstr2
+ .type strstr2, @function
 strstr2:
-.LFB553:
-	.cfi_startproc
-	jmp	strlen2@PLT
-	.cfi_endproc
-.LFE553:
-	.size	strstr2, .-strstr2
-	.ident	"GCC: (Debian 4.7.1-2) 4.7.1"
-	.section	.note.GNU-stack,"",@progbits
+.LFB552:
+ .cfi_startproc
+ jmp strlen_new@PLT
+ .cfi_endproc
+.LFE552:
+ .size strstr2, .-strstr2
+
+
+# 17 "variant/gen_new.h" 2
