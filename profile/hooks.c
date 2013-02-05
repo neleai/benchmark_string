@@ -150,7 +150,7 @@ size_t strnlen(char *x,size_t no){
 	if (r==no) {FAILED(strlen)}
   return r;
 }
-size_t strlen(char *x){
+size_t strlen(const char *x){
    
 	START_MEASURE(strlen);
 	size_t r=strlen3(x);
@@ -241,17 +241,22 @@ char * memchr(char *x,int c,size_t n){
 }
 char * rawmemchr(char *x,int c){return memchr(x,c,SIZE_MAX);}
 
-char * strncpy(char *x,const char *y ,size_t n){
+char * strncpy2(char *x,const char *y ,size_t n,int end){
 	START_MEASURE(strncpy);
 	size_t i;
 
 	for (i = 0 ; i!=n && y[i] != '\0' ; i++)
 		x[i] = y[i];
+  size_t e=i;
   while (i!=n) x[i++]=0;
 	int r=i;
 	COMMON_MEASURE(strncpy);
-	return x;
+  if (end) prof.strncpy.extra[0]++;
+	return end ? x+e : x;
 }
+char *strncpy(char *x,char *y,size_t n){return strncpy2(x,y,n,0);}
+char *stpncpy(char *x,char *y,size_t n){return strncpy2(x,y,n,1);}
+
 char*
 strcpy2(char *x, const char *y,int end){
 	START_MEASURE(strcpy);
@@ -262,6 +267,7 @@ strcpy2(char *x, const char *y,int end){
 		x[i] = '\0';
 	int r=i;
 	COMMON_MEASURE(strcpy);
+  if (end) prof.strcpy.extra[0]++;
 	return end ? x+r : x;
 }
 char *strcpy(char *x,char *y){return strcpy2(x,y,0);}
@@ -284,6 +290,8 @@ char *memccpy(char *x,char *y,int c,size_t n){
 	if (cp) n= cp-x;
 	return memcpy(x,y,n);
 }
+char*
+mempcpy(char *x, const char *y,size_t n){ return memcpy(x,y,n)+n; }
 
 	char*
 strncat(char *x, const char *y, size_t n)
@@ -318,11 +326,11 @@ int strcasecmp(char *x,char *y){
 int memcmp(unsigned char *x,unsigned char *y,size_t n){
 	size_t i=0,r,ret2;
 
-  START_MEASURE(strcmp);
+  START_MEASURE(memcmp);
 	while(i!=n && x[i]==y[i]) i++;
   r=i;
-	COMMON_MEASURE(strcmp);
-  if (x==y) prof.strcmp.extra[0]++;
+	COMMON_MEASURE(memcmp);
+  if (x==y) prof.memcmp.extra[0]++;
   ret2=((int)x[i])-((int)y[i]);
 	if ( i == n) ret2=0;
   return ret2;
@@ -380,7 +388,7 @@ lsearch (const void *key, const void *s, size_t size, size_t psize,
   return NULL;
 }
 
-
+/*strcmp.extra[0] probability equality happened because x==y */
 int strncmp(char *x,char *y,size_t n){
 	START_MEASURE(strcmp);
 	size_t r=0;
@@ -452,11 +460,13 @@ char *strstr2(char *s,char *y,int cas){
 char *strstr(char *x,char *y){return strstr2(x,y,0);}
 char *strcasestr(char *x,char *y){return strstr2(x,y,1);}
 
+  /*memset.extra[0] probability of c being 0*/
 char *memset(char *x,int c,size_t no){
   size_t r=no;size_t i;
   START_MEASURE(memset);
   for(i=0;i<no;i++) x[i]=c;
   COMMON_MEASURE(memset);
+  if ( c==0 ) prof.memset.extra[0]++;
   return x;
 }
 char *bzero(char *x,size_t no){return memset(x,0,no);}
