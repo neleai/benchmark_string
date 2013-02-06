@@ -1,4 +1,4 @@
-# red
+# blue
 # 1 "variant/gen_new.h"
 # 1 "<built-in>"
 # 1 "<command-line>"
@@ -11,7 +11,7 @@
 # 33 "variant/strlen-new.S"
 .text
 .text ;.globl strlen_new; .type strlen_new, @function;strlen_new:; .cfi_startproc
-# 68 "variant/strlen-new.S"
+# 69 "variant/strlen-new.S"
  pxor %xmm8, %xmm8
  pxor %xmm9, %xmm9
  pxor %xmm10, %xmm10
@@ -22,19 +22,22 @@
  cmpq $4032, %rcx
 
  ja .Lnext
-# 101 "variant/strlen-new.S"
+# 102 "variant/strlen-new.S"
  andq $-16, %rax
  pcmpeqb (%rax), %xmm8; pcmpeqb 16(%rax), %xmm9; pcmpeqb 32(%rax), %xmm10; pcmpeqb 48(%rax), %xmm11; pmovmskb %xmm8, %esi; pmovmskb %xmm9, %edx; pmovmskb %xmm10, %r8d; pmovmskb %xmm11, %ecx; salq $16, %rdx; salq $16, %rcx; orq %rsi, %rdx; orq %r8, %rcx; salq $32, %rcx; orq %rcx, %rdx;; movq %rdi, %rcx; xorq %rax, %rcx; andq $-64, %rax;; sarq %cl, %rdx; test %rdx, %rdx; je .Lloop; bsfq %rdx, %rax; ret
 
+.p2align 4
 .Lnext:
  andq $-64, %rax
  pcmpeqb (%rax), %xmm8; pcmpeqb 16(%rax), %xmm9; pcmpeqb 32(%rax), %xmm10; pcmpeqb 48(%rax), %xmm11; pmovmskb %xmm8, %esi; pmovmskb %xmm9, %edx; pmovmskb %xmm10, %r8d; pmovmskb %xmm11, %ecx; salq $16, %rdx; salq $16, %rcx; orq %rsi, %rdx; orq %r8, %rcx; salq $32, %rcx; orq %rcx, %rdx;; movq %rdi, %rcx; xorq %rax, %rcx; andq $-64, %rax;; sarq %cl, %rdx; test %rdx, %rdx; je .Lloop_init; bsfq %rdx, %rax; ret
-# 119 "variant/strlen-new.S"
+# 121 "variant/strlen-new.S"
+.p2align 4
 .Lloop_init:
  pxor %xmm9, %xmm9
  pxor %xmm10, %xmm10
  pxor %xmm11, %xmm11
-# 163 "variant/strlen-new.S"
+# 167 "variant/strlen-new.S"
+.p2align 4
 .Lloop:
 
  movdqa 64(%rax), %xmm8
@@ -57,7 +60,7 @@
  testl %edx, %edx
  jne .Lexit0
  jmp .Lloop
-
+.p2align 4
 .Lexit64:
  addq $64, %rax
 .Lexit0:
@@ -73,6 +76,7 @@
 
 .cfi_endproc ; .size strlen_new, .-strlen_new
 
+ .p2align 4,,15
 .globl reversed
  .type reversed, @function
 reversed:

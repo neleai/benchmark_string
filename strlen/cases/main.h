@@ -42,7 +42,7 @@ int try_test(int ns2,int ss2,int rnd){int i,k;
     // We have dirty data on caches, prefetch for clean state.
     for(i=0;i<1024;i++) foos[64*i]++;
 
-    for(i=0;i<ss;i+=64){
+    for(i=0;i<ss+64;i+=64){
         _mm_prefetch(haystack+i ,_MM_HINT_T0);
       }
   #endif
