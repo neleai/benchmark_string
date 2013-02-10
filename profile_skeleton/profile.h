@@ -10,17 +10,21 @@
 #include <string.h>
 #include "layout.h"
 #include "variants.h"
-
 static void* libc_handle,*libm_handle;
-
 unsigned int r_seed;
 char *x=NULL;
+char *y;
 size_t r=0,ns=0;
 #include <malloc.h>
 
 #include "utils.h"
-
 disk_layout prof;
+
+__attribute__((constructor)) static void init_seed(){
+	struct timeval time;
+  gettimeofday(&time,NULL);
+  r_seed= (time.tv_sec * 1000) + (time.tv_usec / 1000);
+}
 __attribute__((destructor)) static void save_cnt(){ int i,j;
   FILE *fi = fopen(FNAME,"r+");
   if (fi){
@@ -62,23 +66,22 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
     }
   }
 }
-
 #define FAILED(fn)    prof.fn.success--;\
     prof.fn.fail++;
 
 
 
 #define START_MEASURE(fn) prof.fn.start=rdtsc();
-#define COMMON_MEASURE(fn)\
-  /*if(prof.fn.start!=prof.fn.last && (prof.fn.start-prof.fn.last)<(1<<31))\
-  	prof.fn.delay[ 63-__builtin_clzl(prof.fn.start-prof.fn.last) ]++;*/\
+#define COMMON_MEASURE(fn) \
+  if(prof.fn.start!=prof.fn.last && (prof.fn.start-prof.fn.last)<(1<<31))\
+  	prof.fn.delay[ 63-__builtin_clzl(prof.fn.start-prof.fn.last) ]++;\
   prof.fn.last=rdtsc();\
   prof.fn.aligns[(b_## fn & B_REL_ALIGN) ? (x-y)%64 : ((uint64_t) x)%64]++;\
 	prof.fn.success++;\
   if (r<=16) prof.fn.less16++;\
   size_t r2= (b_##fn & B_BYTEWISE_SIZE) ? r\
     :((size_t)x+r)/16-((size_t)x)/16+1;\
-	if (prof.fn.last-prof.fn.start<2000000){\
+	if (prof.fn.last-prof.fn.start<1024+128*r){\
     if(r2<=1000) {\
       prof.fn.cnt[choice][1][r2/10]++;\
     	prof.fn.time[choice][1][r2/10]+=prof.fn.last-prof.fn.start;\
@@ -106,17 +109,3 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
     prof.fn.call_sites++;\
   }\
   }
-
-char *y;
-
-size_t strlen(const char *x){
-	r_seed++;
-	int choice= r_seed%strlen_no;
-//  int choice=rand_r(&r_seed)%strlen_no;
-  size_t (*fn)(char *) = strlen_func[choice];
-	START_MEASURE(strlen);
-	size_t r=fn(x);
-  COMMON_MEASURE(strlen);
-  return r;
-}
-

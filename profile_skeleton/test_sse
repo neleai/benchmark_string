@@ -1,0 +1,14 @@
+SSSE3="`cat /proc/cpuinfo | grep ssse3 `"
+AVX2="`cat /proc/cpuinfo | grep avx2 `"
+
+if [ -z "$SSSE3" ]
+then
+echo 2
+else
+if [ -z "$AVX2" ]
+then
+echo 3
+else
+echo 4
+fi
+fi
