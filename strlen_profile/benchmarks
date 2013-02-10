@@ -1,0 +1,34 @@
+make
+make test
+
+make reset
+LD_PRELOAD=./libc_profile.so tests/seq
+make rep
+rm -r results_seq
+cp -r results/ results_seq
+
+make reset
+LD_PRELOAD=./libc_profile.so tests/rand
+make rep
+rm -r results_rand
+cp -r results/ results_rand
+
+make reset
+LD_PRELOAD=./libc_profile.so tests/rand_nocache
+make rep
+rm -r results_rand_nocache
+cp -r results/ results_rand_nocache
+
+make reset
+LD_PRELOAD=./libc_profile.so tests/rand_noicache
+make rep
+rm -r results_rand_noicache
+cp -r results/ results_rand_noicache
+
+make reset
+LD_PRELOAD=./libc_profile.so  gcc -O3 variant/strlen_sse2_pminub.s variant/strlen_sse4.s  variant/strlen_new.s       -DFNAME='"/tmp/libc_profile"' hooks.c -shared -ldl -fPIC -g 
+make rep
+rm -r results_gcc
+cp -r results/ results_gcc
+
+tar -cjf results.tar.bz2 results_*
