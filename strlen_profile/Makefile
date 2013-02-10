@@ -1,7 +1,8 @@
 FNAME = ${PWD}/data_profile
 FILES = variant/strlen_sse2_pminub.s variant/strlen_sse4.s variant/strlen_new.s
 all: header
-	gcc -Dstrlen_no=`./test_sse` $(FILES)	-DFNAME='"$(FNAME)"' hooks.c -shared -ldl -fPIC -g -o libc_profile.so
+	gcc backtrace.c -c
+	gcc -O1 -Dstrlen_no=`./test_sse` $(FILES)	-DFNAME='"$(FNAME)"' backtrace.o hooks.c -shared -ldl -fPIC -g -o libc_profile.so
 	make reset
 	@DIR=`pwd`
 	@echo

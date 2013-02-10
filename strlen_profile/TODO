@@ -1,2 +1,0 @@
-Substract measurement overhead to get cycles. 
-Remove outliers (they are mostly caused by context switch thus uninteresting.)
