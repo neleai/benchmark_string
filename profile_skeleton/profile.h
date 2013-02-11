@@ -79,16 +79,23 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
   prof.fn.aligns[(b_## fn & B_REL_ALIGN) ? (x-y)%64 : ((uint64_t) x)%64]++;\
 	prof.fn.success++;\
   if (r<=16) prof.fn.less16++;\
-  size_t r2= (b_##fn & B_BYTEWISE_SIZE) ? r\
-    :((size_t)x+r)/16-((size_t)x)/16+1;\
+  size_t r2= ((size_t)x+r)/16-((size_t)x)/16+1;\
 	if (prof.fn.last-prof.fn.start<1024+128*r){\
     if(r2<=1000) {\
-      prof.fn.cnt[choice][1][r2/10]++;\
-    	prof.fn.time[choice][1][r2/10]+=prof.fn.last-prof.fn.start;\
+      prof.fn.block_cnt[choice][1][r2/10]++;\
+    	prof.fn.block_time[choice][1][r2/10]+=prof.fn.last-prof.fn.start;\
     }\
 	  if(r2<=100) {\
-      prof.fn.cnt[choice][0][r2]++;\
-  	  prof.fn.time[choice][0][r2]+=prof.fn.last-prof.fn.start;\
+      prof.fn.block_cnt[choice][0][r2]++;\
+  	  prof.fn.block_time[choice][0][r2]+=prof.fn.last-prof.fn.start;\
+    }\
+    if(r<=1000) {\
+      prof.fn.byte_cnt[choice][1][r/10]++;\
+    	prof.fn.byte_time[choice][1][r/10]+=prof.fn.last-prof.fn.start;\
+    }\
+	  if(r<=100) {\
+      prof.fn.byte_cnt[choice][0][r]++;\
+  	  prof.fn.byte_time[choice][0][r]+=prof.fn.last-prof.fn.start;\
     }\
   }\
   if (b_##fn & B_NEEDLE){\

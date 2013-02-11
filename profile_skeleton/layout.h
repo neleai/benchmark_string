@@ -1,10 +1,10 @@
 
 #define TOP_FUNCTIONS 10
 
+ typedef uint64_t profile_array[4][2][100];
  typedef struct {
   uint64_t less16;
- uint64_t cnt[4][2][100];
- uint64_t time[4][2][100];
+	profile_array byte_cnt,byte_time,block_cnt,block_time;
  uint64_t needle[2][100];
 	uint64_t delay[64];
  uint64_t aligns[64];

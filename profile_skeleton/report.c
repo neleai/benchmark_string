@@ -52,33 +52,47 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
                           for(j=start;j<100;j++) SPRINTF("%f %f\n",idx,exp); \
                           SPRINTF("'> %s_%i\n",file,choice);\
                           }\
-                          SPRINTF( GNUPLOT_SET "\n plot",flags & B_BYTEWISE_SIZE ? "bytes" : "blocks");\
+                          SPRINTF( GNUPLOT_SET "\n plot",desc_type[block_type]);\
                           for(choice=0;choice<strcpy_no;choice++){\
                             SPRINTF(" \"%s_%i\" with lines linecolor rgb \"%s\" title \"%s\",",file,choice,strcpy_color[choice],strcpy_names[choice]);\
                           }\
                           SPRINTF(" 0 notitle'| gnuplot > %s.png\n",file);\
                           SPRINTF("echo '<img src=%s.png></img>'\n" ,file);
-   
-    #define YLABEL "cycles" 
-		SPRINTF("echo '<br>average time<br>'\n");
-    PRINT_LOOP((smp->cnt[choice][0][j/10]<50 ? 0.0 : smp->time[choice][0][j/10]/(smp->cnt[choice][0][j/10]+0.1)),strcat2(fname,"_1t"  ),5,(j-5)/10.0);
-    PRINT_LOOP((smp->cnt[choice][0][j]<50 ? 0.0 : smp->time[choice][0][j]/(smp->cnt[choice][0][j]+0.1)),strcat2(fname,"_10t"          ),0,j*1.0);
-    PRINT_LOOP((smp->cnt[choice][1][j]<50 ? 0.0 : smp->time[choice][1][j]/(smp->cnt[choice][1][j]+0.1)),strcat2(fname,"_100t"         ),0,j*10.0);
+   	int block_type;
+		profile_array *cnt,*time;
+    char *desc_type[2]={"bytes","blocks"}; 
+		for(block_type=0;block_type<2;block_type++){
 
-    #define YLABEL "cycles" 
-    SPRINTF("echo '<br>Estimated time spent<br>'\n");
-    PRINT_LOOP((smp->cnt[choice][0][j/10]<50 ? 0.0 : smp->time[choice][0][j/10]/(smp->cnt[choice][0][j/10]+0.1)*(smp->cnt[0][0][j/10]+smp->cnt[1][0][j/10]+smp->cnt[2][0][j/10]+smp->cnt[3][0][j/10])),strcat2(fname,"_1s"  ),5,(j-5)/10.0);
-    PRINT_LOOP((smp->cnt[choice][0][j]<50 ? 0.0 : smp->time[choice][0][j]/(smp->cnt[choice][0][j]+0.1)*(smp->cnt[0][0][j]+smp->cnt[1][0][j]+smp->cnt[2][0][j]+smp->cnt[3][0][j])),strcat2(fname,"_10s"  ),0,j*1.0);
-    PRINT_LOOP((smp->cnt[choice][1][j]<50 ? 0.0 : smp->time[choice][1][j]/(smp->cnt[choice][1][j]+0.1)*(smp->cnt[0][1][j]+smp->cnt[1][1][j]+smp->cnt[2][1][j]+smp->cnt[3][0][j])),strcat2(fname,"_100s"  ),0,j*10.0);
- 
-    #define YLABEL "calls" 
-    SPRINTF("echo '<br>number of calls<br>'\n");
-    PRINT_LOOP((float)smp->cnt[choice][0][j/10],strcat2(fname,"_1"  ),5,(j-5)/10.0);
-    PRINT_LOOP((float)smp->cnt[choice][0][j]   ,strcat2(fname,"_10" ),0,j*1.0);
-    PRINT_LOOP((float)smp->cnt[choice][1][j]   ,strcat2(fname,"_100"),0,j*10.0);
+			if(block_type==0){
+			 cnt = &(smp->byte_cnt);
+			 time= &(smp->byte_time);
+			} 
+			if(block_type==1){
+			 cnt = &(smp->block_cnt);
+			 time= &(smp->block_time);
+			} 
 
-    SPRINTF("echo '<br> Calls using at most 16 bytes: %.2f%% <br>'\n",100*(smp->less16+0.0)/calls);
+		/* TODO div to switch between byte/block granularity */
+#define YLABEL "cycles" 
+			SPRINTF("echo '<br>average time<br>'\n");
+			PRINT_LOOP(((*cnt)[choice][0][j/10]<50 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_1t"  ),5,(j-5)/10.0);
+			PRINT_LOOP(((*cnt)[choice][0][j]<50 ? 0.0 : (*time)[choice][0][j]/((*cnt)[choice][0][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_10t"          ),0,j*1.0);
+			PRINT_LOOP(((*cnt)[choice][1][j]<50 ? 0.0 : (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_100t"         ),0,j*10.0);
 
+#define YLABEL "cycles" 
+			SPRINTF("echo '<br>Estimated time spent<br>'\n");
+			PRINT_LOOP(((*cnt)[choice][0][j/10]<50 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)*((*cnt)[0][0][j/10]+(*cnt)[1][0][j/10]+(*cnt)[2][0][j/10]+(*cnt)[3][0][j/10])),strcat2(strcat2(fname,desc_type[block_type]),"_1s"  ),5,(j-5)/10.0);
+			PRINT_LOOP(((*cnt)[choice][0][j]<50 ? 0.0 : (*time)[choice][0][j]/((*cnt)[choice][0][j]+0.1)*((*cnt)[0][0][j]+(*cnt)[1][0][j]+(*cnt)[2][0][j]+(*cnt)[3][0][j])),strcat2(strcat2(fname,desc_type[block_type]),"_10s"  ),0,j*1.0);
+			PRINT_LOOP(((*cnt)[choice][1][j]<50 ? 0.0 : (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)*((*cnt)[0][1][j]+(*cnt)[1][1][j]+(*cnt)[2][1][j]+(*cnt)[3][0][j])),strcat2(strcat2(fname,desc_type[block_type]),"_100s"  ),0,j*10.0);
+
+#define YLABEL "calls" 
+			SPRINTF("echo '<br>number of calls<br>'\n");
+			PRINT_LOOP((float)(*cnt)[choice][0][j/10],strcat2(strcat2(fname,desc_type[block_type]),"_1"  ),5,(j-5)/10.0);
+			PRINT_LOOP((float)(*cnt)[choice][0][j]   ,strcat2(strcat2(fname,desc_type[block_type]),"_10" ),0,j*1.0);
+			PRINT_LOOP((float)(*cnt)[choice][1][j]   ,strcat2(strcat2(fname,desc_type[block_type]),"_100"),0,j*10.0);
+
+			SPRINTF("echo '<br> Calls using at most 16 bytes: %.2f%% <br>'\n",100*(smp->less16+0.0)/calls);
+		}
 
 		
     if (flags & B_SHOW_ALIGN){
