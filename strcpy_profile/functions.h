@@ -1,0 +1,3 @@
+FN(strcpy)
+
+#undef FN
