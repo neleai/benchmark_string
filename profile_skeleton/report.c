@@ -47,14 +47,14 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
  
     #define GNUPLOT_SET "echo ' reset\n set terminal png\n set xlabel \"%s\"\n set ylabel \"" YLABEL "\""
     #define PRINT_LOOP(exp,file,start,idx)  \
-                          for(choice=0;choice<strcpy_no;choice++){\
+                          for(choice=0;choice<function_no;choice++){\
                           SPRINTF("echo '");\
                           for(j=start;j<100;j++) SPRINTF("%f %f\n",idx,exp); \
                           SPRINTF("'> %s_%i\n",file,choice);\
                           }\
                           SPRINTF( GNUPLOT_SET "\n plot",desc_type[block_type]);\
-                          for(choice=0;choice<strcpy_no;choice++){\
-                            SPRINTF(" \"%s_%i\" with lines linecolor rgb \"%s\" title \"%s\",",file,choice,strcpy_color[choice],strcpy_names[choice]);\
+                          for(choice=0;choice<function_no;choice++){\
+                            SPRINTF(" \"%s_%i\" with lines linecolor rgb \"%s\" title \"%s\",",file,choice,function_color[choice],function_names[choice]);\
                           }\
                           SPRINTF(" 0 notitle'| gnuplot > %s.png\n",file);\
                           SPRINTF("echo '<img src=%s.png></img>'\n" ,file);

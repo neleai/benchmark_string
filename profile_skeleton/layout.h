@@ -48,35 +48,4 @@ placeholder;
 #define B_BYTEWISE_SIZE 8
 #define B_DELAY_ONLY 16
 
-uint64_t b_strlen=0,
-        b_strchr=0,
-        b_strstr=B_NEEDLE,
-        b_memchr=0,
-        b_strspn=B_NEEDLE,
-        b_strcat=B_NEEDLE,
-        b_strcpy=B_REL_ALIGN | B_SHOW_ALIGN,
-        b_memcpy=B_REL_ALIGN | B_SHOW_ALIGN,
-        b_strcmp=B_REL_ALIGN | B_SHOW_ALIGN ,
-        b_strcasecmp=B_REL_ALIGN | B_SHOW_ALIGN ,
-        b_strverscmp=B_REL_ALIGN | B_SHOW_ALIGN ,
-
-        b_strdup=0,
-        b_strrchr=0,
-        b_memset=0,
-        b_strtol=B_BYTEWISE_SIZE,
-        b_malloc=B_BYTEWISE_SIZE,
-        b_free=B_DELAY_ONLY,
-        b_bsearch=B_BYTEWISE_SIZE | B_NEEDLE,
-        b_lsearch=B_BYTEWISE_SIZE | B_NEEDLE,
-        b_qsort  =B_BYTEWISE_SIZE | B_NEEDLE,
-        b_rand=B_DELAY_ONLY,
-        b_asin=B_DELAY_ONLY,
-        b_sin=B_DELAY_ONLY,
-        b_sin2=B_DELAY_ONLY,
-        b_sin3=B_DELAY_ONLY,
-        b_erf=B_DELAY_ONLY,
-        b_pow=B_DELAY_ONLY,
-        b_bessel=B_DELAY_ONLY,
-        b_sinh=B_DELAY_ONLY,
-        b_malloc_lifetime=B_BYTEWISE_SIZE;
-
+uint64_t b_function = 0;
