@@ -26,7 +26,7 @@ rm -r results_rand_noicache
 cp -r results/ results_rand_noicache
 
 make reset
-LD_PRELOAD=./libc_profile.so  gcc -O3 variant/strcpy_sse2_pminub.s variant/strcpy_sse4.s  variant/strcpy_new.s       -DFNAME='"/tmp/libc_profile"' hooks.c -shared -ldl -fPIC -g 
+make bench_gcc
 make rep
 rm -r results_gcc
 cp -r results/ results_gcc

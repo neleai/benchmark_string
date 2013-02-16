@@ -1,3 +1,3 @@
-FN(strlen)
+FN(function)
 
-
+#undef FN

@@ -1,3 +1,3 @@
-FN(strcpy)
+FN(function)
 
 #undef FN

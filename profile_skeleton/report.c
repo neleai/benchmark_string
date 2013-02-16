@@ -60,19 +60,22 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
                           SPRINTF("echo '<img src=%s.png></img>'\n" ,file);
    	int block_type;
 		profile_array *cnt,*time;
-    char *desc_type[2]={"bytes","blocks"}; 
+    char *desc_type[2]={"blocks","bytes"}; 
+		SPRINTF("echo \"<a href='javascript:showhide(\\\"div%sblocks\\\",\\\"div%sbytes\\\")'> blocks </a> \
+                    <a href='javascript:showhide(\\\"div%sbytes\\\",\\\"div%sblocks\\\")'> bytes </a> \
+\"\n",fname,fname,fname,fname);
 		for(block_type=0;block_type<2;block_type++){
 
 			if(block_type==0){
-			 cnt = &(smp->byte_cnt);
-			 time= &(smp->byte_time);
-			} 
-			if(block_type==1){
 			 cnt = &(smp->block_cnt);
 			 time= &(smp->block_time);
 			} 
+			if(block_type==1){
+			 cnt = &(smp->byte_cnt);
+			 time= &(smp->byte_time);
+			} 
 
-		/* TODO div to switch between byte/block granularity */
+			SPRINTF("echo '<div id=\"div%s%s\" style=\"display:%s\">'\n",fname,desc_type[block_type],block_type==0 ? "block" : "none");/*TODO configurable default*/
 #define YLABEL "cycles" 
 			SPRINTF("echo '<br>average time<br>'\n");
 			PRINT_LOOP(((*cnt)[choice][0][j/10]<50 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_1t"  ),5,(j-5)/10.0);
@@ -92,6 +95,7 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
 			PRINT_LOOP((float)(*cnt)[choice][1][j]   ,strcat2(strcat2(fname,desc_type[block_type]),"_100"),0,j*10.0);
 
 			SPRINTF("echo '<br> Calls using at most 16 bytes: %.2f%% <br>'\n",100*(smp->less16+0.0)/calls);
+			SPRINTF("echo '</div>'\n");
 		}
 
 		
@@ -132,6 +136,9 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
 
 int main(){ int i,j;
   printf("echo 'See <a href=doc/properties.html>this</a> for description'\n");
+
+	printf("echo \" <script language=javascript type='text/javascript'> function showhide(show,hide) {  document.getElementById(show).style.display='block';	document.getElementById(hide).style.display='none'; } </script>\"\n");
+
 
   FILE *fi = fopen(FNAME,"r+");
   result_no=0;

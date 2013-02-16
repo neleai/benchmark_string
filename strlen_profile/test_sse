@@ -1,16 +1,8 @@
-echo 3
-exit
-SSE4="`cat /proc/cpuinfo | grep sse4_2 `"
 AVX2="`cat /proc/cpuinfo | grep avx2 `"
 
-if [ -z "$SSE4" ]
-then
-echo 2
-else
 if [ -z "$AVX2" ]
 then
 echo 3
 else
 echo 4
-fi
 fi

@@ -1,8 +1,8 @@
 FNAME = ${PWD}/data_profile
-FILES = variant/strlen_sse2_pminub.s variant/strlen_sse4.s variant/strlen_new.s variant/strlen_new2.s
+FILES = variant/strlen_sse2_pminub.s variant/strlen_revised.s variant/strlen_new.s
 all: header
 	gcc backtrace.c -c
-	gcc -O1 -Dstrlen_no=`./test_sse` $(FILES)	-DFNAME='"$(FNAME)"' backtrace.o hooks.c -shared -ldl -fPIC -g -o libc_profile.so
+	gcc  -Dfunction_no=`./test_sse` $(FILES)	-DFNAME='"$(FNAME)"' backtrace.o hooks.c -shared -ldl -fPIC -g -o libc_profile.so
 	make reset
 	@DIR=`pwd`
 	@echo
@@ -21,7 +21,7 @@ reset:
 	dd if=/dev/zero of=$(FNAME) count=1000 2> /dev/null
 	chmod a+rw $(FNAME)
 rep:
-	gcc -Dstrlen_no=`./test_sse`  $(FILES) -DFNAME='"$(FNAME)"' report.c -o report -g
+	gcc -Dfunction_no=`./test_sse`  $(FILES) -DFNAME='"$(FNAME)"' report.c -o report -g
 	-mkdir  results
 	cp -r doc results
 	./report > results/x
@@ -29,10 +29,10 @@ rep:
 	tar -cjf results.tar.bz2 results	
 header:
 	-cpp -Ivariant variant/gen_sse2_pminub.h > variant/strlen_sse2_pminub.s
-	-cpp -Ivariant variant/gen_sse4.h        > variant/strlen_sse4.s
+	-cpp -Ivariant variant/gen_revised.h        > variant/strlen_revised.s
 	-cpp -Ivariant variant/gen_new.h         > variant/strlen_new.s
 bench_gcc:
-	LD_PRELOAD=${PWD}/libc_profile.so  gcc  -Dstrlen_no=`./test_sse` -O3  $(FILES) -DFNAME='"$(FNAME)"' hooks.c -shared -ldl -fPIC -g -o libc_profil.so
+	LD_PRELOAD=${PWD}/libc_profile.so  gcc  -Dfunction_no=`./test_sse` -O3  $(FILES) -DFNAME='"$(FNAME)"' hooks.c -shared -ldl -fPIC -g -o libc_profil.so
 	make rep
 test:
 	gcc tests/seq.c tests/forget_icache.s -o tests/seq

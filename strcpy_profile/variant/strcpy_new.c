@@ -33,17 +33,26 @@ static inline tp_mask first_bit (tp_mask x)
 
 
 
-static char *memcpy_small (char *dest, char *src, size_t no, char *ret);
+static char *memcpy_small_tail (char *dest, char *src, size_t no, char *ret);
+
+
+#ifdef AS_STRNCPY
+# define RETURN(x) return memset_tail (x, 0, endp - (x), \
+                                       _STR_STP (ret, x));
+#else
+# define RETURN(x) return _STR_STP (ret, x)
+#endif
+
 
 #ifdef AS_STPCPY
 char *STRCPY (char *dest, char *src)
 #else
 char *STRCPY (char *dest, char *src)
 {
-  return strcpy_internal (dest, src, dest);
+  return strcpy_tail (dest, src, dest);
 }
 
-char *strcpy_internal (char *dest, char *src, char *ret)
+char *strcpy_tail (char *dest, char *src, char *ret)
 #endif
 {
   char *s, *d;
@@ -61,7 +70,8 @@ page_cont:
       for (i = offset; i < 64; i++)
         {
           dest[i - offset] = src[i - offset];
-          if (!src[i - offset]) return _STR_STP (ret, dest + i - offset);
+          if (!src[i - offset]) 
+            RETURN (dest + i - offset);
         }
       goto aligned;
     }
@@ -72,7 +82,10 @@ page_cont:
   if (m)
     {
       no = first_bit (m);
-      return memcpy_small (dest, src, no + 1, _STR_STP (ret, dest + no));
+#ifdef AS_STRNCPY
+      memset(dest + no, 0, endp - (dest + no) );
+#endif
+      return memcpy_small_tail (dest, src, no + 1, _STR_STP (ret, dest + no));
     }
   STOREU ( dest, v0);
 
@@ -97,7 +110,7 @@ page_cont:
 
   if (no != 63 || src[63] == 0)
     {
-      return _STR_STP (ret, dest + no);
+			RETURN (dest + no);
     }
 
 aligned:
@@ -134,7 +147,7 @@ aligned:
 
 /* Copies up to 16 bytes and returns ret.  */
 /* A viable optimization could be test 1 << no do defer need of first_bit.  */
-static char *memcpy_small (char *dest, char *src, size_t no, char *ret)
+static char *memcpy_small_tail (char *dest, char *src, size_t no, char *ret)
 {
   if (no & (8 + 16))
     {

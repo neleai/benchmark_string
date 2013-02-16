@@ -55,6 +55,7 @@ ENTRY(strlen)
 	jne	L(n_nonzero)
 	xor	%rax, %rax
 	ret
+.p2align 4
 L(n_nonzero):
 
 /* Initialize long lived registers.  */
@@ -88,6 +89,7 @@ L(n_nonzero):
 #endif
 
 #define PROLOG(lab)	\
+	FIND_ZERO;	\
 	movq	%rdi, %rcx;	\
 	xorq	%rax, %rcx;	\
 	STRNLEN_PROLOG;	\
@@ -97,38 +99,17 @@ L(n_nonzero):
 	bsfq	%rdx, %rax;	\
 	ret
 
-	movdqu	(%rax),	%xmm12
-	pcmpeqb	%xmm8,	%xmm12
-	pmovmskb	%xmm12,	%edx
-	test	%edx,	%edx
-	je L(next48_bytes)
-	bsfq	%rdx,%rax
-	ret
-L(next48_bytes):
-/* Same as FIND_ZERO except we do not check first 16 bytes.  */
 	andq	$-16, %rax
-  pcmpeqb 16(%rax), %xmm9;  
-  pcmpeqb 32(%rax), %xmm10; 
-  pcmpeqb 48(%rax), %xmm11; 
-  pmovmskb  %xmm9, %edx;  
-  pmovmskb  %xmm10, %r8d; 
-  pmovmskb  %xmm11, %ecx; 
-  salq  $16, %rdx;  
-  salq  $16, %rcx;  
-  orq %r8, %rcx;  
-  salq  $32, %rcx;
-  orq %rcx, %rdx;
-
 	PROLOG(loop)
 
-	.p2align 4
+.p2align 4
 L(next):
 	andq	$-64, %rax
-	FIND_ZERO
 	PROLOG(loop_init)
 
 #ifdef AS_STRNLEN
 /* We must do this check to correctly handle strnlen (s, -1).  */
+.p2align 4
 L(strnlen_ret):
 	bts	%rsi, %rdx
 	sarq	%cl, %rdx
@@ -137,13 +118,13 @@ L(strnlen_ret):
 	bsfq	%rdx, %rax
 	ret
 #endif
-	.p2align 4
+.p2align 4
 L(loop_init):
 	pxor	%xmm9, %xmm9
 	pxor	%xmm10, %xmm10
 	pxor	%xmm11, %xmm11
 #ifdef AS_STRNLEN
-	.p2align 4
+.p2align 4
 L(loop):
 
 	addq	$64, %rax
@@ -160,7 +141,6 @@ L(loop):
 	jne	L(exit)
 	jmp	L(loop)
 
-	.p2align 4
 L(exit_end):
 	cmp	%rax, %r11
 	je	L(first)
@@ -174,7 +154,6 @@ L(first):
 	subq	%rdi, %rax
 	ret
 
-	.p2align 4
 L(exit):
 	pxor	%xmm8, %xmm8
 	FIND_ZERO
@@ -185,7 +164,7 @@ L(exit):
 	ret
 
 #else
-	.p2align 4
+.p2align 4
 L(loop):
 
 	movdqa	64(%rax), %xmm8
@@ -208,8 +187,7 @@ L(loop):
 	testl	%edx, %edx
 	jne	L(exit0)
 	jmp	L(loop)
-
-	.p2align 4
+.p2align 4
 L(exit64):
 	addq	$64, %rax
 L(exit0):
