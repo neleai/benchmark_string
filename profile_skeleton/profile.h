@@ -76,7 +76,11 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
   if(prof.fn.start!=prof.fn.last && (prof.fn.start-prof.fn.last)<(1<<31))\
   	prof.fn.delay[ 63-__builtin_clzl(prof.fn.start-prof.fn.last) ]++;\
   prof.fn.last=rdtsc();\
-  prof.fn.aligns[(b_## fn & B_REL_ALIGN) ? (x-y)%64 : ((uint64_t) x)%64]++;\
+  prof.fn.aligns[ ((uint64_t) x)%64]++;\
+	if (b_##fn & B_NEEDLE){\
+    prof.fn.needle_aligns[((uint64_t) y)%64]++;\
+		prof.fn.rel_aligns[(x-y)%64]++;\
+  }\
 	prof.fn.success++;\
   if (r<=16) prof.fn.less16++;\
   size_t r2= ((size_t)x+r)/16-((size_t)x)/16+1;\

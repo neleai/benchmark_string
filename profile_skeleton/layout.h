@@ -7,7 +7,7 @@
 	profile_array byte_cnt,byte_time,block_cnt,block_time;
  uint64_t needle[2][100];
 	uint64_t delay[64];
- uint64_t aligns[64];
+ uint64_t aligns[64],needle_aligns[64],rel_aligns[64];
  uint64_t success,fail;
  uint64_t start,last;
   uint64_t extra[4];
@@ -48,4 +48,4 @@ placeholder;
 #define B_BYTEWISE_SIZE 8
 #define B_DELAY_ONLY 16
 
-uint64_t b_function = 0;
+uint64_t b_function = B_NEEDLE | B_SHOW_ALIGN;

@@ -75,46 +75,69 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
 			 time= &(smp->byte_time);
 			} 
 
-			SPRINTF("echo '<div id=\"div%s%s\" style=\"display:%s\">'\n",fname,desc_type[block_type],block_type==0 ? "block" : "none");/*TODO configurable default*/
-#define YLABEL "cycles" 
-			SPRINTF("echo '<br>average time<br>'\n");
-			PRINT_LOOP(((*cnt)[choice][0][j/10]<50 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_1t"  ),5,(j-5)/10.0);
-			PRINT_LOOP(((*cnt)[choice][0][j]<50 ? 0.0 : (*time)[choice][0][j]/((*cnt)[choice][0][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_10t"          ),0,j*1.0);
-			PRINT_LOOP(((*cnt)[choice][1][j]<50 ? 0.0 : (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_100t"         ),0,j*10.0);
 
 #define YLABEL "cycles" 
-			SPRINTF("echo '<br>Estimated time spent<br>'\n");
+
+			SPRINTF("echo '<div id=\"div%s%s\" style=\"display:%s\">'\n",fname,desc_type[block_type],((block_type==0&&(flags&B_BYTEWISE_SIZE)) || ((block_type==1&&!(flags&B_BYTEWISE_SIZE)))) ? "block" : "none");/*TODO configurable default*/
+
+			SPRINTF("echo '<h2>Estimated time spent</h2>'\n");
+
 			PRINT_LOOP(((*cnt)[choice][0][j/10]<50 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)*((*cnt)[0][0][j/10]+(*cnt)[1][0][j/10]+(*cnt)[2][0][j/10]+(*cnt)[3][0][j/10])),strcat2(strcat2(fname,desc_type[block_type]),"_1s"  ),5,(j-5)/10.0);
 			PRINT_LOOP(((*cnt)[choice][0][j]<50 ? 0.0 : (*time)[choice][0][j]/((*cnt)[choice][0][j]+0.1)*((*cnt)[0][0][j]+(*cnt)[1][0][j]+(*cnt)[2][0][j]+(*cnt)[3][0][j])),strcat2(strcat2(fname,desc_type[block_type]),"_10s"  ),0,j*1.0);
 			PRINT_LOOP(((*cnt)[choice][1][j]<50 ? 0.0 : (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)*((*cnt)[0][1][j]+(*cnt)[1][1][j]+(*cnt)[2][1][j]+(*cnt)[3][0][j])),strcat2(strcat2(fname,desc_type[block_type]),"_100s"  ),0,j*10.0);
 
-#define YLABEL "calls" 
-			SPRINTF("echo '<br>number of calls<br>'\n");
+
+			SPRINTF("echo '<h2>average time</h2>'\n");
+			PRINT_LOOP(((*cnt)[choice][0][j/10]<50 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_1t"  ),5,(j-5)/10.0);
+			PRINT_LOOP(((*cnt)[choice][0][j]<50 ? 0.0 : (*time)[choice][0][j]/((*cnt)[choice][0][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_10t"          ),0,j*1.0);
+			PRINT_LOOP(((*cnt)[choice][1][j]<50 ? 0.0 : (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_100t"         ),0,j*10.0);
+
+#undef YLABEL
+#define YLABEL "calls"
+
+			SPRINTF("echo '<h2>number of calls</h2>'\n");
+
 			PRINT_LOOP((float)(*cnt)[choice][0][j/10],strcat2(strcat2(fname,desc_type[block_type]),"_1"  ),5,(j-5)/10.0);
 			PRINT_LOOP((float)(*cnt)[choice][0][j]   ,strcat2(strcat2(fname,desc_type[block_type]),"_10" ),0,j*1.0);
 			PRINT_LOOP((float)(*cnt)[choice][1][j]   ,strcat2(strcat2(fname,desc_type[block_type]),"_100"),0,j*10.0);
-
 			SPRINTF("echo '<br> Calls using at most 16 bytes: %.2f%% <br>'\n",100*(smp->less16+0.0)/calls);
-			SPRINTF("echo '</div>'\n");
+	
+		SPRINTF("echo '</div>'\n");
 		}
 
-		
-    if (flags & B_SHOW_ALIGN){
-      SPRINTF("\necho \"");
-      for(i=0;i<64;i++) {
-        SPRINTF("%i %11lld\n",i,smp->aligns[i]);
+			SPRINTF("echo '<h2>Alignment</h2>'\n");
+			SPRINTF("echo \"<a href='javascript:showhide(\\\"div%salign\\\",\\\"div\\\")'> show </a> <a href='javascript:showhide(\\\"div\\\",\\\"div%salign\\\")'> hide </a>\"\n",fname,fname);
+			SPRINTF("echo '<div id=div%salign style=\"display:%s\">'\n" ,fname,(flags&B_SHOW_ALIGN) ? "show" : "hide");
+#define PRINT_ALIGN(type,label) \
+      SPRINTF("\necho \"");\
+      for(i=0;i<64;i++) { \
+        SPRINTF("%i %11lld\n",i,smp->type[i]);\
+      }\
+      SPRINTF("\"> %s" #type "\n",fname);\
+      SPRINTF("" GNUPLOT_SET "\n set xtics 8\n plot \"%s" #type "\" with lines, 0 notitle'| gnuplot >  %s" #type ".png\n",label,fname,fname);\
+      SPRINTF("echo '<img src=%s" #type ".png></img>'\n", fname);
+			if (flags & B_NEEDLE) {
+        PRINT_ALIGN(rel_aligns,"relative alignment");
+			}
+			PRINT_ALIGN(aligns,"haystack alignment");
+			if (flags & B_NEEDLE) {
+        PRINT_ALIGN(needle_aligns,"needle alignment");
       }
-      SPRINTF("\"> %s_alignment\n",fname);
-      SPRINTF("" GNUPLOT_SET "\n set xtics 8\n plot \"%s_alignment\" with lines, 0 notitle'| gnuplot >  %s_alignment.png\n","alignment",fname,fname);
-      SPRINTF("echo '<br> %s <br> <img src=%s_alignment.png></img><br>'\n", flags & B_REL_ALIGN ? "Relative alignment" : "Alingment" ,fname);
+
+			
+
       SPRINTF("echo '<br> Calls aligned to 16 bytes: %.2f%% <br>'",100*(smp->aligns[0]+smp->aligns[16]+smp->aligns[32]+smp->aligns[48]+0.0)/calls);
-    }
+		SPRINTF("\necho '</div>'\n");
+
+		SPRINTF("echo '<h2> Delays between calls</h2>'\n");
+
 		SPRINTF("\necho \"");
 		for(i=0;i<32;i++) {
 	 		SPRINTF("%i %11lld\n",i,smp->delay[i]);
 		}
 		SPRINTF("\">%s_delay\n",fname);
-		SPRINTF("echo '<br> Delays between calls<br> <img src=%s_delay.png></img><br>'\n",fname);
+
+		SPRINTF("echo '<img src=%s_delay.png></img><br>'\n",fname);
 		SPRINTF("" GNUPLOT_SET "\n plot \"%s_delay\" with lines, 0 notitle'| gnuplot > %s_delay.png\n","log2(cycles)",fname,fname);
 		SPRINTF("echo '<br> Total calls: %11lld\n Success probability: %.2f%% <br>'\n",calls,(100*smp->success+0.0)/calls);
     if(smp->extra[0])
@@ -137,7 +160,7 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
 int main(){ int i,j;
   printf("echo 'See <a href=doc/properties.html>this</a> for description'\n");
 
-	printf("echo \" <script language=javascript type='text/javascript'> function showhide(show,hide) {  document.getElementById(show).style.display='block';	document.getElementById(hide).style.display='none'; } </script>\"\n");
+	printf("echo \" <script language=javascript type='text/javascript'> function showhide(show,hide) { if(document.getElementById(show)) document.getElementById(show).style.display='block'; if(document.getElementById(hide))	document.getElementById(hide).style.display='none'; } </script>\"\n");
 
 
   FILE *fi = fopen(FNAME,"r+");
