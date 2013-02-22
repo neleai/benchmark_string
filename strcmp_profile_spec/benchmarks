@@ -1,0 +1,27 @@
+make
+
+make reset
+LD_PRELOAD=./libc_profile.so tests/rand
+make rep
+rm -r results_rand
+cp -r results/ results_rand
+
+make reset
+LD_PRELOAD=./libc_profile.so tests/rand_nocache
+make rep
+rm -r results_rand_nocache
+cp -r results/ results_rand_nocache
+
+make reset
+LD_PRELOAD=./libc_profile.so tests/rand_noicache
+make rep
+rm -r results_rand_noicache
+cp -r results/ results_rand_noicache
+
+make reset
+make bench_gcc
+make rep
+rm -r results_gcc
+cp -r results/ results_gcc
+
+tar -cjf results.tar.bz2 results_*
