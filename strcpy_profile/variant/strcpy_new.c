@@ -1,4 +1,3 @@
-#define STRCPY stpcpy_new
 #define AS_STPCPY
 
 #ifdef AS_STPCPY
@@ -9,6 +8,9 @@
 
 
 #include <emmintrin.h>
+#ifndef UNALIGNED
+#include <tmmintrin.h>
+#endif
 #include <stdint.h>
 #include <stdlib.h>
 typedef __m128i tp_vector;
@@ -19,6 +21,7 @@ typedef uint64_t tp_mask;
 #define STORE(x,y) _mm_store_si128 ((tp_vector *) (x), (y))
 #define STOREU(x,y) _mm_storeu_si128 ((tp_vector *) (x), (y))
 
+#define CONCAT(x,y,n) _mm_alignr_epi8(x,y,n)
 #define MIN _mm_min_epu8
 #define EQ  _mm_cmpeq_epi8
 #define OR  _mm_or_si128
@@ -33,33 +36,24 @@ static inline tp_mask first_bit (tp_mask x)
 
 
 
-static char *memcpy_small_tail (char *dest, char *src, size_t no, char *ret);
-
-
-#ifdef AS_STRNCPY
-# define RETURN(x) return memset_tail (x, 0, endp - (x), \
-                                       _STR_STP (ret, x));
-#else
-# define RETURN(x) return _STR_STP (ret, x)
-#endif
-
+static char *memcpy_small (char *dest, char *src, size_t no, char *ret);
 
 #ifdef AS_STPCPY
 char *STRCPY (char *dest, char *src)
 #else
 char *STRCPY (char *dest, char *src)
 {
-  return strcpy_tail (dest, src, dest);
+  return strcpy_internal (dest, src, dest);
 }
 
-char *strcpy_tail (char *dest, char *src, char *ret)
+char *strcpy_internal (char *dest, char *src, char *ret)
 #endif
 {
   char *s, *d;
   tp_vector vz = BROADCAST (0);
   tp_vector v0, v1, v2, v3;
   tp_mask m, m2;
-  int i, no, offset;
+  long i, no, offset;
 
 page_cont:
   ;
@@ -70,8 +64,7 @@ page_cont:
       for (i = offset; i < 64; i++)
         {
           dest[i - offset] = src[i - offset];
-          if (!src[i - offset]) 
-            RETURN (dest + i - offset);
+          if (!src[i - offset]) return _STR_STP (ret, dest + i - offset);
         }
       goto aligned;
     }
@@ -82,10 +75,7 @@ page_cont:
   if (m)
     {
       no = first_bit (m);
-#ifdef AS_STRNCPY
-      memset(dest + no, 0, endp - (dest + no) );
-#endif
-      return memcpy_small_tail (dest, src, no + 1, _STR_STP (ret, dest + no));
+      return memcpy_small (dest, src, no + 1, _STR_STP (ret, dest + no));
     }
   STOREU ( dest, v0);
 
@@ -110,7 +100,7 @@ page_cont:
 
   if (no != 63 || src[63] == 0)
     {
-			RETURN (dest + no);
+      return _STR_STP (ret, dest + no);
     }
 
 aligned:
@@ -124,6 +114,7 @@ aligned:
   v2 = LOAD (src + 32);
   v3 = LOAD (src + 48);
 
+#ifdef UNALIGNED
   /* We use aligned loads and unaligned stores.
      This is faster than unaligned load and aligned stores because
      test for load crossing page is not neccessary.  */
@@ -142,12 +133,70 @@ aligned:
       src += 64;
       dest += 64;
     }
+#else
+	
+	STOREU (dest, v0);
+	switch ((dest-src)%16){
+	case 0:
+	  while (1)
+    {
+      /* Test zero byte among 64 bytes and if is then handle it by header.  */
+      if (get_mask (EQ (MIN (v0, MIN (v1, MIN (v2, v3))), vz))) goto page_cont;
+      STORE (dest + 0, v0);
+      v0 = LOAD (src + 64);
+      STORE (dest + 16, v1);
+      v1 = LOAD (src + 16 + 64);
+      STORE (dest + 32, v2);
+      v2 = LOAD (src + 32 + 64);
+      STORE (dest + 48, v3);
+      v3 = LOAD (src + 48 + 64);
+      src += 64;
+      dest += 64;
+    }
+	
+		#define UNALIGNED_COPY(align)\
+		 case align:\
+    while(1){\
+      if (get_mask (EQ (MIN (v0, MIN (v1, MIN (v2, v3))), vz))) {goto end_page;}\
+			STORE (dest + align + 0, CONCAT(v0,v1,align));\
+      v0 = LOAD (src + 64);\
+			STORE (dest + align + 16, CONCAT(v1,v2,align));\
+      v1 = LOAD (src + 16 + 64);\
+			STORE (dest + align + 32, CONCAT(v2,v3,align));\
+      v2 = LOAD (src + 32 + 64);\
+ 			STORE (dest + align + 48, CONCAT(v3,v0,align));\
+	    v3 = LOAD (src + 48 + 64);\
+      src += 64;\
+      dest += 64;\
+    }
+		UNALIGNED_COPY(1);
+		UNALIGNED_COPY(2);
+		UNALIGNED_COPY(3);
+		UNALIGNED_COPY(4);
+		UNALIGNED_COPY(5);
+		UNALIGNED_COPY(6);
+		UNALIGNED_COPY(7);
+		UNALIGNED_COPY(8);
+		UNALIGNED_COPY(9);
+		UNALIGNED_COPY(10);
+		UNALIGNED_COPY(11);
+		UNALIGNED_COPY(12);
+		UNALIGNED_COPY(13);
+		UNALIGNED_COPY(14);
+		UNALIGNED_COPY(15);
+	}
+#endif
+	end_page:;
+	while(*src) 
+   *dest++ = *src++;
+	*dest = 0;
+	return  _STR_STP(ret, dest);
 
 }
 
 /* Copies up to 16 bytes and returns ret.  */
 /* A viable optimization could be test 1 << no do defer need of first_bit.  */
-static char *memcpy_small_tail (char *dest, char *src, size_t no, char *ret)
+static char *memcpy_small (char *dest, char *src, size_t no, char *ret)
 {
   if (no & (8 + 16))
     {

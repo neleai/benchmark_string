@@ -1,14 +1,15 @@
 #include "profile.h"
-char *strcpy2(char *x,const char *y,int end){
+int *strcmp(char *x,const char *y){
   r_seed=r_seed+1;
   unsigned int choice=(r_seed)%function_no;
   char* (*fn)(char *,const char *) = function_func[choice];
+	
+	size_t r= 0;
+	char *x2=x,*y2=y;
+	while(*x2==*y2 && *x2){ x2++; y2++; }
+	r = x2 - x;
 	START_MEASURE(function);
-	char * p=fn(x,y);
-	size_t r= p-x;
+	int p=fn(x,y);
   COMMON_MEASURE(function);
-  return end ? p : x;
+  return p;
 }
-char *strcpy(char *dest,const char *src){	return strcpy2(dest,src,0); }
-char *stpcpy(char *dest,const char *src){	return strcpy2(dest,src,1); }
-
