@@ -21,7 +21,7 @@ typedef uint64_t tp_mask;
 #define STORE(x,y) _mm_store_si128 ((tp_vector *) (x), (y))
 #define STOREU(x,y) _mm_storeu_si128 ((tp_vector *) (x), (y))
 
-#define CONCAT(x,y,n) _mm_alignr_epi8(x,y,n)
+#define CONCAT(x,y,n) _mm_alignr_epi8(y,x,n)
 #define MIN _mm_min_epu8
 #define EQ  _mm_cmpeq_epi8
 #define OR  _mm_or_si128
@@ -134,14 +134,14 @@ aligned:
       dest += 64;
     }
 #else
-	
+
 	STOREU (dest, v0);
 	switch ((dest-src)%16){
 	case 0:
 	  while (1)
     {
       /* Test zero byte among 64 bytes and if is then handle it by header.  */
-      if (get_mask (EQ (MIN (v0, MIN (v1, MIN (v2, v3))), vz))) goto page_cont;
+      if ( get_mask (EQ (MIN (v0, MIN (v1, MIN (v2, v3))), vz))) goto page_cont;
       STORE (dest + 0, v0);
       v0 = LOAD (src + 64);
       STORE (dest + 16, v1);
@@ -158,13 +158,13 @@ aligned:
 		 case align:\
     while(1){\
       if (get_mask (EQ (MIN (v0, MIN (v1, MIN (v2, v3))), vz))) {goto end_page;}\
-			STORE (dest + align + 0, CONCAT(v0,v1,align));\
+			STORE (dest +16- align + 0, CONCAT(v0,v1,16-align));\
       v0 = LOAD (src + 64);\
-			STORE (dest + align + 16, CONCAT(v1,v2,align));\
+			STORE (dest +16- align + 16, CONCAT(v1,v2,16-align));\
       v1 = LOAD (src + 16 + 64);\
-			STORE (dest + align + 32, CONCAT(v2,v3,align));\
+			STORE (dest +16- align + 32, CONCAT(v2,v3,16-align));\
       v2 = LOAD (src + 32 + 64);\
- 			STORE (dest + align + 48, CONCAT(v3,v0,align));\
+ 			STORE (dest +16- align + 48, CONCAT(v3,v0,16-align));\
 	    v3 = LOAD (src + 48 + 64);\
       src += 64;\
       dest += 64;\

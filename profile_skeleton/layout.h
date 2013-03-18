@@ -31,12 +31,16 @@ typedef struct {
   #define FN(f) f ,
 #include "functions.h"
 placeholder;
+
+} disk_layout;
+typedef struct {
 	binary_names 
   #define FN(f) f[TOP_FUNCTIONS] ,
 #include "functions.h"
-placeholder2;
+placeholder;
 
-} disk_layout;
+} disk_layout2;
+
 
 #define B_NEEDLE 1
 #define B_REL_ALIGN 2

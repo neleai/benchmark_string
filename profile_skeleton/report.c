@@ -37,7 +37,7 @@ char *strcat2(char *a,char *b){
 result_s results[100]; int result_no;
 void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i, j, choice;
     #define SPRINTF(...) buf+=sprintf(buf,__VA_ARGS__)
-    char    *buf   = malloc(50000);
+    char    *buf   = malloc(1000000);
 		uint64_t calls = smp->success+smp->fail+1;
     results[result_no].text  = buf; 
     results[result_no].calls = calls;

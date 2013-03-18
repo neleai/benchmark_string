@@ -1,10 +1,10 @@
 #include <string.h>
 #include <emmintrin.h>
 static unsigned int r_seed;
-
+char* astrcpy(char *a,char *b);
 char *gen(char *buf,int size,int offset){int i;
   for(i=0;i<size;i++){
-    buf[i+offset]=(rand_r(&r_seed)%128)+1;
+    buf[i+offset]=(rand_r(&r_seed)%16)+'a';
   }
   buf[i+offset]=0;
 
@@ -38,15 +38,15 @@ int main(){ int i,j,k;
   char *buf=malloc(2000000),*p;
   for(i=0;i<100000;i++){
     p=gen(buf,rand_r(&r_seed)%160,rand_r(&r_seed)%1000000);
-    ret+=strcpy(b2,p);
+    ret+=astrcpy(b2,p);
   }
   for(i=0;i<100000;i++){
     p=gen(buf,rand_r(&r_seed)%1600,rand_r(&r_seed)%1000000);
-    ret+=strcpy(b2,p);
+    ret+=astrcpy(b2,p);
   }
   for(i=0;i<100000;i++){
     p=gen(buf,rand_r(&r_seed)%16000,rand_r(&r_seed)%1000000);
-    ret+=strcpy(b2,p);
+    ret+=astrcpy(b2,p);
   }
   return ret;
 }
