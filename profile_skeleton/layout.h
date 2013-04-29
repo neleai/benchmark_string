@@ -1,11 +1,12 @@
 
 #define TOP_FUNCTIONS 10
 
- typedef uint64_t profile_array[4][2][100];
+ typedef uint64_t profile_array[4][2][101];
  typedef struct {
   uint64_t less16;
 	profile_array byte_cnt,byte_time,block_cnt,block_time;
- uint64_t needle[2][100];
+	profile_array time_distribution;
+ uint64_t needle[2][101];
 	uint64_t delay[64];
  uint64_t aligns[64],needle_aligns[64],rel_aligns[64];
  uint64_t success,fail;
@@ -20,7 +21,7 @@ typedef struct {
 
 typedef struct {
   void 
-  #define FN(f) *f[100],
+  #define FN(f) *f[101],
   #include "functions.h"
 *placeholder;
 } call_sites_s;

@@ -27,15 +27,15 @@ int  binary_namescmp(binary_names *a,binary_names *b){
   return 0;
 }
 
-char strcatbuf[1000];
+char strcatbuf[10000];
 char *strcat2(char *a,char *b){
   strcpy(strcatbuf,a);
   strcat(strcatbuf,b);
-  return strcatbuf;
+  return strdup(strcatbuf);
 }
 
 result_s results[100]; int result_no;
-void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i, j, choice;
+void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i, j, k, choice;
     #define SPRINTF(...) buf+=sprintf(buf,__VA_ARGS__)
     char    *buf   = malloc(1000000);
 		uint64_t calls = smp->success+smp->fail+1;
@@ -82,18 +82,34 @@ void report_fn(prof_str *smp,char *fname,int flags,binary_names *binaries){int i
 
 			SPRINTF("echo '<h2>Estimated time spent</h2>'\n");
 
-			PRINT_LOOP(((*cnt)[choice][0][j/10]<50 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)*((*cnt)[0][0][j/10]+(*cnt)[1][0][j/10]+(*cnt)[2][0][j/10]+(*cnt)[3][0][j/10])),strcat2(strcat2(fname,desc_type[block_type]),"_1s"  ),5,(j-5)/10.0);
-			PRINT_LOOP(((*cnt)[choice][0][j]<50 ? 0.0 : (*time)[choice][0][j]/((*cnt)[choice][0][j]+0.1)*((*cnt)[0][0][j]+(*cnt)[1][0][j]+(*cnt)[2][0][j]+(*cnt)[3][0][j])),strcat2(strcat2(fname,desc_type[block_type]),"_10s"  ),0,j*1.0);
-			PRINT_LOOP(((*cnt)[choice][1][j]<50 ? 0.0 : (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)*((*cnt)[0][1][j]+(*cnt)[1][1][j]+(*cnt)[2][1][j]+(*cnt)[3][0][j])),strcat2(strcat2(fname,desc_type[block_type]),"_100s"  ),0,j*10.0);
+			PRINT_LOOP(((*cnt)[choice][0][j/10]<100 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)*((*cnt)[0][0][j/10]+(*cnt)[1][0][j/10]+(*cnt)[2][0][j/10]+(*cnt)[3][0][j/10])),strcat2(strcat2(fname,desc_type[block_type]),"_1s"  ),5,(j-5)/10.0);
+			PRINT_LOOP(((*cnt)[choice][0][j]<100 ? 0.0 : (*time)[choice][0][j]/((*cnt)[choice][0][j]+0.1)*((*cnt)[0][0][j]+(*cnt)[1][0][j]+(*cnt)[2][0][j]+(*cnt)[3][0][j])),strcat2(strcat2(fname,desc_type[block_type]),"_10s"  ),0,j*1.0);
+			PRINT_LOOP(((*cnt)[choice][1][j]<100 ? 0.0 : (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)*((*cnt)[0][1][j]+(*cnt)[1][1][j]+(*cnt)[2][1][j]+(*cnt)[3][1][j])),strcat2(strcat2(fname,desc_type[block_type]),"_100s"  ),0,j*10.0);
 
+		double total_time[function_no];
+		for(choice=0;choice<function_no;choice++){
+      total_time[choice]=0;
+		  for(j=0;j<100;j++){
+				total_time[choice] += (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)*((*cnt)[0][1][j]+(*cnt)[1][1][j]+(*cnt)[2][1][j]+(*cnt)[3][1][j]);
+      }
+		}
 
+		SPRINTF("echo '<br>total estimate<br> ");
+		for(choice=0;choice<function_no;choice++)
+			SPRINTF("%s: %f ",function_names[choice],total_time[choice]);
+		SPRINTF("'\n");
 			SPRINTF("echo '<h2>average time</h2>'\n");
-			PRINT_LOOP(((*cnt)[choice][0][j/10]<50 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_1t"  ),5,(j-5)/10.0);
-			PRINT_LOOP(((*cnt)[choice][0][j]<50 ? 0.0 : (*time)[choice][0][j]/((*cnt)[choice][0][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_10t"          ),0,j*1.0);
-			PRINT_LOOP(((*cnt)[choice][1][j]<50 ? 0.0 : (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_100t"         ),0,j*10.0);
+			PRINT_LOOP(((*cnt)[choice][0][j/10]<100 ? 0.0 : (*time)[choice][0][j/10]/((*cnt)[choice][0][j/10]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_1t"  ),5,(j-5)/10.0);
+			PRINT_LOOP(((*cnt)[choice][0][j]<100 ? 0.0 : (*time)[choice][0][j]/((*cnt)[choice][0][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_10t"          ),0,j*1.0);
+			PRINT_LOOP(((*cnt)[choice][1][j]<100 ? 0.0 : (*time)[choice][1][j]/((*cnt)[choice][1][j]+0.1)),strcat2(strcat2(fname,desc_type[block_type]),"_100t"         ),0,j*10.0);
 
 #undef YLABEL
 #define YLABEL "calls"
+
+	SPRINTF("echo '<h2>Distribution for sizes 16 and 128 </h2>'\n");
+	PRINT_LOOP((float)smp->time_distribution[choice][0][j],strcat2(strcat2(fname,desc_type[block_type]),"time16"),0,j*5.0);
+	PRINT_LOOP((float)smp->time_distribution[choice][1][j],strcat2(strcat2(fname,desc_type[block_type]),"time400"),0,j*5.0);
+
 
 			SPRINTF("echo '<h2>number of calls</h2>'\n");
 

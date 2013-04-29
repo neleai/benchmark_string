@@ -14,10 +14,10 @@ char *binary_name(){int i;
 static uint64_t  __attribute__((noinline)) rdtsc(void)
 {
   uint32_t lo, hi;
-/*  __asm__ __volatile__ (
+  __asm__ __volatile__ (
     "        xorl %%eax,%%eax \n"
     "        cpuid"      // serialize
-    ::: "%rax", "%rbx", "%rcx", "%rdx");*/
+    ::: "%rax", "%rbx", "%rcx", "%rdx"); 
   /* We cannot use "=A", since this would use %rax on x86_64 and return only the lower 32bits of the TSC */
   __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
   return (uint64_t)hi << 32 | lo;

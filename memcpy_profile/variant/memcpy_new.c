@@ -55,60 +55,44 @@ void *memcpy_new_u(char *dest, char *src, size_t n)
 	char *dest2= dest;
 	if (__builtin_expect((uint64_t)((src - dest)-n) < 2*n,0)) 
     return __memcpy_overlap(dest,src,n);
-/*	if (__builtin_expect(n > 3200,0))
-		return memcpy_libc(dest,src,n); */
-  if (__builtin_expect(n < 16,0))
+  if (__builtin_expect(n <= 128,1))
     {
-			return memcpy_small(dest, src, n, dest2);
-    }
-    if (n>2048) {
-      STOREU(dest, LOADU(src));
+			if (n<= 16);
+				return memcpy_small(dest, src, n, dest2);
+			STOREU(dest, LOADU(src));
+			STOREU(dest + n - 16, LOADU(src + n - 16));
+			if (n <= 32) return dest2;
 			STOREU(dest+16, LOADU(src+16));
+			STOREU(dest + n - 32, LOADU(src + n - 32));
+			if (n <= 64) return dest2;
 			STOREU(dest+32, LOADU(src+32));
+			STOREU(dest + n - 48, LOADU(src + n - 48));
 			STOREU(dest+48, LOADU(src+48));
-      STOREU(dest + n - 16, LOADU(src + n - 16));
-      STOREU(dest + n - 32, LOADU(src + n - 32));
-      STOREU(dest + n - 48, LOADU(src + n - 48));
-      STOREU(dest + n - 64, LOADU(src + n - 64));
+			STOREU(dest + n - 64, LOADU(src + n - 64));
+			return dest2;
+		}
+    STOREU(dest, LOADU(src));
+    STOREU(dest + n - 16, LOADU(src + n - 16));
+		STOREU(dest+16, LOADU(src+16));
+    STOREU(dest + n - 32, LOADU(src + n - 32));
+		STOREU(dest+32, LOADU(src+32));
+    STOREU(dest + n - 48, LOADU(src + n - 48));
+		STOREU(dest+48, LOADU(src+48));
+    STOREU(dest + n - 64, LOADU(src + n - 64));
 
-      from = ALIGN_DOWN(dest + 64, 64);
-      mid  = ALIGN_DOWN(dest + n -1024, 64);
-      to   = ALIGN_DOWN(dest + n , 64);
- 			src += from - dest;
-
-      while (from != mid)
-        {
-		  		__builtin_prefetch(src + 1024);
-          STORE(from, LOADU(src));
-          STORE(from+16, LOADU(src+16));
-          STORE(from+32, LOADU(src+32));
-          STORE(from+48, LOADU(src+48));
-          from += 64;
-					src += 64;
-        }
-	      while (from != to)
-        {
-          STORE(from, LOADU(src));
-          STORE(from+16, LOADU(src+16));
-          STORE(from+32, LOADU(src+32));
-          STORE(from+48, LOADU(src+48));
-          from += 64;
-					src += 64;
-        }
-  		  return dest2;
-      }
-      STOREU(dest, LOADU(src));
-      STOREU(dest + n - 16, LOADU(src + n - 16));
-      from = ALIGN_DOWN(dest + 16, 16);
-      to   = ALIGN_DOWN(dest + n, 16);
-			src += from - dest;
-      while (from != to)
-        {
-          STORE(from, LOADU(src));
-          from += 16;
-					src += 16;
-        }
-  		return dest2;
+		from = ALIGN_DOWN(dest + 64, 64);
+		to   = ALIGN_DOWN(dest + n , 64);
+		src += from - dest;
+		while (from != to)
+		{
+			STORE(from, LOADU(src));
+			STORE(from+16, LOADU(src+16));
+			STORE(from+32, LOADU(src+32));
+			STORE(from+48, LOADU(src+48));
+			from += 64;
+			src += 64;
+		}
+		return dest2;
 }
 
 static char *memcpy_small (char *dest, char *src, size_t no, char *ret)

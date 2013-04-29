@@ -84,7 +84,7 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
 	prof.fn.success++;\
   if (r<=16) prof.fn.less16++;\
   size_t r2= ((size_t)x+r)/16-((size_t)x)/16+1;\
-	if (prof.fn.last-prof.fn.start<1024+128*r){\
+	if (prof.fn.last-prof.fn.start<10000000){\
     if(r2<=1000) {\
       prof.fn.block_cnt[choice][1][r2/10]++;\
     	prof.fn.block_time[choice][1][r2/10]+=prof.fn.last-prof.fn.start;\
@@ -102,6 +102,8 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
   	  prof.fn.byte_time[choice][0][r]+=prof.fn.last-prof.fn.start;\
     }\
   }\
+	if (r==16 && prof.fn.last-prof.fn.start<500) prof.fn.time_distribution[choice][0][(prof.fn.last-prof.fn.start)/5]++;\
+	if (r==128 && prof.fn.last-prof.fn.start<500) prof.fn.time_distribution[choice][1][(prof.fn.last-prof.fn.start)/5]++;\
   if (b_##fn & B_NEEDLE){\
   if(ns<=1000)\
     prof.fn.needle[1][ns/10]++;\
