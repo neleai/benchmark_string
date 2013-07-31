@@ -37,7 +37,11 @@ typedef uint64_t tp_mask;
 
 static char *__memcpy_overlap(char *dest,char *src,size_t n)
 {
-	size_t i;
+	long i;
+  	for (i=0;i < n ;i++)
+	  	dest[i]=src[i];
+	return dest;
+	if (!n) return dest;
 	if (dest < src)
   	for (i=0;i < n ;i++)
 	  	dest[i]=src[i];
@@ -55,6 +59,7 @@ void *memcpy_new_u(char *dest, char *src, size_t n)
 	char *dest2= dest;
 	if (__builtin_expect((uint64_t)((src - dest)-n) < 2*n,0)) 
     return __memcpy_overlap(dest,src,n);
+
   if (__builtin_expect(n <= 128,1))
     {
 			if (n<= 16);

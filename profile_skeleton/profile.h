@@ -72,10 +72,11 @@ __attribute__((destructor)) static void save_cnt(){ int i,j;
 
 
 #define START_MEASURE(fn) prof.fn.start=rdtsc();
-#define COMMON_MEASURE(fn) \
+#define COMMON_MEASURE(fn, siz) \
   if(prof.fn.start!=prof.fn.last && (prof.fn.start-prof.fn.last)<(1<<31))\
   	prof.fn.delay[ 63-__builtin_clzl(prof.fn.start-prof.fn.last) ]++;\
   prof.fn.last=rdtsc();\
+	size_t r = siz;\
   prof.fn.aligns[ ((uint64_t) x)%64]++;\
 	if (b_##fn & B_NEEDLE){\
     prof.fn.needle_aligns[((uint64_t) y)%64]++;\
