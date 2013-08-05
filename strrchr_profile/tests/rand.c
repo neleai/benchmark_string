@@ -61,7 +61,7 @@ int main(){ int i,j,k;
 			dest=buf; src=b2;
 			gen(&dest,&src,size=rand_r(&r_seed)%sizes[j],SIZE);
 
-			ret += (int) strrchr(dest,rand_r(&r_seed)%128);
+			ret += (long) strrchr(dest,rand_r(&r_seed)%128);
 
 			dest[size]=(rand_r(&r_seed)%128)+1;
 

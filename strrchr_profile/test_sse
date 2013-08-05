@@ -1,1 +1,8 @@
+SSE42="`cat /proc/cpuinfo | grep sse4_2 `"
+
+if [ -z "$SSE42" ]
+then
+echo 2
+else
 echo 3
+fi
